@@ -77,7 +77,7 @@ function ExercisesContent() {
               </svg>
             </button>
           )}
-          <h1 className="text-xl font-bold">{isSelecting ? 'Add Exercise' : 'Exercises'}</h1>
+          <h1 className="text-2xl font-bold">{isSelecting ? 'Add Exercise' : 'Exercises'}</h1>
         </div>
 
         {/* Search */}
@@ -91,7 +91,7 @@ function ExercisesContent() {
             placeholder="Search exercises..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-surface border border-border rounded-xl pl-10 pr-4 py-3 min-h-[48px] text-sm focus:border-primary outline-none"
+            className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-3 min-h-[48px] text-sm focus:border-primary outline-none"
           />
         </div>
 
@@ -135,7 +135,7 @@ function ExercisesContent() {
               >
                 <p className="font-medium text-sm">{ex.name}</p>
                 <div className="flex gap-2 mt-1">
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary-light capitalize">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-surface text-text-secondary capitalize">
                     {ex.category.replace('_', ' ')}
                   </span>
                   {ex.primary_muscles.slice(0, 2).map((m) => (

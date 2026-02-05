@@ -68,7 +68,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-8">
+    <div className="p-8">
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-text">LiftLog</h1>
         <p className="mt-2 text-text-secondary">Sign in to your account</p>
@@ -110,7 +110,7 @@ export default function LoginPage() {
 
       <p className="mt-6 text-center text-sm text-text-secondary">
         Don&apos;t have an account?{' '}
-        <Link href="/register" className="font-medium text-primary-light hover:text-primary transition-colors">
+        <Link href="/register" className="font-medium text-primary hover:text-primary-dark transition-colors">
           Create one
         </Link>
       </p>

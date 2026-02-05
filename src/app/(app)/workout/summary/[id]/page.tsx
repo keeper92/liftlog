@@ -62,7 +62,7 @@ export default function WorkoutSummaryPage() {
     <div className="px-4 pt-8 pb-20">
       <div className="text-center mb-8">
         <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-4">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2DA44E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
@@ -89,7 +89,7 @@ export default function WorkoutSummaryPage() {
         </Card>
       </div>
 
-      <h2 className="text-lg font-semibold mb-3">Exercises</h2>
+      <h2 className="text-xs font-medium text-text-muted uppercase tracking-wider mb-4">Exercises</h2>
       <div className="space-y-3 mb-8">
         {Array.from(exerciseMap.entries()).map(([exId, { name, sets }]) => (
           <Card key={exId}>

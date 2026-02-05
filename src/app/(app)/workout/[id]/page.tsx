@@ -132,9 +132,9 @@ export default function ActiveWorkoutPage() {
         {store.exercises.map((ex, exIdx) => {
           const prev = store.previousPerformance[ex.exerciseId] || [];
           return (
-            <div key={ex.exerciseId + exIdx} className="bg-surface rounded-2xl p-4 border border-border">
+            <div key={ex.exerciseId + exIdx} className="bg-surface rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-primary-light">{ex.exerciseName}</h3>
+                <h3 className="font-semibold text-text">{ex.exerciseName}</h3>
                 <button
                   onClick={() => store.removeExercise(ex.exerciseId)}
                   className="text-text-muted text-xs hover:text-error"
@@ -174,7 +174,7 @@ export default function ActiveWorkoutPage() {
                       const val = e.target.value ? toStorageWeight(parseFloat(e.target.value), unitSystem) : null;
                       store.updateSet(exIdx, setIdx, { weight: val });
                     }}
-                    className="bg-surface-light rounded-lg px-2 py-2 text-center text-sm min-h-[44px] w-full border border-border focus:border-primary outline-none"
+                    className="bg-background rounded-lg px-2 py-2 text-center text-sm min-h-[44px] w-full border border-border focus:border-primary outline-none"
                     placeholder="0"
                   />
                   <input
@@ -185,7 +185,7 @@ export default function ActiveWorkoutPage() {
                       const val = e.target.value ? parseInt(e.target.value) : null;
                       store.updateSet(exIdx, setIdx, { reps: val });
                     }}
-                    className="bg-surface-light rounded-lg px-2 py-2 text-center text-sm min-h-[44px] w-full border border-border focus:border-primary outline-none"
+                    className="bg-background rounded-lg px-2 py-2 text-center text-sm min-h-[44px] w-full border border-border focus:border-primary outline-none"
                     placeholder="0"
                   />
                   <button

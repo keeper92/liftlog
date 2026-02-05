@@ -102,8 +102,9 @@ export default function ProgressPage() {
   }));
 
   return (
-    <div className="px-4 pt-6 pb-20">
-      <h1 className="text-2xl font-bold mb-6">Progress</h1>
+    <div className="px-5 pt-8 pb-20">
+      <p className="text-xs font-medium text-text-muted uppercase tracking-wider">LiftLog</p>
+      <h1 className="text-3xl font-bold mt-1 mb-8">Progress</h1>
 
       {exercises.length === 0 ? (
         <div className="text-center py-12">
@@ -116,7 +117,7 @@ export default function ProgressPage() {
           <select
             value={selectedExercise}
             onChange={(e) => setSelectedExercise(e.target.value)}
-            className="w-full bg-surface border border-border rounded-xl px-4 py-3 min-h-[48px] text-sm mb-6 focus:border-primary outline-none appearance-none"
+            className="w-full bg-background border border-border rounded-xl px-4 py-3 min-h-[48px] text-sm mb-6 focus:border-primary outline-none appearance-none"
           >
             {exercises.map((ex) => (
               <option key={ex.id} value={ex.id}>{ex.name}</option>
@@ -129,14 +130,14 @@ export default function ProgressPage() {
               <p className="text-sm font-medium mb-3">Estimated 1RM ({unit})</p>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={chartData}>
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9CA3AF' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} width={40} />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9B9B9B' }} />
+                  <YAxis tick={{ fontSize: 10, fill: '#9B9B9B' }} width={40} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#1A1A2E', border: '1px solid #374151', borderRadius: '8px' }}
-                    labelStyle={{ color: '#9CA3AF' }}
-                    itemStyle={{ color: '#818CF8' }}
+                    contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E8E8E6', borderRadius: '8px' }}
+                    labelStyle={{ color: '#6B6B6B' }}
+                    itemStyle={{ color: '#E8710A' }}
                   />
-                  <Line type="monotone" dataKey="e1rm" stroke="#4F46E5" strokeWidth={2} dot={{ fill: '#4F46E5', r: 3 }} />
+                  <Line type="monotone" dataKey="e1rm" stroke="#E8710A" strokeWidth={2} dot={{ fill: '#E8710A', r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
             </Card>
@@ -158,30 +159,30 @@ export default function ProgressPage() {
       {/* Personal Records */}
       {records.length > 0 && (
         <>
-          <h2 className="text-lg font-semibold mb-3">Personal Records</h2>
-          <div className="space-y-3">
+          <h2 className="text-xs font-medium text-text-muted uppercase tracking-wider mb-4">Personal Records</h2>
+          <div className="divide-y divide-border">
             {records.map((pr) => (
-              <Card key={pr.exercise_id}>
+              <div key={pr.exercise_id} className="py-3.5">
                 <p className="font-medium text-sm">{pr.exercise_name}</p>
                 <div className="grid grid-cols-3 gap-2 mt-2">
                   <div>
-                    <p className="text-lg font-bold text-primary-light">
+                    <p className="text-lg font-bold text-primary">
                       {toDisplayWeight(pr.max_weight, unitSystem)}
                     </p>
                     <p className="text-xs text-text-muted">Max {unit}</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-primary-light">{pr.max_reps}</p>
+                    <p className="text-lg font-bold text-primary">{pr.max_reps}</p>
                     <p className="text-xs text-text-muted">Max Reps</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-primary-light">
+                    <p className="text-lg font-bold text-primary">
                       {Math.round(toDisplayWeight(pr.estimated_1rm, unitSystem))}
                     </p>
                     <p className="text-xs text-text-muted">Est 1RM</p>
                   </div>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         </>

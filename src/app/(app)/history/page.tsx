@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { formatRelativeDate, formatDuration, toDisplayWeight, weightUnit } from '@/lib/utils/units';
-import Card from '@/components/ui/Card';
-
 interface HistoryWorkout {
   id: string;
   name: string | null;
@@ -50,8 +48,9 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="px-4 pt-6 pb-20">
-      <h1 className="text-2xl font-bold mb-6">History</h1>
+    <div className="px-5 pt-8 pb-20">
+      <p className="text-xs font-medium text-text-muted uppercase tracking-wider">LiftLog</p>
+      <h1 className="text-3xl font-bold mt-1 mb-8">History</h1>
 
       {loading ? (
         <p className="text-text-muted text-sm text-center py-8">Loading...</p>
@@ -64,8 +63,8 @@ export default function HistoryPage() {
         <div className="space-y-6">
           {Array.from(grouped.entries()).map(([month, monthWorkouts]) => (
             <div key={month}>
-              <h2 className="text-sm font-semibold text-text-secondary mb-3">{month}</h2>
-              <div className="space-y-3">
+              <h2 className="text-xs font-medium text-text-muted uppercase tracking-wider mb-3">{month}</h2>
+              <div className="divide-y divide-border">
                 {monthWorkouts.map((w) => {
                   const exerciseIds = new Set(w.sets.map((s) => s.exercise_id));
                   const totalVolume = w.sets.reduce(
@@ -77,22 +76,22 @@ export default function HistoryPage() {
                     : 0;
 
                   return (
-                    <Card key={w.id}>
+                    <div key={w.id} className="py-3.5">
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="font-medium">{w.name || 'Workout'}</p>
-                          <p className="text-sm text-text-secondary mt-0.5">{formatRelativeDate(w.date)}</p>
+                          <p className="font-medium text-sm">{w.name || 'Workout'}</p>
+                          <p className="text-xs text-text-muted mt-0.5">{formatRelativeDate(w.date)}</p>
                         </div>
                         {duration > 0 && (
-                          <span className="text-sm text-text-muted">{formatDuration(duration)}</span>
+                          <span className="text-xs text-text-muted">{formatDuration(duration)}</span>
                         )}
                       </div>
-                      <div className="flex gap-4 mt-2 text-xs text-text-muted">
+                      <div className="flex gap-4 mt-1.5 text-xs text-text-muted">
                         <span>{exerciseIds.size} exercises</span>
                         <span>{w.sets.length} sets</span>
                         <span>{toDisplayWeight(totalVolume, unitSystem).toLocaleString()} {unit}</span>
                       </div>
-                    </Card>
+                    </div>
                   );
                 })}
               </div>

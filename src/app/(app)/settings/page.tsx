@@ -27,8 +27,9 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="px-4 pt-6 pb-4">
-      <h1 className="text-2xl font-bold mb-6">Settings</h1>
+    <div className="px-5 pt-8 pb-4">
+      <p className="text-xs font-medium text-text-muted uppercase tracking-wider">LiftLog</p>
+      <h1 className="text-3xl font-bold mt-1 mb-8">Settings</h1>
 
       <div className="space-y-4">
         <Card>
@@ -64,7 +65,7 @@ export default function SettingsPage() {
             <select
               value={defaultRestTimer}
               onChange={(e) => setDefaultRestTimer(Number(e.target.value))}
-              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-primary"
+              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
             >
               {REST_TIMER_OPTIONS.map((seconds) => (
                 <option key={seconds} value={seconds}>

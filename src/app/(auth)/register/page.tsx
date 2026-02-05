@@ -68,7 +68,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-8">
+    <div className="p-8">
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-text">LiftLog</h1>
         <p className="mt-2 text-text-secondary">Create your account</p>
@@ -110,7 +110,7 @@ export default function RegisterPage() {
 
       <p className="mt-6 text-center text-sm text-text-secondary">
         Already have an account?{' '}
-        <Link href="/login" className="font-medium text-primary-light hover:text-primary transition-colors">
+        <Link href="/login" className="font-medium text-primary hover:text-primary-dark transition-colors">
           Sign in
         </Link>
       </p>
