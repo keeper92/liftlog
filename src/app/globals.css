@@ -1,22 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --color-primary: #4F46E5;
-  --color-primary-light: #818CF8;
-  --color-primary-dark: #3730A3;
+  --color-primary: #E8710A;
+  --color-primary-light: #F09D4A;
+  --color-primary-dark: #C55E08;
 
-  --color-background: #0F0F1A;
-  --color-surface: #1A1A2E;
-  --color-surface-light: #252542;
+  --color-background: #FFFFFF;
+  --color-surface: #F7F7F5;
+  --color-surface-light: #EFEFED;
 
-  --color-text: #FFFFFF;
-  --color-text-secondary: #9CA3AF;
-  --color-text-muted: #6B7280;
+  --color-text: #1A1A1A;
+  --color-text-secondary: #6B6B6B;
+  --color-text-muted: #9B9B9B;
 
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
-  --color-border: #374151;
+  --color-success: #2DA44E;
+  --color-warning: #D4A72C;
+  --color-error: #CF222E;
+  --color-border: #E8E8E6;
 }
 
 @theme inline {
@@ -43,7 +43,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar styling for dark theme */
+/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -61,7 +61,7 @@ body {
   background: var(--color-text-muted);
 }
 
-/* Remove default autofill styles for dark inputs */
+/* Autofill styles */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {

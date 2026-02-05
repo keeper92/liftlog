@@ -27,12 +27,12 @@ export default function Input({
       <input
         id={inputId}
         className={`
-          min-h-[48px] w-full rounded-xl border bg-surface px-4 text-text
+          min-h-[48px] w-full rounded-xl border bg-background px-4 text-text
           placeholder:text-text-muted
           transition-colors duration-150 ease-in-out
-          focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
+          focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
           disabled:cursor-not-allowed disabled:opacity-50
-          ${error ? 'border-error focus:ring-error/50 focus:border-error' : 'border-border'}
+          ${error ? 'border-error focus:ring-error/20 focus:border-error' : 'border-border'}
           ${className}
         `}
         {...rest}

@@ -11,7 +11,7 @@ export default function Card({ children, className = '', onClick }: CardProps) {
     <Component
       onClick={onClick}
       className={`
-        rounded-2xl border border-border bg-surface p-4
+        rounded-xl bg-surface p-4
         ${onClick ? 'cursor-pointer transition-colors hover:bg-surface-light active:bg-surface-light text-left w-full' : ''}
         ${className}
       `}

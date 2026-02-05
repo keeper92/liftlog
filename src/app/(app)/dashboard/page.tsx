@@ -6,7 +6,6 @@ import { createClient } from '@/lib/supabase/client';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { formatRelativeDate, toDisplayWeight, weightUnit } from '@/lib/utils/units';
-import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 
 interface ProgressSummary {
@@ -64,8 +63,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="px-4 pt-6 pb-4">
-      <h1 className="text-2xl font-bold mb-6">LiftLog</h1>
+    <div className="px-5 pt-8 pb-4">
+      <p className="text-xs font-medium text-text-muted uppercase tracking-wider">LiftLog</p>
+      <h1 className="text-3xl font-bold mt-1 mb-8">Home</h1>
 
       {isActive ? (
         <Button variant="primary" fullWidth size="lg" onClick={handleResumeWorkout}>
@@ -78,30 +78,30 @@ export default function DashboardPage() {
       )}
 
       {summary && (
-        <div className="grid grid-cols-3 gap-3 mt-6">
-          <Card className="text-center">
-            <p className="text-2xl font-bold text-primary">{summary.currentStreak}</p>
-            <p className="text-xs text-text-secondary mt-1">Day Streak</p>
-          </Card>
-          <Card className="text-center">
-            <p className="text-2xl font-bold text-primary">{summary.weekWorkouts}</p>
-            <p className="text-xs text-text-secondary mt-1">This Week</p>
-          </Card>
-          <Card className="text-center">
-            <p className="text-2xl font-bold text-primary">
+        <div className="flex items-baseline justify-between mt-8 py-4 border-y border-border">
+          <div className="text-center flex-1">
+            <p className="text-2xl font-bold">{summary.currentStreak}</p>
+            <p className="text-xs text-text-muted mt-0.5">Day Streak</p>
+          </div>
+          <div className="text-center flex-1">
+            <p className="text-2xl font-bold">{summary.weekWorkouts}</p>
+            <p className="text-xs text-text-muted mt-0.5">This Week</p>
+          </div>
+          <div className="text-center flex-1">
+            <p className="text-2xl font-bold">
               {toDisplayWeight(summary.weekVolume, unitSystem).toLocaleString()}
             </p>
-            <p className="text-xs text-text-secondary mt-1">{weightUnit(unitSystem)} Volume</p>
-          </Card>
+            <p className="text-xs text-text-muted mt-0.5">{weightUnit(unitSystem)} Vol</p>
+          </div>
         </div>
       )}
 
       <div className="mt-8">
-        <h2 className="text-lg font-semibold mb-3">Recent Workouts</h2>
+        <h2 className="text-xs font-medium text-text-muted uppercase tracking-wider mb-4">Recent Workouts</h2>
         {recentWorkouts.length === 0 ? (
           <p className="text-text-muted text-sm">No workouts yet. Start your first one!</p>
         ) : (
-          <div className="space-y-3">
+          <div className="divide-y divide-border">
             {recentWorkouts.map((w) => {
               const exerciseIds = new Set(w.sets.map((s) => s.exercise_id));
               const totalVolume = w.sets.reduce(
@@ -109,18 +109,16 @@ export default function DashboardPage() {
                 0,
               );
               return (
-                <Card key={w.id}>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium">{w.name || 'Workout'}</p>
-                      <p className="text-sm text-text-secondary">{formatRelativeDate(w.date)}</p>
-                    </div>
-                    <div className="text-right text-sm text-text-secondary">
-                      <p>{exerciseIds.size} exercises</p>
-                      <p>{toDisplayWeight(totalVolume, unitSystem).toLocaleString()} {weightUnit(unitSystem)}</p>
-                    </div>
+                <div key={w.id} className="py-3.5 flex justify-between items-center">
+                  <div>
+                    <p className="font-medium text-sm">{w.name || 'Workout'}</p>
+                    <p className="text-xs text-text-muted mt-0.5">{formatRelativeDate(w.date)}</p>
                   </div>
-                </Card>
+                  <div className="text-right text-xs text-text-muted">
+                    <p>{exerciseIds.size} exercises</p>
+                    <p>{toDisplayWeight(totalVolume, unitSystem).toLocaleString()} {weightUnit(unitSystem)}</p>
+                  </div>
+                </div>
               );
             })}
           </div>
