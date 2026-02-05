@@ -64,7 +64,7 @@ export default function DashboardPage() {
 
   return (
     <div className="px-5 pt-8 pb-4">
-      <p className="text-xs font-medium text-text-muted uppercase tracking-wider">LiftLog</p>
+      <p className="text-sm font-black text-text tracking-tight">rep</p>
       <h1 className="text-3xl font-bold mt-1 mb-8">Home</h1>
 
       {isActive ? (

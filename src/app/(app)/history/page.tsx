@@ -49,7 +49,7 @@ export default function HistoryPage() {
 
   return (
     <div className="px-5 pt-8 pb-20">
-      <p className="text-xs font-medium text-text-muted uppercase tracking-wider">LiftLog</p>
+      <p className="text-sm font-black text-text tracking-tight">rep</p>
       <h1 className="text-3xl font-bold mt-1 mb-8">History</h1>
 
       {loading ? (

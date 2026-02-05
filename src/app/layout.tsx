@@ -9,14 +9,14 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'LiftLog',
+  title: 'rep',
   description: 'Track your workouts',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'LiftLog',
+    title: 'rep',
   },
-  applicationName: 'LiftLog',
+  applicationName: 'rep',
 };
 
 export const viewport: Viewport = {

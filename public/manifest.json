@@ -1,6 +1,6 @@
 {
-  "name": "LiftLog",
-  "short_name": "LiftLog",
+  "name": "rep",
+  "short_name": "rep",
   "description": "Track your workouts and progress",
   "start_url": "/dashboard",
   "display": "standalone",

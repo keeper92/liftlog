@@ -70,7 +70,7 @@ export default function RegisterPage() {
   return (
     <div className="p-8">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-text">LiftLog</h1>
+        <h1 className="text-3xl font-black text-text tracking-tight">rep</h1>
         <p className="mt-2 text-text-secondary">Create your account</p>
       </div>
 
