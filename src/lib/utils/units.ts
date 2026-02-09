@@ -1,18 +1,19 @@
 import type { UnitSystem } from '@/lib/types/user';
 
-const KG_TO_LB = 2.20462;
 const LB_TO_KG = 0.453592;
 
-export function toDisplayWeight(kg: number, unit: UnitSystem): number {
-  if (unit === 'imperial') {
-    return Math.round(kg * KG_TO_LB * 10) / 10;
+// Weights are stored in lbs internally
+export function toDisplayWeight(lbs: number, unit: UnitSystem): number {
+  if (unit === 'metric') {
+    return Math.round(lbs * LB_TO_KG * 10) / 10;
   }
-  return Math.round(kg * 10) / 10;
+  return Math.round(lbs);
 }
 
 export function toStorageWeight(value: number, unit: UnitSystem): number {
-  if (unit === 'imperial') {
-    return Math.round(value * LB_TO_KG * 100) / 100;
+  if (unit === 'metric') {
+    // Convert kg input to lbs for storage
+    return Math.round(value / LB_TO_KG);
   }
   return value;
 }
@@ -43,4 +44,67 @@ export function formatRelativeDate(dateStr: string): string {
   if (diffDays < 7) return `${diffDays} days ago`;
 
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+// Cardio time utilities
+export function formatTimeInput(seconds: number | null): string {
+  if (seconds === null || seconds === 0) return '';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+export function parseTimeInput(input: string): number | null {
+  if (!input || input.trim() === '') return null;
+  const trimmed = input.trim();
+
+  // Handle mm:ss format
+  if (trimmed.includes(':')) {
+    const parts = trimmed.split(':');
+    const minutes = parseInt(parts[0]) || 0;
+    const seconds = parseInt(parts[1]) || 0;
+    return minutes * 60 + seconds;
+  }
+
+  // Treat single number as minutes
+  const minutes = parseInt(trimmed);
+  return isNaN(minutes) ? null : minutes * 60;
+}
+
+// Cardio distance utilities
+const MI_TO_KM = 1.60934;
+
+export function distanceUnit(unit: UnitSystem): string {
+  return unit === 'imperial' ? 'mi' : 'km';
+}
+
+export function toDisplayDistance(miles: number | null, unit: UnitSystem): number | null {
+  if (miles === null) return null;
+  if (unit === 'metric') {
+    return Math.round(miles * MI_TO_KM * 100) / 100;
+  }
+  return Math.round(miles * 100) / 100;
+}
+
+export function toStorageDistance(value: number, unit: UnitSystem): number {
+  if (unit === 'metric') {
+    // Convert km input to miles for storage
+    return value / MI_TO_KM;
+  }
+  return value;
+}
+
+// Calculate pace from time (seconds) and distance (miles)
+export function calculatePace(timeSeconds: number | null, distanceMiles: number | null, unit: UnitSystem): string | null {
+  if (!timeSeconds || !distanceMiles || distanceMiles === 0) return null;
+
+  // Convert distance to display unit for pace calculation
+  const displayDistance = unit === 'metric' ? distanceMiles * MI_TO_KM : distanceMiles;
+
+  // Pace in seconds per unit (mile or km)
+  const paceSeconds = timeSeconds / displayDistance;
+  const paceMinutes = Math.floor(paceSeconds / 60);
+  const paceRemainingSeconds = Math.round(paceSeconds % 60);
+
+  return `${paceMinutes}:${paceRemainingSeconds.toString().padStart(2, '0')}/${unit === 'metric' ? 'km' : 'mi'}`;
 }

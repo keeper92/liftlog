@@ -3,3 +3,4 @@ export type { Exercise } from './exercise';
 export type { Workout, WorkoutSummary } from './workout';
 export type { WorkoutSet } from './set';
 export type { BodyMeasurement } from './bodyMeasurement';
+export type { WorkoutTemplate, TemplateExercise } from './template';

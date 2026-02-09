@@ -12,19 +12,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-primary text-white hover:bg-primary-light active:bg-primary-dark focus-visible:ring-primary/50',
+    'bg-primary text-white hover:bg-primary-light active:bg-primary-dark shadow-sm hover:shadow',
   outline:
-    'border border-border text-text hover:bg-surface-light active:bg-surface-light focus-visible:ring-border/50',
+    'border-2 border-primary text-primary hover:bg-primary/5 active:bg-primary/10',
   ghost:
-    'text-text-secondary hover:bg-surface-light hover:text-text active:bg-surface-light focus-visible:ring-surface-light/50',
+    'text-text-secondary hover:bg-surface-light hover:text-text active:bg-surface-light',
   danger:
-    'bg-error text-white hover:bg-error/80 active:bg-error/70 focus-visible:ring-error/50',
+    'bg-error text-white hover:bg-error/90 active:bg-error/80 shadow-sm',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'min-h-[36px] px-3 text-sm',
-  md: 'min-h-[44px] px-5 text-sm',
-  lg: 'min-h-[52px] px-6 text-base',
+  sm: 'min-h-[36px] px-4 text-sm',
+  md: 'min-h-[48px] px-6 text-sm',
+  lg: 'min-h-[56px] px-8 text-base',
 };
 
 export default function Button({
@@ -41,9 +41,9 @@ export default function Button({
     <button
       disabled={disabled || loading}
       className={`
-        inline-flex items-center justify-center gap-2 rounded-xl font-medium
-        transition-colors duration-150 ease-in-out
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background
+        inline-flex items-center justify-center gap-2 rounded-full font-semibold
+        transition-all duration-150 ease-in-out
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background
         disabled:cursor-not-allowed disabled:opacity-50
         ${variantClasses[variant]}
         ${sizeClasses[size]}

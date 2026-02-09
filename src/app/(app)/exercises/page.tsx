@@ -14,6 +14,13 @@ interface Exercise {
   equipment: string | null;
 }
 
+// Display names for cardio exercises (cleaner than DB names)
+const CARDIO_DISPLAY_NAMES: Record<string, string> = {
+  'Jogging, Treadmill': 'Treadmill',
+  'Bicycling, Stationary': 'Stationary Bike',
+  'Rowing, Stationary': 'Rowing Machine',
+};
+
 export default function ExercisesPage() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-dvh text-text-muted">Loading...</div>}>
@@ -32,36 +39,99 @@ function ExercisesContent() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [search, setSearch] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
+  const [showCardio, setShowCardio] = useState(false);
+  const [showRecentlyUsed, setShowRecentlyUsed] = useState(false);
+  const [recentlyUsedIds, setRecentlyUsedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Fetch recently used exercise IDs on mount
+  useEffect(() => {
+    async function loadRecentlyUsed() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('sets')
+        .select('exercise_id, timestamp, workouts!inner(user_id)')
+        .eq('workouts.user_id', user.id)
+        .order('timestamp', { ascending: false });
+
+      if (data) {
+        // Get unique exercise IDs in order of most recent use
+        const seen = new Set<string>();
+        const recentIds: string[] = [];
+        for (const row of data) {
+          if (!seen.has(row.exercise_id)) {
+            seen.add(row.exercise_id);
+            recentIds.push(row.exercise_id);
+          }
+          if (recentIds.length >= 50) break;
+        }
+        setRecentlyUsedIds(recentIds);
+      }
+    }
+    loadRecentlyUsed();
+  }, []);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
-      let query = supabase
-        .from('exercises')
-        .select('id, name, category, primary_muscles, equipment')
-        .order('name')
-        .limit(50);
 
-      if (search) {
-        query = query.ilike('name', `%${search}%`);
-      }
-      if (selectedMuscle) {
-        query = query.contains('primary_muscles', [selectedMuscle]);
-      }
+      if (showRecentlyUsed && recentlyUsedIds.length > 0) {
+        // Fetch exercises by recently used IDs
+        let query = supabase
+          .from('exercises')
+          .select('id, name, category, primary_muscles, equipment')
+          .in('id', recentlyUsedIds);
 
-      const { data } = await query;
-      if (data) setExercises(data);
+        if (search) {
+          query = query.ilike('name', `%${search}%`);
+        }
+
+        const { data } = await query;
+        if (data) {
+          // Sort by recently used order
+          const sorted = [...data].sort(
+            (a, b) => recentlyUsedIds.indexOf(a.id) - recentlyUsedIds.indexOf(b.id)
+          );
+          setExercises(sorted);
+        }
+      } else {
+        let query = supabase
+          .from('exercises')
+          .select('id, name, category, primary_muscles, equipment')
+          .order('name')
+          .limit(50);
+
+        if (search) {
+          query = query.ilike('name', `%${search}%`);
+        }
+        if (showCardio) {
+          // Only show these 5 cardio exercises
+          query = query.in('name', [
+            'Bicycling, Stationary',
+            'Stairmaster',
+            'Elliptical Trainer',
+            'Rowing, Stationary',
+            'Jogging, Treadmill',
+          ]);
+        } else if (selectedMuscle) {
+          query = query.contains('primary_muscles', [selectedMuscle]);
+        }
+
+        const { data } = await query;
+        if (data) setExercises(data);
+      }
       setLoading(false);
     }
 
     const debounce = setTimeout(load, 300);
     return () => clearTimeout(debounce);
-  }, [search, selectedMuscle]);
+  }, [search, selectedMuscle, showCardio, showRecentlyUsed, recentlyUsedIds]);
 
   function handleSelectExercise(exercise: Exercise) {
     if (isSelecting) {
-      addExercise({ id: exercise.id, name: exercise.name });
+      addExercise({ id: exercise.id, name: exercise.name, category: exercise.category });
       router.back();
     }
   }
@@ -98,19 +168,51 @@ function ExercisesContent() {
         {/* Muscle Filter */}
         <div className="flex overflow-x-auto gap-2 pb-2 -mx-4 px-4 scrollbar-hide">
           <button
-            onClick={() => setSelectedMuscle(null)}
+            onClick={() => {
+              setShowRecentlyUsed(true);
+              setShowCardio(false);
+              setSelectedMuscle(null);
+            }}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              !selectedMuscle ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
+              showRecentlyUsed ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
+            }`}
+          >
+            Recently Used
+          </button>
+          <button
+            onClick={() => {
+              setShowRecentlyUsed(false);
+              setShowCardio(false);
+              setSelectedMuscle(null);
+            }}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              !showRecentlyUsed && !showCardio && !selectedMuscle ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
             }`}
           >
             All
           </button>
+          <button
+            onClick={() => {
+              setShowRecentlyUsed(false);
+              setShowCardio(true);
+              setSelectedMuscle(null);
+            }}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              showCardio ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
+            }`}
+          >
+            Cardio
+          </button>
           {MUSCLE_GROUPS.map((m) => (
             <button
               key={m}
-              onClick={() => setSelectedMuscle(selectedMuscle === m ? null : m)}
+              onClick={() => {
+                setShowRecentlyUsed(false);
+                setShowCardio(false);
+                setSelectedMuscle(selectedMuscle === m ? null : m);
+              }}
               className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-colors ${
-                selectedMuscle === m ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
+                !showRecentlyUsed && !showCardio && selectedMuscle === m ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
               }`}
             >
               {m.replace('_', ' ')}
@@ -133,7 +235,7 @@ function ExercisesContent() {
                 onClick={() => handleSelectExercise(ex)}
                 className="w-full text-left px-3 py-3 rounded-xl hover:bg-surface-light transition-colors min-h-[44px]"
               >
-                <p className="font-medium text-sm">{ex.name}</p>
+                <p className="font-medium text-sm">{CARDIO_DISPLAY_NAMES[ex.name] || ex.name}</p>
                 <div className="flex gap-2 mt-1">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-surface text-text-secondary capitalize">
                     {ex.category.replace('_', ' ')}
