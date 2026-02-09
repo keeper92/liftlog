@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const DEMO_EMAIL = 'demo@rep.app';
+const DEMO_EMAIL = 'demo@reps.app';
 const DEMO_PASSWORD = 'demo123456';
 
 export async function POST() {

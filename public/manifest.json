@@ -1,6 +1,6 @@
 {
-  "name": "rep",
-  "short_name": "rep",
+  "name": "reps",
+  "short_name": "reps",
   "description": "Track your workouts and progress",
   "start_url": "/dashboard",
   "display": "standalone",

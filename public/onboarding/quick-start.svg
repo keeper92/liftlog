@@ -2,7 +2,7 @@
   <rect width="192" height="320" fill="#ffffff"/>
 
   <!-- Header -->
-  <text x="16" y="32" fill="#171717" font-family="system-ui" font-size="10" font-weight="bold">rep</text>
+  <text x="16" y="32" fill="#171717" font-family="system-ui" font-size="10" font-weight="bold">reps</text>
   <text x="16" y="56" fill="#171717" font-family="system-ui" font-size="20" font-weight="bold">Home</text>
 
   <!-- Quick Start Button with glow effect -->

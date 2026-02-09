@@ -9,14 +9,14 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'rep',
+  title: 'reps',
   description: 'Track your workouts',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'rep',
+    title: 'reps',
   },
-  applicationName: 'rep',
+  applicationName: 'reps',
 };
 
 export const viewport: Viewport = {

@@ -9,7 +9,7 @@ interface OnboardingProps {
 
 const slides = [
   {
-    title: 'Welcome to rep',
+    title: 'Welcome to reps',
     description: 'Your simple, focused workout tracker with a built-in AI personal trainer. Log your lifts, track your progress, and get stronger.',
     image: null, // No image for welcome slide
     icon: null,
@@ -87,7 +87,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             )}
           </div>
         ) : (
-          <p className="text-6xl font-black text-primary mb-8">rep</p>
+          <p className="text-6xl font-black text-primary mb-8">reps</p>
         )}
 
         <h1 className="text-2xl font-bold text-text mb-3">{slide.title}</h1>

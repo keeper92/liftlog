@@ -119,7 +119,7 @@ export default function HistoryPage() {
       <div className="bg-surface px-5 pt-8 pb-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-black text-primary tracking-tight">rep</p>
+            <p className="text-sm font-black text-primary tracking-tight">reps</p>
             <h1 className="text-2xl font-bold mt-1">History</h1>
           </div>
           <div className="flex bg-surface-light rounded-full p-1">

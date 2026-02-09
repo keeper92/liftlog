@@ -26,7 +26,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
       }`}
     >
       <p className="text-4xl font-black text-text tracking-tight animate-fade-in">
-        rep
+        reps
       </p>
     </div>
   );

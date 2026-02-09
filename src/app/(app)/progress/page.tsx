@@ -105,7 +105,7 @@ export default function ProgressPage() {
     <div className="pb-24">
       {/* Header */}
       <div className="bg-surface px-5 pt-8 pb-4 border-b border-border">
-        <p className="text-sm font-black text-primary tracking-tight">rep</p>
+        <p className="text-sm font-black text-primary tracking-tight">reps</p>
         <h1 className="text-2xl font-bold mt-1">Progress</h1>
       </div>
 

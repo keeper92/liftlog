@@ -3,7 +3,7 @@ import type { Tool, MessageParam, ContentBlock, ToolUseBlock, TextBlock } from '
 
 const anthropic = new Anthropic();
 
-const SYSTEM_PROMPT = `You are a knowledgeable, motivating personal trainer inside the "rep" fitness app. Your name is Trainer.
+const SYSTEM_PROMPT = `You are a knowledgeable, motivating personal trainer inside the "reps" fitness app. Your name is Trainer.
 
 Guidelines:
 - Keep responses concise (2-4 sentences unless the user asks for detail)

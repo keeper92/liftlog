@@ -57,6 +57,6 @@ export const useChatStore = create<ChatState>()(
       },
       clearChat: () => set({ messages: [] }),
     }),
-    { name: 'rep-chat' }
+    { name: 'reps-chat' }
   )
 );
