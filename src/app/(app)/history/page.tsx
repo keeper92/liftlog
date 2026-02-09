@@ -36,6 +36,19 @@ export default function HistoryPage() {
   const [view, setView] = useState<ViewMode>('list');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  async function handleDelete(workoutId: string) {
+    if (!window.confirm('Delete this workout? This cannot be undone.')) return;
+
+    setDeleting(workoutId);
+    const { error } = await supabase.from('workouts').delete().eq('id', workoutId);
+
+    if (!error) {
+      setWorkouts((prev) => prev.filter((w) => w.id !== workoutId));
+    }
+    setDeleting(null);
+  }
 
   useEffect(() => {
     async function load() {
@@ -171,9 +184,22 @@ export default function HistoryPage() {
                           <p className="font-semibold text-sm">{w.name || 'Workout'}</p>
                           <p className="text-xs text-text-muted mt-0.5">{formatRelativeDate(w.date)}</p>
                         </div>
-                        {duration > 0 && (
-                          <span className="text-xs text-text-muted bg-surface-light px-2 py-1 rounded-full">{formatDuration(duration)}</span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {duration > 0 && (
+                            <span className="text-xs text-text-muted bg-surface-light px-2 py-1 rounded-full">{formatDuration(duration)}</span>
+                          )}
+                          <button
+                            onClick={() => handleDelete(w.id)}
+                            disabled={deleting === w.id}
+                            className="p-1.5 text-text-muted hover:text-error transition-colors rounded-lg hover:bg-surface-light disabled:opacity-50"
+                            aria-label="Delete workout"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                       <div className="mt-3 space-y-1.5">
                         {exercises.map((ex, i) => (
@@ -278,9 +304,22 @@ export default function HistoryPage() {
                     <div key={w.id} className="bg-surface rounded-2xl p-4 card-shadow">
                       <div className="flex justify-between items-start mb-2">
                         <p className="font-semibold text-sm">{w.name || 'Workout'}</p>
-                        {duration > 0 && (
-                          <span className="text-xs text-text-muted bg-surface-light px-2 py-1 rounded-full">{formatDuration(duration)}</span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {duration > 0 && (
+                            <span className="text-xs text-text-muted bg-surface-light px-2 py-1 rounded-full">{formatDuration(duration)}</span>
+                          )}
+                          <button
+                            onClick={() => handleDelete(w.id)}
+                            disabled={deleting === w.id}
+                            className="p-1.5 text-text-muted hover:text-error transition-colors rounded-lg hover:bg-surface-light disabled:opacity-50"
+                            aria-label="Delete workout"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                       <div className="space-y-1.5">
                         {exercises.map((ex, i) => (
