@@ -76,7 +76,10 @@ export default function ActiveWorkoutPage() {
     }
   };
 
+  const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleInputFocus = (exIdx: number, setIdx: number, field: 'weight' | 'reps') => {
+    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
     setActiveInput({ exIdx, setIdx, field });
   };
 
@@ -89,7 +92,15 @@ export default function ActiveWorkoutPage() {
     )) {
       return;
     }
-    setActiveInput(null);
+    // Delay clearing — on mobile, rendering the Next button can cause a
+    // transient blur (layout reflow) before focus settles back on the input
+    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    blurTimeoutRef.current = setTimeout(() => {
+      const active = document.activeElement;
+      if (!active || active.tagName !== 'INPUT' || !(active as HTMLElement).dataset.trackedInput) {
+        setActiveInput(null);
+      }
+    }, 100);
   }, []);
 
   useEffect(() => {
