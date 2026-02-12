@@ -59,6 +59,68 @@ export default function ActiveWorkoutPage() {
   const [loadingTips, setLoadingTips] = useState(false);
   const [trainingGuideMenu, setTrainingGuideMenu] = useState<{ exerciseId: string; exerciseName: string } | null>(null);
 
+  // Quick-log flow: track active input for weight→reps→complete
+  const [activeInput, setActiveInput] = useState<{ exIdx: number; setIdx: number; field: 'weight' | 'reps' } | null>(null);
+  const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const nextButtonRef = useRef<HTMLButtonElement>(null);
+
+  const getInputKey = (exIdx: number, setIdx: number, field: 'weight' | 'reps') =>
+    `${exIdx}-${setIdx}-${field}`;
+
+  const setInputRef = (exIdx: number, setIdx: number, field: 'weight' | 'reps', el: HTMLInputElement | null) => {
+    const key = getInputKey(exIdx, setIdx, field);
+    if (el) {
+      inputRefs.current.set(key, el);
+    } else {
+      inputRefs.current.delete(key);
+    }
+  };
+
+  const handleInputFocus = (exIdx: number, setIdx: number, field: 'weight' | 'reps') => {
+    setActiveInput({ exIdx, setIdx, field });
+  };
+
+  const handleInputBlur = useCallback((e: React.FocusEvent) => {
+    // Don't clear if focus is moving to the Next button or another tracked input
+    const relatedTarget = e.relatedTarget as HTMLElement | null;
+    if (relatedTarget && (
+      relatedTarget === nextButtonRef.current ||
+      relatedTarget.dataset.trackedInput === 'true'
+    )) {
+      return;
+    }
+    setActiveInput(null);
+  }, []);
+
+  const handleNext = useCallback(() => {
+    if (!activeInput) return;
+    const { exIdx, setIdx, field } = activeInput;
+
+    if (field === 'weight') {
+      // Move focus to reps
+      const repsKey = getInputKey(exIdx, setIdx, 'reps');
+      const repsInput = inputRefs.current.get(repsKey);
+      if (repsInput) {
+        repsInput.focus();
+        repsInput.select();
+      }
+      setActiveInput({ exIdx, setIdx, field: 'reps' });
+    } else if (field === 'reps') {
+      // Complete the set and start rest timer
+      const exercise = store.exercises[exIdx];
+      const s = exercise?.sets[setIdx];
+      if (s && !s.isCompleted) {
+        store.completeSet(exIdx, setIdx);
+        startRestTimer(exercise.restTimerSeconds);
+      }
+      // Blur the current input
+      const repsKey = getInputKey(exIdx, setIdx, 'reps');
+      const repsInput = inputRefs.current.get(repsKey);
+      if (repsInput) repsInput.blur();
+      setActiveInput(null);
+    }
+  }, [activeInput, store, startRestTimer]);
+
   useEffect(() => {
     if (!store.isActive) {
       router.replace('/dashboard');
@@ -412,6 +474,8 @@ export default function ActiveWorkoutPage() {
                       {prev[setIdx] ? `${toDisplayWeight(prev[setIdx].weight, unitSystem)}×${prev[setIdx].reps}` : '-'}
                     </span>
                     <input
+                      ref={(el) => setInputRef(exIdx, setIdx, 'weight', el)}
+                      data-tracked-input="true"
                       type="number"
                       inputMode="decimal"
                       value={s.weight !== null ? toDisplayWeight(s.weight, unitSystem) : ''}
@@ -419,10 +483,18 @@ export default function ActiveWorkoutPage() {
                         const val = e.target.value ? toStorageWeight(parseFloat(e.target.value), unitSystem) : null;
                         store.updateSet(exIdx, setIdx, { weight: val });
                       }}
-                      className="bg-background rounded-lg px-2 py-2 text-center text-sm min-h-[44px] w-full border border-border focus:border-primary outline-none"
+                      onFocus={() => handleInputFocus(exIdx, setIdx, 'weight')}
+                      onBlur={handleInputBlur}
+                      className={`bg-background rounded-lg px-2 py-2 text-center text-sm min-h-[44px] w-full border outline-none ${
+                        activeInput?.exIdx === exIdx && activeInput?.setIdx === setIdx && activeInput?.field === 'weight'
+                          ? 'border-primary ring-1 ring-primary'
+                          : 'border-border focus:border-primary'
+                      }`}
                       placeholder="0"
                     />
                     <input
+                      ref={(el) => setInputRef(exIdx, setIdx, 'reps', el)}
+                      data-tracked-input="true"
                       type="number"
                       inputMode="numeric"
                       value={s.reps ?? ''}
@@ -430,7 +502,13 @@ export default function ActiveWorkoutPage() {
                         const val = e.target.value ? parseInt(e.target.value) : null;
                         store.updateSet(exIdx, setIdx, { reps: val });
                       }}
-                      className="bg-background rounded-lg px-2 py-2 text-center text-sm min-h-[44px] w-full border border-border focus:border-primary outline-none"
+                      onFocus={() => handleInputFocus(exIdx, setIdx, 'reps')}
+                      onBlur={handleInputBlur}
+                      className={`bg-background rounded-lg px-2 py-2 text-center text-sm min-h-[44px] w-full border outline-none ${
+                        activeInput?.exIdx === exIdx && activeInput?.setIdx === setIdx && activeInput?.field === 'reps'
+                          ? 'border-primary ring-1 ring-primary'
+                          : 'border-border focus:border-primary'
+                      }`}
                       placeholder="0"
                     />
                     <button
@@ -439,7 +517,6 @@ export default function ActiveWorkoutPage() {
                           store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
                         } else {
                           store.completeSet(exIdx, setIdx);
-                          // Start rest timer for strength exercises
                           startRestTimer(ex.restTimerSeconds);
                         }
                       }}
@@ -483,6 +560,24 @@ export default function ActiveWorkoutPage() {
           + Add Exercise
         </Button>
       </div>
+
+      {/* Next button - quick-log flow */}
+      {activeInput && !store.exercises[activeInput.exIdx]?.sets[activeInput.setIdx]?.isCompleted && (
+        <div className="fixed bottom-0 left-0 right-0 z-[60] px-4 py-3 bg-surface border-t border-border">
+          <button
+            ref={nextButtonRef}
+            onMouseDown={(e) => e.preventDefault()}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              handleNext();
+            }}
+            onClick={handleNext}
+            className="w-full py-3 rounded-xl bg-primary text-white font-semibold text-base active:bg-primary-light"
+          >
+            {activeInput.field === 'weight' ? 'Next → Reps' : 'Log Set ✓'}
+          </button>
+        </div>
+      )}
 
       {/* Rest Timer - positioned above BottomNav */}
       {restTimer.isActive && (
