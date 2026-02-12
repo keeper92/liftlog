@@ -92,35 +92,6 @@ export default function ActiveWorkoutPage() {
     setActiveInput(null);
   }, []);
 
-  const handleNext = useCallback(() => {
-    if (!activeInput) return;
-    const { exIdx, setIdx, field } = activeInput;
-
-    if (field === 'weight') {
-      // Move focus to reps
-      const repsKey = getInputKey(exIdx, setIdx, 'reps');
-      const repsInput = inputRefs.current.get(repsKey);
-      if (repsInput) {
-        repsInput.focus();
-        repsInput.select();
-      }
-      setActiveInput({ exIdx, setIdx, field: 'reps' });
-    } else if (field === 'reps') {
-      // Complete the set and start rest timer
-      const exercise = store.exercises[exIdx];
-      const s = exercise?.sets[setIdx];
-      if (s && !s.isCompleted) {
-        store.completeSet(exIdx, setIdx);
-        startRestTimer(exercise.restTimerSeconds);
-      }
-      // Blur the current input
-      const repsKey = getInputKey(exIdx, setIdx, 'reps');
-      const repsInput = inputRefs.current.get(repsKey);
-      if (repsInput) repsInput.blur();
-      setActiveInput(null);
-    }
-  }, [activeInput, store, startRestTimer]);
-
   useEffect(() => {
     if (!store.isActive) {
       router.replace('/dashboard');
@@ -159,6 +130,35 @@ export default function ActiveWorkoutPage() {
   const stopRestTimer = useCallback(() => {
     setRestTimer({ isActive: false, secondsRemaining: 0, totalSeconds: 0 });
   }, []);
+
+  const handleNext = useCallback(() => {
+    if (!activeInput) return;
+    const { exIdx, setIdx, field } = activeInput;
+
+    if (field === 'weight') {
+      // Move focus to reps
+      const repsKey = getInputKey(exIdx, setIdx, 'reps');
+      const repsInput = inputRefs.current.get(repsKey);
+      if (repsInput) {
+        repsInput.focus();
+        repsInput.select();
+      }
+      setActiveInput({ exIdx, setIdx, field: 'reps' });
+    } else if (field === 'reps') {
+      // Complete the set and start rest timer
+      const exercise = store.exercises[exIdx];
+      const s = exercise?.sets[setIdx];
+      if (s && !s.isCompleted) {
+        store.completeSet(exIdx, setIdx);
+        startRestTimer(exercise.restTimerSeconds);
+      }
+      // Blur the current input
+      const repsKey = getInputKey(exIdx, setIdx, 'reps');
+      const repsInput = inputRefs.current.get(repsKey);
+      if (repsInput) repsInput.blur();
+      setActiveInput(null);
+    }
+  }, [activeInput, store, startRestTimer]);
 
   // Load previous performance for exercises
   useEffect(() => {
