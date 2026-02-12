@@ -3,12 +3,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
+import { useActiveWorkoutStore, type ActiveWorkoutState } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import {
   formatDuration,
   toDisplayWeight,
-  toStorageWeight,
   weightUnit,
   formatTimeInput,
   parseTimeInput,
@@ -20,6 +19,9 @@ import {
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Card from '@/components/ui/Card';
+import { NumberPadProvider, useNumberPad } from '@/components/workout/NumberPadContext';
+import SetInputCell from '@/components/workout/SetInputCell';
+import NumberPad from '@/components/workout/NumberPad';
 
 interface HistoryEntry {
   date: string;
@@ -59,50 +61,6 @@ export default function ActiveWorkoutPage() {
   const [loadingTips, setLoadingTips] = useState(false);
   const [trainingGuideMenu, setTrainingGuideMenu] = useState<{ exerciseId: string; exerciseName: string } | null>(null);
 
-  // Quick-log flow: track active input for weight→reps→complete
-  const [activeInput, setActiveInput] = useState<{ exIdx: number; setIdx: number; field: 'weight' | 'reps' } | null>(null);
-  const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
-  const nextButtonRef = useRef<HTMLButtonElement>(null);
-
-  const getInputKey = (exIdx: number, setIdx: number, field: 'weight' | 'reps') =>
-    `${exIdx}-${setIdx}-${field}`;
-
-  const setInputRef = (exIdx: number, setIdx: number, field: 'weight' | 'reps', el: HTMLInputElement | null) => {
-    const key = getInputKey(exIdx, setIdx, field);
-    if (el) {
-      inputRefs.current.set(key, el);
-    } else {
-      inputRefs.current.delete(key);
-    }
-  };
-
-  const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleInputFocus = (exIdx: number, setIdx: number, field: 'weight' | 'reps') => {
-    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
-    setActiveInput({ exIdx, setIdx, field });
-  };
-
-  const handleInputBlur = useCallback((e: React.FocusEvent) => {
-    // Don't clear if focus is moving to the Next button or another tracked input
-    const relatedTarget = e.relatedTarget as HTMLElement | null;
-    if (relatedTarget && (
-      relatedTarget === nextButtonRef.current ||
-      relatedTarget.dataset.trackedInput === 'true'
-    )) {
-      return;
-    }
-    // Delay clearing — on mobile, rendering the Next button can cause a
-    // transient blur (layout reflow) before focus settles back on the input
-    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
-    blurTimeoutRef.current = setTimeout(() => {
-      const active = document.activeElement;
-      if (!active || active.tagName !== 'INPUT' || !(active as HTMLElement).dataset.trackedInput) {
-        setActiveInput(null);
-      }
-    }, 100);
-  }, []);
-
   useEffect(() => {
     if (!store.isActive) {
       router.replace('/dashboard');
@@ -126,7 +84,6 @@ export default function ActiveWorkoutPage() {
         }));
       }, 1000);
     } else if (restTimer.isActive && restTimer.secondsRemaining === 0) {
-      // Timer finished
       setRestTimer({ isActive: false, secondsRemaining: 0, totalSeconds: 0 });
     }
     return () => {
@@ -141,35 +98,6 @@ export default function ActiveWorkoutPage() {
   const stopRestTimer = useCallback(() => {
     setRestTimer({ isActive: false, secondsRemaining: 0, totalSeconds: 0 });
   }, []);
-
-  const handleNext = useCallback(() => {
-    if (!activeInput) return;
-    const { exIdx, setIdx, field } = activeInput;
-
-    if (field === 'weight') {
-      // Move focus to reps
-      const repsKey = getInputKey(exIdx, setIdx, 'reps');
-      const repsInput = inputRefs.current.get(repsKey);
-      if (repsInput) {
-        repsInput.focus();
-        repsInput.select();
-      }
-      setActiveInput({ exIdx, setIdx, field: 'reps' });
-    } else if (field === 'reps') {
-      // Complete the set and start rest timer
-      const exercise = store.exercises[exIdx];
-      const s = exercise?.sets[setIdx];
-      if (s && !s.isCompleted) {
-        store.completeSet(exIdx, setIdx);
-        startRestTimer(exercise.restTimerSeconds);
-      }
-      // Blur the current input
-      const repsKey = getInputKey(exIdx, setIdx, 'reps');
-      const repsInput = inputRefs.current.get(repsKey);
-      if (repsInput) repsInput.blur();
-      setActiveInput(null);
-    }
-  }, [activeInput, store, startRestTimer]);
 
   // Load previous performance for exercises
   useEffect(() => {
@@ -291,7 +219,6 @@ export default function ActiveWorkoutPage() {
       .order('workouts(date)', { ascending: false });
 
     if (data) {
-      // Group sets by workout
       const workoutMap = new Map<string, { date: string; sets: typeof data }>();
       for (const row of data) {
         const workout = row.workouts as unknown as { id: string; date: string };
@@ -303,7 +230,6 @@ export default function ActiveWorkoutPage() {
         workoutMap.get(workoutId)!.sets.push(row);
       }
 
-      // Convert to array and sort by date
       const history: HistoryEntry[] = Array.from(workoutMap.values())
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 10)
@@ -322,10 +248,90 @@ export default function ActiveWorkoutPage() {
 
   if (!store.isActive) return null;
 
+  return (
+    <NumberPadProvider startRestTimer={startRestTimer}>
+      <WorkoutContent
+        store={store}
+        unitSystem={unitSystem}
+        elapsed={elapsed}
+        saving={saving}
+        restTimer={restTimer}
+        stopRestTimer={stopRestTimer}
+        startRestTimer={startRestTimer}
+        handleFinish={handleFinish}
+        handleDiscard={handleDiscard}
+        openTrainerTips={openTrainerTips}
+        openHistory={openHistory}
+        historyModal={historyModal}
+        setHistoryModal={setHistoryModal}
+        historyData={historyData}
+        loadingHistory={loadingHistory}
+        trainingGuideMenu={trainingGuideMenu}
+        setTrainingGuideMenu={setTrainingGuideMenu}
+        tipsModal={tipsModal}
+        setTipsModal={setTipsModal}
+        exerciseDetails={exerciseDetails}
+        loadingTips={loadingTips}
+        router={router}
+      />
+    </NumberPadProvider>
+  );
+}
+
+function WorkoutContent({
+  store,
+  unitSystem,
+  elapsed,
+  saving,
+  restTimer,
+  stopRestTimer,
+  startRestTimer,
+  handleFinish,
+  handleDiscard,
+  openTrainerTips,
+  openHistory,
+  historyModal,
+  setHistoryModal,
+  historyData,
+  loadingHistory,
+  trainingGuideMenu,
+  setTrainingGuideMenu,
+  tipsModal,
+  setTipsModal,
+  exerciseDetails,
+  loadingTips,
+  router,
+}: {
+  store: ActiveWorkoutState;
+  unitSystem: 'imperial' | 'metric';
+  elapsed: number;
+  saving: boolean;
+  restTimer: RestTimerState;
+  stopRestTimer: () => void;
+  startRestTimer: (seconds: number) => void;
+  handleFinish: () => void;
+  handleDiscard: () => void;
+  openTrainerTips: (exerciseId: string, exerciseName: string) => void;
+  openHistory: (exerciseId: string, exerciseName: string) => void;
+  historyModal: { exerciseId: string; exerciseName: string } | null;
+  setHistoryModal: (v: { exerciseId: string; exerciseName: string } | null) => void;
+  historyData: HistoryEntry[];
+  loadingHistory: boolean;
+  trainingGuideMenu: { exerciseId: string; exerciseName: string } | null;
+  setTrainingGuideMenu: (v: { exerciseId: string; exerciseName: string } | null) => void;
+  tipsModal: { exerciseId: string; exerciseName: string } | null;
+  setTipsModal: (v: { exerciseId: string; exerciseName: string } | null) => void;
+  exerciseDetails: ExerciseDetails | null;
+  loadingTips: boolean;
+  router: ReturnType<typeof useRouter>;
+}) {
+  const { activeFocus, deactivate } = useNumberPad();
+  const numberPadVisible = activeFocus !== null;
+
   const unit = weightUnit(unitSystem);
 
   return (
-    <div className="flex flex-col min-h-dvh bg-background">
+    <div className="flex flex-col min-h-dvh bg-background" onPointerDown={() => { if (numberPadVisible) deactivate(); }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-surface border-b border-border">
         <button onClick={handleDiscard} className="text-error text-sm font-medium min-h-[44px] px-2 flex items-center">
@@ -341,7 +347,7 @@ export default function ActiveWorkoutPage() {
       </div>
 
       {/* Exercise List */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-20 space-y-6">
+      <div className={`flex-1 overflow-y-auto px-4 py-4 space-y-6 ${numberPadVisible ? 'pb-80' : 'pb-20'}`}>
         {store.exercises.map((ex, exIdx) => {
           const prev = store.previousPerformance[ex.exerciseId] || [];
           return (
@@ -406,7 +412,7 @@ export default function ActiveWorkoutPage() {
 
               {/* Set Rows - Cardio vs Strength */}
               {ex.exerciseCategory === 'cardio' ? (
-                // Cardio: single row with time, distance, and pace
+                // Cardio: single row with time, distance, and pace (native inputs)
                 <div className="space-y-2">
                   {ex.sets.slice(0, 1).map((s, setIdx) => {
                     const pace = calculatePace(s.time, s.distance, unitSystem);
@@ -470,7 +476,7 @@ export default function ActiveWorkoutPage() {
                   })}
                 </div>
               ) : (
-                // Strength: multiple set rows
+                // Strength: custom number pad inputs
                 ex.sets.map((s, setIdx) => (
                   <div
                     key={s.id}
@@ -484,43 +490,23 @@ export default function ActiveWorkoutPage() {
                     <span className="text-center text-sm text-text-muted">
                       {prev[setIdx] ? `${toDisplayWeight(prev[setIdx].weight, unitSystem)}×${prev[setIdx].reps}` : '-'}
                     </span>
-                    <input
-                      ref={(el) => setInputRef(exIdx, setIdx, 'weight', el)}
-                      data-tracked-input="true"
-                      type="number"
-                      inputMode="decimal"
-                      value={s.weight !== null ? toDisplayWeight(s.weight, unitSystem) : ''}
-                      onChange={(e) => {
-                        const val = e.target.value ? toStorageWeight(parseFloat(e.target.value), unitSystem) : null;
-                        store.updateSet(exIdx, setIdx, { weight: val });
-                      }}
-                      onFocus={() => handleInputFocus(exIdx, setIdx, 'weight')}
-                      onBlur={handleInputBlur}
-                      className={`bg-background rounded-lg px-2 py-2 text-center text-sm min-h-[44px] w-full border outline-none ${
-                        activeInput?.exIdx === exIdx && activeInput?.setIdx === setIdx && activeInput?.field === 'weight'
-                          ? 'border-primary ring-1 ring-primary'
-                          : 'border-border focus:border-primary'
-                      }`}
+                    <SetInputCell
+                      exerciseIndex={exIdx}
+                      setIndex={setIdx}
+                      field="weight"
+                      displayValue={s.weight !== null ? String(toDisplayWeight(s.weight, unitSystem)) : ''}
+                      rawValue={s.weight}
                       placeholder="0"
+                      isCompleted={s.isCompleted}
                     />
-                    <input
-                      ref={(el) => setInputRef(exIdx, setIdx, 'reps', el)}
-                      data-tracked-input="true"
-                      type="number"
-                      inputMode="numeric"
-                      value={s.reps ?? ''}
-                      onChange={(e) => {
-                        const val = e.target.value ? parseInt(e.target.value) : null;
-                        store.updateSet(exIdx, setIdx, { reps: val });
-                      }}
-                      onFocus={() => handleInputFocus(exIdx, setIdx, 'reps')}
-                      onBlur={handleInputBlur}
-                      className={`bg-background rounded-lg px-2 py-2 text-center text-sm min-h-[44px] w-full border outline-none ${
-                        activeInput?.exIdx === exIdx && activeInput?.setIdx === setIdx && activeInput?.field === 'reps'
-                          ? 'border-primary ring-1 ring-primary'
-                          : 'border-border focus:border-primary'
-                      }`}
+                    <SetInputCell
+                      exerciseIndex={exIdx}
+                      setIndex={setIdx}
+                      field="reps"
+                      displayValue={s.reps !== null ? String(s.reps) : ''}
+                      rawValue={s.reps}
                       placeholder="0"
+                      isCompleted={s.isCompleted}
                     />
                     <button
                       onClick={() => {
@@ -572,26 +558,11 @@ export default function ActiveWorkoutPage() {
         </Button>
       </div>
 
-      {/* Next button - quick-log flow */}
-      {activeInput && !store.exercises[activeInput.exIdx]?.sets[activeInput.setIdx]?.isCompleted && (
-        <div className="fixed bottom-0 left-0 right-0 z-[60] px-4 py-3 bg-surface border-t border-border">
-          <button
-            ref={nextButtonRef}
-            onMouseDown={(e) => e.preventDefault()}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              handleNext();
-            }}
-            onClick={handleNext}
-            className="w-full py-3 rounded-xl bg-primary text-white font-semibold text-base active:bg-primary-light"
-          >
-            {activeInput.field === 'weight' ? 'Next → Reps' : 'Log Set ✓'}
-          </button>
-        </div>
-      )}
+      {/* Number Pad */}
+      <NumberPad restTimer={restTimer} onStopRestTimer={stopRestTimer} />
 
-      {/* Rest Timer - positioned above BottomNav */}
-      {restTimer.isActive && (
+      {/* Rest Timer - shown only when number pad is NOT visible */}
+      {restTimer.isActive && !numberPadVisible && (
         <div className="fixed bottom-16 left-0 right-0 bg-surface border-t border-border px-4 py-3 z-50">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Rest Timer</span>
@@ -743,7 +714,6 @@ export default function ActiveWorkoutPage() {
           <p className="text-text-muted text-sm text-center py-4">No tips available for this exercise.</p>
         ) : (
           <div className="space-y-4 max-h-96 overflow-y-auto">
-            {/* Equipment & Setup */}
             {(exerciseDetails.equipment || exerciseDetails.level) && (
               <div>
                 <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">Setup</h4>
@@ -762,7 +732,6 @@ export default function ActiveWorkoutPage() {
               </div>
             )}
 
-            {/* Muscles */}
             {(exerciseDetails.primary_muscles?.length > 0 || exerciseDetails.secondary_muscles?.length > 0) && (
               <div>
                 <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">Muscles Worked</h4>
@@ -781,7 +750,6 @@ export default function ActiveWorkoutPage() {
               </div>
             )}
 
-            {/* Form Tips */}
             {exerciseDetails.instructions?.length > 0 && (
               <div>
                 <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">Form Tips</h4>
@@ -795,7 +763,6 @@ export default function ActiveWorkoutPage() {
                 </ol>
               </div>
             )}
-
           </div>
         )}
       </Modal>

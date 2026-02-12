@@ -26,7 +26,7 @@ export interface WorkoutExercise {
   notes: string;
 }
 
-interface ActiveWorkoutState {
+export interface ActiveWorkoutState {
   workoutId: string | null;
   workoutName: string;
   startTime: string | null;
