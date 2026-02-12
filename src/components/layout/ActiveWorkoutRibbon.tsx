@@ -50,27 +50,10 @@ export default function ActiveWorkoutRibbon() {
       className="fixed bottom-[calc(56px+env(safe-area-inset-bottom))] left-0 right-0 z-50 animate-slide-up"
     >
       <div className="mx-auto max-w-lg">
-        <div className="mx-2 flex items-center justify-between rounded-xl bg-primary px-4 py-2.5 shadow-lg">
-          <div className="flex items-center gap-3 min-w-0">
-            {/* Pulsing dot indicator */}
-            <div className="relative flex-shrink-0">
-              <div className="h-2.5 w-2.5 rounded-full bg-white" />
-              <div className="absolute inset-0 h-2.5 w-2.5 animate-ping rounded-full bg-white opacity-75" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">
-                {workoutName || 'Workout'}
-              </p>
-              <p className="text-xs text-white/80">
-                {formatDuration(elapsed)}
-              </p>
-            </div>
-          </div>
-          <div className="flex-shrink-0 ml-3">
-            <span className="text-sm font-semibold text-white">
-              Resume &rarr;
-            </span>
-          </div>
+        <div className="mx-2 flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 shadow-lg">
+          <span className="text-sm font-semibold text-white">
+            Resume Workout &rarr;
+          </span>
         </div>
       </div>
     </Link>
