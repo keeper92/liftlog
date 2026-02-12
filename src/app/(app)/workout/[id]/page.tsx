@@ -80,6 +80,8 @@ export default function ActiveWorkoutPage() {
     setActiveInput({ exIdx, setIdx, field });
   };
 
+  const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleInputBlur = useCallback((e: React.FocusEvent) => {
     // Don't clear if focus is moving to the Next button or another tracked input
     const relatedTarget = e.relatedTarget as HTMLElement | null;
@@ -89,8 +91,23 @@ export default function ActiveWorkoutPage() {
     )) {
       return;
     }
-    setActiveInput(null);
+    // Delay clearing so that tapping an input doesn't flash the Next button
+    // (the Next button render can cause a transient blur on mobile)
+    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    blurTimeoutRef.current = setTimeout(() => {
+      // Only clear if no input is focused after the delay
+      const active = document.activeElement;
+      if (!active || active.tagName !== 'INPUT' || !('trackedInput' in (active as HTMLElement).dataset)) {
+        setActiveInput(null);
+      }
+    }, 100);
   }, []);
+
+  // Cancel pending blur when a new focus arrives
+  const handleInputFocusWrapped = (exIdx: number, setIdx: number, field: 'weight' | 'reps') => {
+    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    handleInputFocus(exIdx, setIdx, field);
+  };
 
   useEffect(() => {
     if (!store.isActive) {
@@ -483,7 +500,7 @@ export default function ActiveWorkoutPage() {
                         const val = e.target.value ? toStorageWeight(parseFloat(e.target.value), unitSystem) : null;
                         store.updateSet(exIdx, setIdx, { weight: val });
                       }}
-                      onFocus={() => handleInputFocus(exIdx, setIdx, 'weight')}
+                      onFocus={() => handleInputFocusWrapped(exIdx, setIdx, 'weight')}
                       onBlur={handleInputBlur}
                       className={`bg-background rounded-lg px-2 py-2 text-center text-sm min-h-[44px] w-full border outline-none ${
                         activeInput?.exIdx === exIdx && activeInput?.setIdx === setIdx && activeInput?.field === 'weight'
@@ -502,7 +519,7 @@ export default function ActiveWorkoutPage() {
                         const val = e.target.value ? parseInt(e.target.value) : null;
                         store.updateSet(exIdx, setIdx, { reps: val });
                       }}
-                      onFocus={() => handleInputFocus(exIdx, setIdx, 'reps')}
+                      onFocus={() => handleInputFocusWrapped(exIdx, setIdx, 'reps')}
                       onBlur={handleInputBlur}
                       className={`bg-background rounded-lg px-2 py-2 text-center text-sm min-h-[44px] w-full border outline-none ${
                         activeInput?.exIdx === exIdx && activeInput?.setIdx === setIdx && activeInput?.field === 'reps'
