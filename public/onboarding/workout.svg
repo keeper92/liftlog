@@ -1,0 +1,69 @@
+<svg width="192" height="320" viewBox="0 0 192 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="192" height="320" fill="#f5f5f5"/>
+
+  <!-- Header -->
+  <rect x="0" y="0" width="192" height="48" fill="#ffffff"/>
+  <line x1="0" y1="48" x2="192" y2="48" stroke="#e5e5e5"/>
+  <text x="16" y="28" fill="#ef4444" font-family="system-ui" font-size="11" font-weight="500">Discard</text>
+  <text x="96" y="24" fill="#171717" font-family="system-ui" font-size="12" font-weight="600" text-anchor="middle">Workout</text>
+  <text x="96" y="38" fill="#71717a" font-family="system-ui" font-size="10" text-anchor="middle">12:34</text>
+  <rect x="140" y="14" width="44" height="24" rx="6" fill="#f97316"/>
+  <text x="162" y="30" fill="#ffffff" font-family="system-ui" font-size="10" font-weight="500" text-anchor="middle">Finish</text>
+
+  <!-- Exercise Card -->
+  <rect x="12" y="60" width="168" height="140" rx="12" fill="#ffffff" stroke="#e5e5e5"/>
+  <text x="24" y="84" fill="#171717" font-family="system-ui" font-size="13" font-weight="600">Barbell Bench Press</text>
+
+  <!-- Column Headers -->
+  <text x="28" y="104" fill="#71717a" font-family="system-ui" font-size="9">SET</text>
+  <text x="58" y="104" fill="#71717a" font-family="system-ui" font-size="9">PREV</text>
+  <text x="98" y="104" fill="#71717a" font-family="system-ui" font-size="9">LB</text>
+  <text x="132" y="104" fill="#71717a" font-family="system-ui" font-size="9">REPS</text>
+
+  <!-- Set 1 - Completed -->
+  <text x="32" y="124" fill="#71717a" font-family="system-ui" font-size="11" text-anchor="middle">1</text>
+  <text x="64" y="124" fill="#a1a1aa" font-family="system-ui" font-size="10" text-anchor="middle">135×8</text>
+  <rect x="84" y="112" width="32" height="20" rx="4" fill="#f5f5f5" stroke="#e5e5e5"/>
+  <text x="100" y="126" fill="#171717" font-family="system-ui" font-size="10" text-anchor="middle">135</text>
+  <rect x="120" y="112" width="28" height="20" rx="4" fill="#f5f5f5" stroke="#e5e5e5"/>
+  <text x="134" y="126" fill="#171717" font-family="system-ui" font-size="10" text-anchor="middle">8</text>
+  <circle cx="160" cy="122" r="10" fill="#22c55e"/>
+  <path d="M155 122 L158 125 L165 118" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Set 2 - Completed -->
+  <text x="32" y="148" fill="#71717a" font-family="system-ui" font-size="11" text-anchor="middle">2</text>
+  <text x="64" y="148" fill="#a1a1aa" font-family="system-ui" font-size="10" text-anchor="middle">135×8</text>
+  <rect x="84" y="136" width="32" height="20" rx="4" fill="#f5f5f5" stroke="#e5e5e5"/>
+  <text x="100" y="150" fill="#171717" font-family="system-ui" font-size="10" text-anchor="middle">140</text>
+  <rect x="120" y="136" width="28" height="20" rx="4" fill="#f5f5f5" stroke="#e5e5e5"/>
+  <text x="134" y="150" fill="#171717" font-family="system-ui" font-size="10" text-anchor="middle">8</text>
+  <circle cx="160" cy="146" r="10" fill="#22c55e"/>
+  <path d="M155 146 L158 149 L165 142" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Set 3 - In progress -->
+  <text x="32" y="172" fill="#71717a" font-family="system-ui" font-size="11" text-anchor="middle">3</text>
+  <text x="64" y="172" fill="#a1a1aa" font-family="system-ui" font-size="10" text-anchor="middle">135×8</text>
+  <rect x="84" y="160" width="32" height="20" rx="4" fill="#ffffff" stroke="#e5e5e5"/>
+  <rect x="120" y="160" width="28" height="20" rx="4" fill="#ffffff" stroke="#e5e5e5"/>
+  <circle cx="160" cy="170" r="10" fill="#e5e5e5"/>
+
+  <!-- Add Set link -->
+  <text x="50" y="192" fill="#f97316" font-family="system-ui" font-size="10">+ Add Set</text>
+  <text x="110" y="192" fill="#71717a" font-family="system-ui" font-size="10">History</text>
+
+  <!-- Add Exercise Button -->
+  <rect x="12" y="212" width="168" height="36" rx="8" fill="#ffffff" stroke="#e5e5e5"/>
+  <text x="96" y="234" fill="#71717a" font-family="system-ui" font-size="11" text-anchor="middle">+ Add Exercise</text>
+
+  <!-- Rest Timer -->
+  <rect x="0" y="256" width="192" height="48" fill="#ffffff"/>
+  <line x1="0" y1="256" x2="192" y2="256" stroke="#e5e5e5"/>
+  <text x="16" y="276" fill="#171717" font-family="system-ui" font-size="11" font-weight="500">Rest Timer</text>
+  <text x="160" y="276" fill="#71717a" font-family="system-ui" font-size="10">Skip</text>
+  <rect x="16" y="284" width="120" height="6" rx="3" fill="#e5e5e5"/>
+  <rect x="16" y="284" width="80" height="6" rx="3" fill="#f97316"/>
+  <text x="160" y="292" fill="#171717" font-family="system-ui" font-size="14" font-weight="bold">1:02</text>
+
+  <!-- Bottom Nav -->
+  <rect x="0" y="304" width="192" height="16" fill="#ffffff"/>
+</svg>

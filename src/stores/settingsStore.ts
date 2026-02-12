@@ -8,10 +8,12 @@ interface SettingsState {
   unitSystem: UnitSystem;
   defaultRestTimer: number;
   autoStartRestTimer: boolean;
+  hasSeenOnboarding: boolean;
 
   setUnitSystem: (unit: UnitSystem) => void;
   setDefaultRestTimer: (seconds: number) => void;
   setAutoStartRestTimer: (enabled: boolean) => void;
+  setHasSeenOnboarding: (seen: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -20,10 +22,12 @@ export const useSettingsStore = create<SettingsState>()(
       unitSystem: 'metric',
       defaultRestTimer: 90,
       autoStartRestTimer: true,
+      hasSeenOnboarding: false,
 
       setUnitSystem: (unitSystem) => set({ unitSystem }),
       setDefaultRestTimer: (defaultRestTimer) => set({ defaultRestTimer }),
       setAutoStartRestTimer: (autoStartRestTimer) => set({ autoStartRestTimer }),
+      setHasSeenOnboarding: (hasSeenOnboarding) => set({ hasSeenOnboarding }),
     }),
     {
       name: 'settings',

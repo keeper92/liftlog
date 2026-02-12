@@ -10,6 +10,8 @@ export interface ActiveSet {
   setNumber: number;
   weight: number | null;
   reps: number | null;
+  time: number | null;      // For cardio: duration in seconds
+  distance: number | null;  // For cardio: distance in miles (stored as miles)
   isWarmup: boolean;
   isCompleted: boolean;
   timestamp: string | null;
@@ -18,6 +20,7 @@ export interface ActiveSet {
 export interface WorkoutExercise {
   exerciseId: string;
   exerciseName: string;
+  exerciseCategory: string;  // 'cardio', 'barbell', 'dumbbell', etc.
   sets: ActiveSet[];
   restTimerSeconds: number;
   notes: string;
@@ -30,16 +33,19 @@ interface ActiveWorkoutState {
   exercises: WorkoutExercise[];
   isActive: boolean;
   previousPerformance: Record<string, { weight: number; reps: number }[]>;
+  templateId: string | null;
 
-  startWorkout: (name?: string) => void;
-  addExercise: (exercise: { id: string; name: string }) => void;
+  startWorkout: (name?: string, templateId?: string) => void;
+  addExercise: (exercise: { id: string; name: string; category: string }) => void;
+  addExerciseWithSets: (exercise: { id: string; name: string; category: string }, setCount: number) => void;
   removeExercise: (exerciseId: string) => void;
+  moveExercise: (fromIndex: number, toIndex: number) => void;
   addSet: (exerciseIndex: number) => void;
   updateSet: (exerciseIndex: number, setIndex: number, data: Partial<ActiveSet>) => void;
   completeSet: (exerciseIndex: number, setIndex: number) => void;
   removeSet: (exerciseIndex: number, setIndex: number) => void;
   setPreviousPerformance: (exerciseId: string, sets: { weight: number; reps: number }[]) => void;
-  finishWorkout: () => { workoutId: string; exercises: WorkoutExercise[]; startTime: string; workoutName: string } | null;
+  finishWorkout: () => { workoutId: string; exercises: WorkoutExercise[]; startTime: string; workoutName: string; templateId: string | null } | null;
   discardWorkout: () => void;
 }
 
@@ -52,8 +58,9 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
       exercises: [],
       isActive: false,
       previousPerformance: {},
+      templateId: null,
 
-      startWorkout: (name?: string) => {
+      startWorkout: (name?: string, templateId?: string) => {
         set({
           workoutId: uuidv4(),
           workoutName: name || `Workout ${new Date().toLocaleDateString()}`,
@@ -61,6 +68,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
           exercises: [],
           isActive: true,
           previousPerformance: {},
+          templateId: templateId || null,
         });
       },
 
@@ -69,6 +77,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
         const newExercise: WorkoutExercise = {
           exerciseId: exercise.id,
           exerciseName: exercise.name,
+          exerciseCategory: exercise.category,
           sets: [
             {
               id: uuidv4(),
@@ -76,11 +85,38 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
               setNumber: 1,
               weight: null,
               reps: null,
+              time: null,
+              distance: null,
               isWarmup: false,
               isCompleted: false,
               timestamp: null,
             },
           ],
+          restTimerSeconds: 90,
+          notes: '',
+        };
+        set({ exercises: [...state.exercises, newExercise] });
+      },
+
+      addExerciseWithSets: (exercise, setCount) => {
+        const state = get();
+        const sets: ActiveSet[] = Array.from({ length: setCount }, (_, i) => ({
+          id: uuidv4(),
+          exerciseId: exercise.id,
+          setNumber: i + 1,
+          weight: null,
+          reps: null,
+          time: null,
+          distance: null,
+          isWarmup: false,
+          isCompleted: false,
+          timestamp: null,
+        }));
+        const newExercise: WorkoutExercise = {
+          exerciseId: exercise.id,
+          exerciseName: exercise.name,
+          exerciseCategory: exercise.category,
+          sets,
           restTimerSeconds: 90,
           notes: '',
         };
@@ -94,6 +130,18 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
         });
       },
 
+      moveExercise: (fromIndex, toIndex) => {
+        const state = get();
+        if (fromIndex === toIndex) return;
+        if (fromIndex < 0 || fromIndex >= state.exercises.length) return;
+        if (toIndex < 0 || toIndex >= state.exercises.length) return;
+
+        const exercises = [...state.exercises];
+        const [moved] = exercises.splice(fromIndex, 1);
+        exercises.splice(toIndex, 0, moved);
+        set({ exercises });
+      },
+
       addSet: (exerciseIndex) => {
         const state = get();
         const exercises = [...state.exercises];
@@ -104,6 +152,8 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
 
         const prefillWeight = lastSet?.weight ?? prev?.[exercise.sets.length]?.weight ?? null;
         const prefillReps = lastSet?.reps ?? prev?.[exercise.sets.length]?.reps ?? null;
+        const prefillTime = lastSet?.time ?? null;
+        const prefillDistance = lastSet?.distance ?? null;
 
         exercise.sets = [
           ...exercise.sets,
@@ -113,6 +163,8 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
             setNumber: nextSetNum,
             weight: prefillWeight,
             reps: prefillReps,
+            time: prefillTime,
+            distance: prefillDistance,
             isWarmup: false,
             isCompleted: false,
             timestamp: null,
@@ -175,6 +227,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
           exercises: state.exercises,
           startTime: state.startTime,
           workoutName: state.workoutName,
+          templateId: state.templateId,
         };
 
         set({
@@ -184,6 +237,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
           exercises: [],
           isActive: false,
           previousPerformance: {},
+          templateId: null,
         });
 
         return result;
@@ -197,6 +251,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
           exercises: [],
           isActive: false,
           previousPerformance: {},
+          templateId: null,
         });
       },
     }),

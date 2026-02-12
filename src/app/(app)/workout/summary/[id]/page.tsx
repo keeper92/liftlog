@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { formatDuration, toDisplayWeight, weightUnit } from '@/lib/utils/units';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
+import Input from '@/components/ui/Input';
 
 interface WorkoutData {
   id: string;
@@ -24,11 +26,27 @@ interface WorkoutData {
 }
 
 export default function WorkoutSummaryPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-dvh text-text-muted">Loading...</div>}>
+      <WorkoutSummaryContent />
+    </Suspense>
+  );
+}
+
+function WorkoutSummaryContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const templateId = searchParams.get('templateId');
   const supabase = createClient();
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const [workout, setWorkout] = useState<WorkoutData | null>(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveMode, setSaveMode] = useState<'new' | 'update'>('new');
+  const [trainingNotes, setTrainingNotes] = useState<string | null>(null);
+  const [loadingNotes, setLoadingNotes] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -41,6 +59,211 @@ export default function WorkoutSummaryPage() {
     }
     load();
   }, [params.id]);
+
+  // Generate AI training notes
+  useEffect(() => {
+    if (!workout) return;
+    const workoutData = workout; // Capture for async closure
+
+    async function generateNotes() {
+      setLoadingNotes(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoadingNotes(false);
+        return;
+      }
+
+      // Get unique exercise IDs from this workout
+      const exerciseIds = [...new Set(workoutData.sets.map((s) => s.exercise_id))];
+
+      // Fetch previous performance for each exercise (excluding this workout)
+      const comparisons: {
+        exerciseName: string;
+        currentBest: { weight: number; reps: number };
+        previousBest: { weight: number; reps: number } | null;
+      }[] = [];
+
+      for (const exId of exerciseIds) {
+        const exerciseSets = workoutData.sets.filter((s) => s.exercise_id === exId && !s.is_warmup);
+        if (exerciseSets.length === 0) continue;
+
+        const exerciseName = exerciseSets[0].exercises.name;
+
+        // Find best set in current workout (highest weight, then highest reps)
+        const currentBest = exerciseSets.reduce(
+          (best, s) => {
+            const weight = s.weight || 0;
+            const reps = s.reps || 0;
+            if (weight > best.weight || (weight === best.weight && reps > best.reps)) {
+              return { weight, reps };
+            }
+            return best;
+          },
+          { weight: 0, reps: 0 }
+        );
+
+        // Fetch previous best for this exercise
+        const { data: prevData } = await supabase
+          .from('sets')
+          .select('weight, reps, workouts!inner(id, user_id)')
+          .eq('exercise_id', exId)
+          .eq('workouts.user_id', user.id)
+          .neq('workouts.id', workoutData.id)
+          .eq('is_warmup', false)
+          .eq('is_completed', true)
+          .order('weight', { ascending: false })
+          .limit(10);
+
+        let previousBest: { weight: number; reps: number } | null = null;
+        if (prevData && prevData.length > 0) {
+          previousBest = prevData.reduce(
+            (best, s) => {
+              const weight = s.weight || 0;
+              const reps = s.reps || 0;
+              if (weight > best.weight || (weight === best.weight && reps > best.reps)) {
+                return { weight, reps };
+              }
+              return best;
+            },
+            { weight: 0, reps: 0 }
+          );
+        }
+
+        comparisons.push({ exerciseName, currentBest, previousBest });
+      }
+
+      // Build context for AI
+      const unit = unitSystem === 'imperial' ? 'lbs' : 'kg';
+      const comparisonText = comparisons.map((c) => {
+        const current = `${toDisplayWeight(c.currentBest.weight, unitSystem)}${unit} x ${c.currentBest.reps}`;
+        if (c.previousBest) {
+          const prev = `${toDisplayWeight(c.previousBest.weight, unitSystem)}${unit} x ${c.previousBest.reps}`;
+          const weightDiff = c.currentBest.weight - c.previousBest.weight;
+          const repsDiff = c.currentBest.reps - c.previousBest.reps;
+          return `${c.exerciseName}: Today ${current}, Previous best ${prev} (${weightDiff >= 0 ? '+' : ''}${toDisplayWeight(weightDiff, unitSystem)}${unit}, ${repsDiff >= 0 ? '+' : ''}${repsDiff} reps)`;
+        }
+        return `${c.exerciseName}: Today ${current} (first time!)`;
+      }).join('\n');
+
+      // Call AI to generate notes
+      try {
+        const response = await fetch('/api/training-notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            workoutName: workoutData.name || 'Workout',
+            exerciseCount: exerciseIds.length,
+            totalSets: workoutData.sets.filter((s) => !s.is_warmup).length,
+            comparisons: comparisonText,
+            unitSystem,
+          }),
+        });
+
+        if (response.ok) {
+          const reader = response.body?.getReader();
+          const decoder = new TextDecoder();
+          let notes = '';
+
+          if (reader) {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              notes += decoder.decode(value, { stream: true });
+              setTrainingNotes(notes);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to generate training notes:', err);
+      }
+
+      setLoadingNotes(false);
+    }
+
+    generateNotes();
+  }, [workout, unitSystem]);
+
+  async function handleSaveTemplate() {
+    if (!templateName.trim() || !workout) return;
+    setSaving(true);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setSaving(false);
+      return;
+    }
+
+    const { data: template, error: tErr } = await supabase
+      .from('workout_templates')
+      .insert({ user_id: user.id, name: templateName.trim() })
+      .select()
+      .single();
+
+    if (tErr || !template) {
+      setSaving(false);
+      return;
+    }
+
+    // Get unique exercises in order of first appearance
+    const exerciseOrder: string[] = [];
+    for (const s of workout.sets) {
+      if (!exerciseOrder.includes(s.exercise_id)) {
+        exerciseOrder.push(s.exercise_id);
+      }
+    }
+
+    const templateExercises = exerciseOrder.map((exId, idx) => ({
+      template_id: template.id,
+      exercise_id: exId,
+      order_index: idx,
+      default_sets: workout.sets.filter((s) => s.exercise_id === exId && !s.is_warmup).length || 3,
+    }));
+
+    await supabase.from('template_exercises').insert(templateExercises);
+
+    setSaving(false);
+    setShowSaveModal(false);
+    setTemplateName('');
+  }
+
+  async function handleUpdateTemplate() {
+    if (!workout || !templateId) return;
+    setSaving(true);
+
+    // Delete existing template exercises
+    await supabase
+      .from('template_exercises')
+      .delete()
+      .eq('template_id', templateId);
+
+    // Get unique exercises in order of first appearance
+    const exerciseOrder: string[] = [];
+    for (const s of workout.sets) {
+      if (!exerciseOrder.includes(s.exercise_id)) {
+        exerciseOrder.push(s.exercise_id);
+      }
+    }
+
+    // Insert new template exercises
+    const templateExercises = exerciseOrder.map((exId, idx) => ({
+      template_id: templateId,
+      exercise_id: exId,
+      order_index: idx,
+      default_sets: workout.sets.filter((s) => s.exercise_id === exId && !s.is_warmup).length || 3,
+    }));
+
+    await supabase.from('template_exercises').insert(templateExercises);
+
+    // Update template updated_at
+    await supabase
+      .from('workout_templates')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', templateId);
+
+    setSaving(false);
+    router.push('/dashboard');
+  }
 
   if (!workout) {
     return <div className="flex items-center justify-center min-h-dvh text-text-muted">Loading...</div>;
@@ -89,6 +312,27 @@ export default function WorkoutSummaryPage() {
         </Card>
       </div>
 
+      {/* Training Notes */}
+      <div className="mb-8">
+        <h2 className="text-xs font-medium text-text-muted uppercase tracking-wider mb-4">Training Notes</h2>
+        <Card>
+          {loadingNotes ? (
+            <div className="flex items-center gap-2 text-text-muted">
+              <span className="inline-flex gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-text-muted animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-text-muted animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-text-muted animate-bounce" style={{ animationDelay: '300ms' }} />
+              </span>
+              <span className="text-sm">Analyzing your workout...</span>
+            </div>
+          ) : trainingNotes ? (
+            <p className="text-sm text-text-secondary whitespace-pre-line">{trainingNotes}</p>
+          ) : (
+            <p className="text-sm text-text-muted">No training notes available.</p>
+          )}
+        </Card>
+      </div>
+
       <h2 className="text-xs font-medium text-text-muted uppercase tracking-wider mb-4">Exercises</h2>
       <div className="space-y-3 mb-8">
         {Array.from(exerciseMap.entries()).map(([exId, { name, sets }]) => (
@@ -108,9 +352,54 @@ export default function WorkoutSummaryPage() {
         ))}
       </div>
 
+      {templateId && (
+        <Button
+          variant="outline"
+          fullWidth
+          className="mb-3"
+          onClick={handleUpdateTemplate}
+          loading={saving}
+        >
+          Update Template
+        </Button>
+      )}
+
+      <Button
+        variant="outline"
+        fullWidth
+        className="mb-3"
+        onClick={() => {
+          setTemplateName(workout.name || 'My Template');
+          setSaveMode('new');
+          setShowSaveModal(true);
+        }}
+      >
+        Save as New Template
+      </Button>
+
       <Button variant="primary" fullWidth onClick={() => router.push('/dashboard')}>
         Done
       </Button>
+
+      <Modal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        title="Save as Template"
+        actions={[
+          { label: 'Cancel', onClick: () => setShowSaveModal(false), variant: 'ghost' },
+          { label: saving ? 'Saving...' : 'Save', onClick: handleSaveTemplate, variant: 'primary' },
+        ]}
+      >
+        <Input
+          label="Template Name"
+          value={templateName}
+          onChange={(e) => setTemplateName(e.target.value)}
+          placeholder="e.g., Push Day, Leg Day"
+        />
+        <p className="text-xs text-text-muted mt-3">
+          This will save the {exerciseMap.size} exercise{exerciseMap.size !== 1 ? 's' : ''} from this workout as a reusable template.
+        </p>
+      </Modal>
     </div>
   );
 }

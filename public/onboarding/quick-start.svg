@@ -1,0 +1,37 @@
+<svg width="192" height="320" viewBox="0 0 192 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="192" height="320" fill="#ffffff"/>
+
+  <!-- Header -->
+  <text x="16" y="32" fill="#171717" font-family="system-ui" font-size="10" font-weight="bold">reps</text>
+  <text x="16" y="56" fill="#171717" font-family="system-ui" font-size="20" font-weight="bold">Home</text>
+
+  <!-- Quick Start Button with glow effect -->
+  <rect x="14" y="78" width="164" height="48" rx="14" fill="#f97316" fill-opacity="0.2"/>
+  <rect x="16" y="80" width="160" height="44" rx="12" fill="#f97316"/>
+  <text x="96" y="107" fill="#ffffff" font-family="system-ui" font-size="14" font-weight="600" text-anchor="middle">Quick Start</text>
+
+  <!-- Tap indicator -->
+  <circle cx="96" cy="102" r="24" fill="#f97316" fill-opacity="0.15"/>
+  <circle cx="96" cy="102" r="16" fill="#f97316" fill-opacity="0.25"/>
+
+  <!-- Templates Section -->
+  <text x="16" y="152" fill="#71717a" font-family="system-ui" font-size="10" font-weight="500">STARTER TEMPLATES</text>
+
+  <!-- Template Cards -->
+  <rect x="16" y="164" width="72" height="56" rx="8" fill="#f5f5f5" stroke="#e5e5e5"/>
+  <text x="24" y="184" fill="#171717" font-family="system-ui" font-size="11" font-weight="500">Upper Body</text>
+  <text x="24" y="200" fill="#71717a" font-family="system-ui" font-size="9">4 exercises</text>
+
+  <rect x="96" y="164" width="72" height="56" rx="8" fill="#f5f5f5" stroke="#e5e5e5"/>
+  <text x="104" y="184" fill="#171717" font-family="system-ui" font-size="11" font-weight="500">Lower Body</text>
+  <text x="104" y="200" fill="#71717a" font-family="system-ui" font-size="9">4 exercises</text>
+
+  <!-- Generate Card -->
+  <rect x="16" y="228" width="72" height="56" rx="8" fill="#f5f5f5" stroke="#e5e5e5"/>
+  <text x="24" y="252" fill="#f97316" font-family="system-ui" font-size="11" font-weight="500">Generate</text>
+  <text x="24" y="268" fill="#71717a" font-family="system-ui" font-size="9">From history</text>
+
+  <!-- Bottom Nav -->
+  <rect x="0" y="280" width="192" height="40" fill="#ffffff"/>
+  <line x1="0" y1="280" x2="192" y2="280" stroke="#e5e5e5" stroke-width="1"/>
+</svg>

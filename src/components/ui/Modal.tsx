@@ -7,6 +7,7 @@ interface ModalAction {
   label: string;
   onClick: () => void;
   variant?: 'primary' | 'outline' | 'ghost' | 'danger';
+  disabled?: boolean;
 }
 
 interface ModalProps {
@@ -77,6 +78,7 @@ export default function Modal({
                 variant={action.variant || 'primary'}
                 size="sm"
                 onClick={action.onClick}
+                disabled={action.disabled}
               >
                 {action.label}
               </Button>

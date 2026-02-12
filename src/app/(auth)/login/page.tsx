@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof LoginInput, string>>>({});
   const [generalError, setGeneralError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -67,10 +68,42 @@ export default function LoginPage() {
     }
   };
 
+  const handleDemo = async () => {
+    setDemoLoading(true);
+    setGeneralError('');
+
+    try {
+      const res = await fetch('/api/demo', { method: 'POST' });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setGeneralError(data.error || 'Failed to set up demo');
+        return;
+      }
+
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (error) {
+        setGeneralError(error.message);
+        return;
+      }
+
+      router.push('/dashboard');
+    } catch {
+      setGeneralError('An unexpected error occurred. Please try again.');
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
   return (
     <div className="p-8">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-black text-text tracking-tight">rep</h1>
+        <h1 className="text-3xl font-black text-text tracking-tight">reps</h1>
         <p className="mt-2 text-text-secondary">Sign in to your account</p>
       </div>
 
@@ -105,6 +138,19 @@ export default function LoginPage() {
 
         <Button type="submit" variant="primary" fullWidth loading={loading}>
           Sign In
+        </Button>
+
+        <div className="relative my-2">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-background px-2 text-text-muted">or</span>
+          </div>
+        </div>
+
+        <Button type="button" variant="outline" fullWidth loading={demoLoading} onClick={handleDemo}>
+          Try Demo
         </Button>
       </form>
 
