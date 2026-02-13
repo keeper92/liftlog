@@ -155,8 +155,14 @@ export default function DashboardPage() {
                 className="flex items-center gap-1 bg-surface-light rounded-full pl-2 pr-2.5 py-1.5 hover:bg-border/50 transition-colors"
               >
                 <span className="text-sm font-bold text-text">{stats?.currentStreak ?? 0}</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-warning">
-                  <path d="M13 2L3 14h9l-1 10 10-12h-9l1-10z" />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-warning">
+                  {/* Double bolt with energy sparks */}
+                  <path d="M13 2L5 13h6l-1 9 8-11h-6l1-9z" fill="currentColor" />
+                  <path d="M17 6l-3 5h3l-2 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <line x1="2" y1="8" x2="3.5" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  <line x1="2" y1="12" x2="3" y2="11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  <line x1="20" y1="10" x2="21.5" y2="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  <line x1="20" y1="14" x2="21" y2="13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
               </button>
               {/* Calendar icon */}
@@ -164,11 +170,21 @@ export default function DashboardPage() {
                 onClick={() => setShowHistory(true)}
                 className="w-9 h-9 flex items-center justify-center rounded-full bg-surface-light hover:bg-border/50 transition-colors"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-text">
+                  {/* Rounded calendar with ring bindings and dot grid */}
+                  <rect x="3" y="5" width="18" height="17" rx="3" ry="3" fill="currentColor" />
+                  {/* Ring bindings */}
+                  <rect x="7" y="3" width="2.5" height="4" rx="1.25" fill="var(--color-surface)" />
+                  <rect x="14.5" y="3" width="2.5" height="4" rx="1.25" fill="var(--color-surface)" />
+                  {/* Header bar */}
+                  <rect x="3" y="5" width="18" height="5" rx="3" ry="0" fill="currentColor" />
+                  {/* Dot grid */}
+                  <circle cx="8" cy="14" r="1.3" fill="var(--color-surface)" />
+                  <circle cx="12" cy="14" r="1.3" fill="var(--color-surface)" />
+                  <circle cx="16" cy="14" r="1.3" fill="var(--color-surface)" />
+                  <circle cx="8" cy="18" r="1.3" fill="var(--color-surface)" />
+                  <circle cx="12" cy="18" r="1.3" fill="var(--color-surface)" />
+                  <circle cx="16" cy="18" r="1.3" fill="var(--color-surface)" />
                 </svg>
               </button>
             </div>
