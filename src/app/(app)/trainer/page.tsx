@@ -5,8 +5,11 @@ import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useChatStore, type ImportData } from '@/stores/chatStore';
-import { toDisplayWeight, weightUnit } from '@/lib/utils/units';
+import { useTrainerProfileStore } from '@/stores/trainerProfileStore';
+import { toDisplayWeight } from '@/lib/utils/units';
 import { FileUploadButton } from '@/components/chat';
+import TrainerProfileCard from '@/components/trainer/TrainerProfileCard';
+import type { TrainerProfile } from '@/lib/types/user';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,6 +51,17 @@ interface WorkoutContext {
     history: ExerciseHistory[];
     similarExercises: string[];
   };
+  trainerProfile?: {
+    experienceLevel: string;
+    trainingFrequency?: string;
+    sessionDuration?: string;
+    goals: string[];
+    gymAccess?: string;
+    availableEquipment?: string[];
+    favoriteExercises?: string[];
+    dislikedOrAvoidedExercises?: string[];
+    additionalNotes?: string;
+  };
 }
 
 interface ImportApiResponse {
@@ -57,6 +71,22 @@ interface ImportApiResponse {
     workouts: ImportData['workouts'];
     needsConfirmation: boolean;
     questions?: string[];
+  };
+}
+
+interface ProfileApiResponse {
+  type: 'profile';
+  text: string;
+  profileData: {
+    experienceLevel: string;
+    trainingFrequency?: string;
+    sessionDuration?: string;
+    goals: string[];
+    gymAccess?: string;
+    availableEquipment?: string[];
+    favoriteExercises?: string[];
+    dislikedOrAvoidedExercises?: string[];
+    additionalNotes?: string;
   };
 }
 
@@ -76,10 +106,13 @@ function TrainerContent() {
   const supabase = createClient();
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const { messages, addMessage, updateMessage, updateImportStatus, clearChat } = useChatStore();
+  const { profile: trainerProfile, setProfile } = useTrainerProfileStore();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [context, setContext] = useState<WorkoutContext | null>(null);
   const [importingMessageId, setImportingMessageId] = useState<string | null>(null);
+  const [profileMode, setProfileMode] = useState(false);
+  const [showProfileCard, setShowProfileCard] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -111,6 +144,21 @@ function TrainerContent() {
         personalRecords: [],
         weeklyStats: null,
       };
+
+      // Include trainer profile in context if available
+      if (trainerProfile) {
+        ctx.trainerProfile = {
+          experienceLevel: trainerProfile.experienceLevel,
+          trainingFrequency: trainerProfile.trainingFrequency || undefined,
+          sessionDuration: trainerProfile.sessionDuration || undefined,
+          goals: trainerProfile.goals,
+          gymAccess: trainerProfile.gymAccess || undefined,
+          availableEquipment: trainerProfile.availableEquipment.length > 0 ? trainerProfile.availableEquipment : undefined,
+          favoriteExercises: trainerProfile.favoriteExercises.length > 0 ? trainerProfile.favoriteExercises : undefined,
+          dislikedOrAvoidedExercises: trainerProfile.dislikedOrAvoidedExercises.length > 0 ? trainerProfile.dislikedOrAvoidedExercises : undefined,
+          additionalNotes: trainerProfile.additionalNotes || undefined,
+        };
+      }
 
       const { data: summary } = await supabase.rpc('get_progress_summary', {
         user_uuid: user.id,
@@ -225,11 +273,21 @@ function TrainerContent() {
       setContext(ctx);
     }
     loadContext();
-  }, [unitSystem, exerciseId, exerciseName]);
+  }, [unitSystem, exerciseId, exerciseName, trainerProfile]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  function startProfileSetup() {
+    setProfileMode(true);
+    setShowProfileCard(false);
+    clearChat();
+    setTimeout(() => {
+      addMessage('assistant', "Let's get to know your training style! I'll ask you a few quick questions so I can give you better, more personalized advice.\n\nFirst off — how long have you been lifting? Would you consider yourself a beginner, intermediate, or advanced lifter?");
+    }, 0);
+    inputRef.current?.focus();
+  }
 
   function handleFileUpload(content: string, filename: string) {
     handleSend(`[file: ${filename}]\n\n${content}`);
@@ -254,7 +312,11 @@ function TrainerContent() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: chatMessages, context }),
+        body: JSON.stringify({
+          messages: chatMessages,
+          context,
+          ...(profileMode && { mode: 'profile-setup' }),
+        }),
       });
 
       if (!response.ok) {
@@ -265,15 +327,70 @@ function TrainerContent() {
       const contentType = response.headers.get('content-type') || '';
 
       if (contentType.includes('application/json')) {
-        // Import response with structured data
-        const data = await response.json() as ImportApiResponse;
-        const importData: ImportData = {
-          workouts: data.importData.workouts,
-          needsConfirmation: data.importData.needsConfirmation,
-          questions: data.importData.questions,
-          status: 'pending',
-        };
-        updateMessage(assistantId, data.text, importData);
+        const data = await response.json();
+
+        if (data.type === 'profile') {
+          // Profile setup complete — save the profile
+          const profileResponse = data as ProfileApiResponse;
+          const now = new Date().toISOString();
+          const newProfile: TrainerProfile = {
+            experienceLevel: profileResponse.profileData.experienceLevel,
+            trainingFrequency: profileResponse.profileData.trainingFrequency || '',
+            sessionDuration: profileResponse.profileData.sessionDuration || '',
+            goals: profileResponse.profileData.goals || [],
+            gymAccess: profileResponse.profileData.gymAccess || '',
+            availableEquipment: profileResponse.profileData.availableEquipment || [],
+            favoriteExercises: profileResponse.profileData.favoriteExercises || [],
+            dislikedOrAvoidedExercises: profileResponse.profileData.dislikedOrAvoidedExercises || [],
+            additionalNotes: profileResponse.profileData.additionalNotes || '',
+            createdAt: trainerProfile?.createdAt || now,
+            updatedAt: now,
+          };
+          setProfile(newProfile);
+          setProfileMode(false);
+
+          // Update context with new profile
+          setContext((prev) => prev ? {
+            ...prev,
+            trainerProfile: {
+              experienceLevel: newProfile.experienceLevel,
+              trainingFrequency: newProfile.trainingFrequency || undefined,
+              sessionDuration: newProfile.sessionDuration || undefined,
+              goals: newProfile.goals,
+              gymAccess: newProfile.gymAccess || undefined,
+              availableEquipment: newProfile.availableEquipment.length > 0 ? newProfile.availableEquipment : undefined,
+              favoriteExercises: newProfile.favoriteExercises.length > 0 ? newProfile.favoriteExercises : undefined,
+              dislikedOrAvoidedExercises: newProfile.dislikedOrAvoidedExercises.length > 0 ? newProfile.dislikedOrAvoidedExercises : undefined,
+              additionalNotes: newProfile.additionalNotes || undefined,
+            },
+          } : prev);
+
+          // Sync to Supabase
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: currentProfile } = await supabase
+              .from('profiles')
+              .select('preferences')
+              .eq('id', user.id)
+              .single();
+            const currentPrefs = (currentProfile?.preferences as Record<string, unknown>) || {};
+            await supabase
+              .from('profiles')
+              .update({ preferences: { ...currentPrefs, trainerProfile: newProfile } })
+              .eq('id', user.id);
+          }
+
+          updateMessage(assistantId, profileResponse.text);
+        } else {
+          // Import response
+          const importData: ImportData = {
+            workouts: (data as ImportApiResponse).importData.workouts,
+            needsConfirmation: (data as ImportApiResponse).importData.needsConfirmation,
+            questions: (data as ImportApiResponse).importData.questions,
+            status: 'pending',
+          };
+          updateMessage(assistantId, (data as ImportApiResponse).text, importData);
+        }
       } else {
         // Regular streaming response
         const reader = response.body?.getReader();
@@ -335,11 +452,20 @@ function TrainerContent() {
 
   const hasUserMessage = messages.some((m) => m.role === 'user');
   const showExerciseSuggestions = exerciseName && !hasUserMessage && messages.length > 0;
-  const showDefaultSuggestions = messages.length === 0;
+  const showDefaultSuggestions = messages.length === 0 && !profileMode;
   const suggestions = exerciseSuggestions || DEFAULT_SUGGESTIONS;
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-64px)]">
+    <div className="flex flex-col h-[calc(100dvh-64px)] relative">
+      {/* Profile Card Overlay */}
+      {showProfileCard && trainerProfile && (
+        <TrainerProfileCard
+          profile={trainerProfile}
+          onUpdate={startProfileSetup}
+          onClose={() => setShowProfileCard(false)}
+        />
+      )}
+
       {/* Header */}
       <div className="bg-surface px-5 pt-8 pb-4 border-b border-border">
         <div className="flex items-center justify-between">
@@ -349,15 +475,44 @@ function TrainerContent() {
             {exerciseName && (
               <p className="text-sm text-text-muted mt-1">Helping with: {exerciseName}</p>
             )}
+            {profileMode && (
+              <p className="text-sm text-primary mt-1">Setting up your profile...</p>
+            )}
           </div>
-          {messages.length > 0 && (
+          <div className="flex items-center gap-3">
+            {/* Profile icon */}
             <button
-              onClick={clearChat}
-              className="text-xs text-text-muted hover:text-text-secondary transition-colors"
+              onClick={() => {
+                if (trainerProfile) {
+                  setShowProfileCard(!showProfileCard);
+                } else {
+                  startProfileSetup();
+                }
+              }}
+              className={`p-1.5 rounded-full transition-colors ${
+                trainerProfile
+                  ? 'text-primary hover:bg-primary/10'
+                  : 'text-text-muted hover:text-text-secondary'
+              }`}
+              title={trainerProfile ? 'View training profile' : 'Set up training profile'}
             >
-              Clear
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
             </button>
-          )}
+            {messages.length > 0 && (
+              <button
+                onClick={() => {
+                  clearChat();
+                  setProfileMode(false);
+                }}
+                className="text-xs text-text-muted hover:text-text-secondary transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -374,6 +529,28 @@ function TrainerContent() {
             <p className="text-text-muted text-sm mb-6">
               Ask me anything about your training
             </p>
+
+            {/* Profile setup banner — shown when no profile exists */}
+            {!trainerProfile && (
+              <button
+                onClick={startProfileSetup}
+                className="w-full max-w-sm mb-6 p-4 rounded-2xl bg-primary/5 border border-primary/20 text-left hover:bg-primary/10 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-text">Set up your training profile</p>
+                    <p className="text-xs text-text-muted mt-0.5">Quick chat so I can personalize your experience</p>
+                  </div>
+                </div>
+              </button>
+            )}
+
             <div className="flex flex-wrap justify-center gap-2">
               {suggestions.map((s) => (
                 <button
@@ -528,16 +705,18 @@ function TrainerContent() {
           }}
           className="flex items-center gap-2"
         >
-          <FileUploadButton
-            onFileContent={handleFileUpload}
-            disabled={isLoading || !context}
-          />
+          {!profileMode && (
+            <FileUploadButton
+              onFileContent={handleFileUpload}
+              disabled={isLoading || !context}
+            />
+          )}
           <input
             ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask your trainer or paste workout data..."
+            placeholder={profileMode ? 'Tell me about your training...' : 'Ask your trainer or paste workout data...'}
             disabled={isLoading || !context}
             className="flex-1 min-h-[44px] rounded-full bg-surface-light px-4 text-sm text-text placeholder:text-text-muted outline-none disabled:opacity-50"
           />

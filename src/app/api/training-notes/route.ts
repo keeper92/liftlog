@@ -18,12 +18,21 @@ Guidelines:
 - If they plateaued or went down, suggest alternatives or recovery
 - Keep the total response under 100 words`;
 
+interface TrainerProfileData {
+  experienceLevel: string;
+  trainingFrequency?: string;
+  goals?: string[];
+  gymAccess?: string;
+  additionalNotes?: string;
+}
+
 interface TrainingNotesRequest {
   workoutName: string;
   exerciseCount: number;
   totalSets: number;
   comparisons: string;
   unitSystem: string;
+  trainerProfile?: TrainerProfileData;
 }
 
 export async function POST(request: Request) {
@@ -35,15 +44,24 @@ export async function POST(request: Request) {
     );
   }
 
-  const { workoutName, exerciseCount, totalSets, comparisons, unitSystem } =
+  const { workoutName, exerciseCount, totalSets, comparisons, unitSystem, trainerProfile } =
     (await request.json()) as TrainingNotesRequest;
 
   const unit = unitSystem === 'imperial' ? 'lbs' : 'kg';
 
+  let profileContext = '';
+  if (trainerProfile) {
+    const parts: string[] = [];
+    parts.push(`Experience: ${trainerProfile.experienceLevel}`);
+    if (trainerProfile.goals && trainerProfile.goals.length > 0) parts.push(`Goals: ${trainerProfile.goals.join(', ')}`);
+    if (trainerProfile.additionalNotes) parts.push(`Notes: ${trainerProfile.additionalNotes}`);
+    profileContext = `\nUser profile: ${parts.join('. ')}.\n`;
+  }
+
   const userMessage = `Workout completed: "${workoutName}"
 ${exerciseCount} exercises, ${totalSets} working sets
 Unit system: ${unit}
-
+${profileContext}
 Exercise performance (today vs previous best):
 ${comparisons}
 

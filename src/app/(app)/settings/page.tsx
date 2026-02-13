@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useTrainerProfileStore } from '@/stores/trainerProfileStore';
 import type { UnitSystem } from '@/lib/types/user';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -20,6 +21,7 @@ export default function SettingsPage() {
     setDefaultRestTimer,
     setAutoStartRestTimer,
   } = useSettingsStore();
+  const trainerProfile = useTrainerProfileStore((s) => s.profile);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -95,6 +97,24 @@ export default function SettingsPage() {
                 }`}
               />
             </button>
+          </div>
+        </Card>
+      </div>
+
+      <div className="mt-6">
+        <Card onClick={() => router.push('/trainer')}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Trainer Profile</p>
+              <p className="text-sm text-text-secondary">
+                {trainerProfile
+                  ? `${trainerProfile.experienceLevel} · ${trainerProfile.goals.join(', ')}`
+                  : 'Set up your training profile for personalized advice'}
+              </p>
+            </div>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
           </div>
         </Card>
       </div>

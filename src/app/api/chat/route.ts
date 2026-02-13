@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { Tool, MessageParam, ContentBlock, ToolUseBlock, TextBlock } from '@anthropic-ai/sdk/resources/messages';
+import type { Tool, MessageParam, ToolUseBlock, TextBlock } from '@anthropic-ai/sdk/resources/messages';
 
 const anthropic = new Anthropic();
 
@@ -27,6 +27,25 @@ When presenting import previews, be concise. Example:
 - Bench Press: 3 sets (135-175 lbs)
 - Squat: 4 sets (185-225 lbs)
 Ready to import? Just say 'yes' or let me know if anything needs fixing."`;
+
+const PROFILE_SETUP_SYSTEM_PROMPT = `You are a knowledgeable, motivating personal trainer inside the "reps" fitness app. Your name is Trainer.
+
+You are getting to know a new user so you can personalize their training experience. Have a natural, friendly conversation to learn about them. Ask about these topics across 3-5 messages (don't ask everything at once — keep it conversational):
+
+1. Experience level — How long have they been lifting? Beginner, intermediate, or advanced?
+2. Training frequency — How many days per week do they train? How long are their sessions?
+3. Goals — What are they working toward? (muscle building, strength, fat loss, general fitness, sport performance, etc.)
+4. Gym & equipment — Where do they train? What equipment do they have access to?
+5. Favorites & preferences — Any favorite exercises? Any they avoid or can't do (injuries, etc.)?
+6. Anything else they want you to know (upcoming events, injuries, schedule constraints)
+
+Guidelines:
+- Be warm, encouraging, and conversational — not like a form
+- Ask 2-3 related things per message, don't overwhelm
+- React to their answers naturally before asking the next question
+- Use plain text, no markdown formatting
+- When you have enough info (at least experience level, goals, and a couple other topics), call the save_trainer_profile tool
+- Include a friendly confirmation message alongside the tool call`;
 
 const IMPORT_TOOL: Tool = {
   name: 'import_workouts',
@@ -83,6 +102,54 @@ const IMPORT_TOOL: Tool = {
   },
 };
 
+const PROFILE_TOOL: Tool = {
+  name: 'save_trainer_profile',
+  description: 'Save the user\'s training profile after gathering enough info from the conversation. Call this when you have learned about their experience level, goals, and at least a couple other topics (frequency, equipment, preferences).',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      experienceLevel: { type: 'string', description: 'Beginner, intermediate, or advanced (or more specific)' },
+      trainingFrequency: { type: 'string', description: 'How often they train (e.g., "4 days per week")' },
+      sessionDuration: { type: 'string', description: 'Typical session length (e.g., "60-90 minutes")' },
+      goals: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Training goals (e.g., "build muscle", "lose fat", "get stronger")',
+      },
+      gymAccess: { type: 'string', description: 'Where they train and general equipment situation' },
+      availableEquipment: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Specific equipment available (e.g., "barbell", "dumbbells", "cable machine")',
+      },
+      favoriteExercises: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Exercises the user enjoys or wants to focus on',
+      },
+      dislikedOrAvoidedExercises: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Exercises the user avoids (injuries, preferences)',
+      },
+      additionalNotes: { type: 'string', description: 'Any other relevant info (injuries, schedule constraints, upcoming events)' },
+    },
+    required: ['experienceLevel', 'goals'],
+  },
+};
+
+interface TrainerProfileData {
+  experienceLevel: string;
+  trainingFrequency?: string;
+  sessionDuration?: string;
+  goals: string[];
+  gymAccess?: string;
+  availableEquipment?: string[];
+  favoriteExercises?: string[];
+  dislikedOrAvoidedExercises?: string[];
+  additionalNotes?: string;
+}
+
 interface WorkoutContext {
   unitSystem: string;
   recentWorkouts: {
@@ -109,11 +176,24 @@ interface WorkoutContext {
     history: { date: string; sets: { weight: number; reps: number }[] }[];
     similarExercises: string[];
   };
+  trainerProfile?: TrainerProfileData;
 }
 
 interface ChatRequestMessage {
   role: 'user' | 'assistant';
   content: string;
+}
+
+function buildProfileContextString(profile: TrainerProfileData): string {
+  const lines: string[] = [];
+  lines.push(`- Experience: ${profile.experienceLevel}`);
+  if (profile.trainingFrequency) lines.push(`- Frequency: ${profile.trainingFrequency}${profile.sessionDuration ? `, ${profile.sessionDuration} sessions` : ''}`);
+  if (profile.goals.length > 0) lines.push(`- Goals: ${profile.goals.join(', ')}`);
+  if (profile.gymAccess) lines.push(`- Gym: ${profile.gymAccess}${profile.availableEquipment && profile.availableEquipment.length > 0 ? ` (${profile.availableEquipment.join(', ')})` : ''}`);
+  if (profile.favoriteExercises && profile.favoriteExercises.length > 0) lines.push(`- Favorite exercises: ${profile.favoriteExercises.join(', ')}`);
+  if (profile.dislikedOrAvoidedExercises && profile.dislikedOrAvoidedExercises.length > 0) lines.push(`- Avoids: ${profile.dislikedOrAvoidedExercises.join(', ')}`);
+  if (profile.additionalNotes) lines.push(`- Notes: ${profile.additionalNotes}`);
+  return `User's training profile:\n${lines.join('\n')}`;
 }
 
 export async function POST(request: Request) {
@@ -125,14 +205,55 @@ export async function POST(request: Request) {
     );
   }
 
-  const { messages, context } = (await request.json()) as {
+  const { messages, context, mode } = (await request.json()) as {
     messages: ChatRequestMessage[];
     context: WorkoutContext;
+    mode?: 'profile-setup' | 'chat';
   };
+
+  // Profile setup mode — use profile-gathering system prompt + profile tool
+  if (mode === 'profile-setup') {
+    const response = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 512,
+      system: PROFILE_SETUP_SYSTEM_PROMPT,
+      tools: [PROFILE_TOOL],
+      messages: messages.map((m): MessageParam => ({ role: m.role, content: m.content })),
+    });
+
+    const toolUse = response.content.find((block): block is ToolUseBlock => block.type === 'tool_use');
+    const textBlock = response.content.find((block): block is TextBlock => block.type === 'text');
+
+    if (toolUse && toolUse.name === 'save_trainer_profile') {
+      return new Response(
+        JSON.stringify({
+          type: 'profile',
+          text: textBlock?.text || 'Profile saved! I\'ll use this to personalize all my advice going forward.',
+          profileData: toolUse.input,
+        }),
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // No tool call yet — just a regular text response (still gathering info)
+    const text = response.content
+      .filter((block): block is TextBlock => block.type === 'text')
+      .map((block) => block.text)
+      .join('');
+
+    return new Response(text, {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
+  }
 
   // Build context string from workout data
   const contextParts: string[] = [];
   contextParts.push(`User's preferred unit system: ${context.unitSystem}`);
+
+  // Inject trainer profile if available
+  if (context.trainerProfile) {
+    contextParts.push(buildProfileContextString(context.trainerProfile));
+  }
 
   if (context.weeklyStats) {
     const s = context.weeklyStats;
@@ -184,7 +305,7 @@ export async function POST(request: Request) {
     contextParts.push(exerciseContext);
   }
 
-  if (contextParts.length === 1) {
+  if (!context.trainerProfile && contextParts.length === 1) {
     contextParts.push('No workout data yet — this user is just getting started.');
   }
 

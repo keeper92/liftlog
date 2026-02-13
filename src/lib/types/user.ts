@@ -14,3 +14,17 @@ export interface UserPreferences {
   autoStartRestTimer?: boolean;
   showWarmupSets?: boolean;
 }
+
+export interface TrainerProfile {
+  experienceLevel: string;
+  trainingFrequency: string;
+  sessionDuration: string;
+  goals: string[];
+  gymAccess: string;
+  availableEquipment: string[];
+  favoriteExercises: string[];
+  dislikedOrAvoidedExercises: string[];
+  additionalNotes: string;
+  createdAt: string;
+  updatedAt: string;
+}
