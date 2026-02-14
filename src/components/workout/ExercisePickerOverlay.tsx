@@ -1,9 +1,7 @@
 'use client';
 
-import { Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useCallback, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import { useExerciseSearch } from '@/hooks/useExerciseSearch';
 import { CARDIO_DISPLAY_NAMES } from '@/lib/types/exercise';
 import type { ExerciseRow } from '@/lib/types/exercise';
@@ -11,21 +9,49 @@ import { MUSCLE_GROUPS, EXERCISE_CATEGORIES } from '@/lib/constants';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 
-export default function ExercisesPage() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-dvh text-text-muted">Loading...</div>}>
-      <ExercisesContent />
-    </Suspense>
-  );
+interface ExercisePickerOverlayProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (exercise: { id: string; name: string; category: string }) => void;
 }
 
-function ExercisesContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const isSelecting = searchParams.get('select') === 'true';
+export default function ExercisePickerOverlay({ isOpen, onClose, onSelect }: ExercisePickerOverlayProps) {
   const supabase = createClient();
-  const addExercise = useActiveWorkoutStore((s) => s.addExercise);
 
+  // Escape key to close
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, handleKeyDown]);
+
+  if (!isOpen) return null;
+
+  return <PickerContent supabase={supabase} onClose={onClose} onSelect={onSelect} />;
+}
+
+/** Inner component that only mounts when overlay is open (so hooks run fresh each open) */
+function PickerContent({
+  supabase,
+  onClose,
+  onSelect,
+}: {
+  supabase: ReturnType<typeof createClient>;
+  onClose: () => void;
+  onSelect: (exercise: { id: string; name: string; category: string }) => void;
+}) {
   const {
     exercises,
     setExercises,
@@ -52,10 +78,7 @@ function ExercisesContent() {
   const [saving, setSaving] = useState(false);
 
   function handleSelectExercise(exercise: ExerciseRow) {
-    if (isSelecting) {
-      addExercise({ id: exercise.id, name: exercise.name, category: exercise.category });
-      router.back();
-    }
+    onSelect({ id: exercise.id, name: exercise.name, category: exercise.category });
   }
 
   function openCreateModal() {
@@ -78,11 +101,9 @@ function ExercisesContent() {
     if (!exerciseForm.name.trim()) return;
 
     setSaving(true);
-
     const isOwnCustom = editingExercise?.is_custom && editingExercise?.user_id === currentUserId;
 
     if (editingExercise && isOwnCustom) {
-      // Update existing custom exercise (user owns it)
       const { error } = await supabase
         .from('exercises')
         .update({
@@ -102,7 +123,6 @@ function ExercisesContent() {
         );
       }
     } else if (editingExercise && !isOwnCustom) {
-      // Create a custom copy of a seeded exercise with new name
       const { data, error } = await supabase
         .from('exercises')
         .insert({
@@ -117,19 +137,12 @@ function ExercisesContent() {
         .single();
 
       if (!error && data) {
-        // If selecting, add to workout immediately
-        if (isSelecting) {
-          addExercise({ id: data.id, name: data.name, category: data.category });
-          setShowCreateModal(false);
-          setSaving(false);
-          router.back();
-          return;
-        }
-        // Add to top of list
-        setExercises((prev) => [data, ...prev]);
+        onSelect({ id: data.id, name: data.name, category: data.category });
+        setShowCreateModal(false);
+        setSaving(false);
+        return;
       }
     } else {
-      // Create new exercise
       const { data, error } = await supabase
         .from('exercises')
         .insert({
@@ -144,16 +157,10 @@ function ExercisesContent() {
         .single();
 
       if (!error && data) {
-        // If selecting, add to workout immediately
-        if (isSelecting) {
-          addExercise({ id: data.id, name: data.name, category: data.category });
-          setShowCreateModal(false);
-          setSaving(false);
-          router.back();
-          return;
-        }
-        // Otherwise add to list
-        setExercises((prev) => [data, ...prev]);
+        onSelect({ id: data.id, name: data.name, category: data.category });
+        setShowCreateModal(false);
+        setSaving(false);
+        return;
       }
     }
 
@@ -167,30 +174,31 @@ function ExercisesContent() {
 
     setSaving(true);
     const { error } = await supabase.from('exercises').delete().eq('id', editingExercise.id);
-
     if (!error) {
       setExercises((prev) => prev.filter((ex) => ex.id !== editingExercise.id));
     }
-
     setSaving(false);
     setShowCreateModal(false);
   }
 
   return (
-    <div className="flex flex-col min-h-dvh">
-      <div className="px-4 pt-4 pb-2">
-        <div className="flex items-center gap-3 mb-4">
-          {isSelecting && (
-            <button onClick={() => router.back()} className="text-text-secondary min-h-[44px] flex items-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-          )}
-          <h1 className="text-2xl font-bold">{isSelecting ? 'Add Exercise' : 'Exercises'}</h1>
-        </div>
+    <div className="fixed inset-0 z-[100] bg-background flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <h1 className="text-lg font-bold">Add Exercise</h1>
+        <button
+          onClick={onClose}
+          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-light transition-colors"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
 
-        {/* Search */}
+      {/* Search */}
+      <div className="px-4 pt-3 pb-2">
         <div className="relative mb-3">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8" />
@@ -201,11 +209,12 @@ function ExercisesContent() {
             placeholder="Search exercises..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-3 min-h-[48px] text-sm focus:border-primary outline-none"
+            className="w-full bg-surface border border-border rounded-xl pl-10 pr-4 py-3 min-h-[48px] text-sm focus:border-primary outline-none"
+            autoFocus
           />
         </div>
 
-        {/* Muscle Filter */}
+        {/* Filter Tabs */}
         <div className="flex overflow-x-auto gap-2 pb-2 -mx-4 px-4 scrollbar-hide">
           <button
             onClick={() => {
@@ -262,7 +271,7 @@ function ExercisesContent() {
       </div>
 
       {/* Exercise List */}
-      <div className="flex-1 overflow-y-auto px-4 pb-20">
+      <div className="flex-1 overflow-y-auto px-4 pb-8">
         {loading ? (
           <p className="text-text-muted text-sm text-center py-8">Loading...</p>
         ) : exercises.length === 0 ? (
@@ -274,7 +283,7 @@ function ExercisesContent() {
           </div>
         ) : (
           <div className="space-y-1">
-            {/* Create custom button at top */}
+            {/* Create custom button */}
             <button
               onClick={openCreateModal}
               className="w-full text-left px-3 py-3 rounded-xl hover:bg-surface-light transition-colors min-h-[44px] border border-dashed border-border mb-2"

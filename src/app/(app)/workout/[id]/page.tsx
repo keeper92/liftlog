@@ -22,6 +22,7 @@ import Card from '@/components/ui/Card';
 import { NumberPadProvider, useNumberPad } from '@/components/workout/NumberPadContext';
 import SetInputCell from '@/components/workout/SetInputCell';
 import NumberPad from '@/components/workout/NumberPad';
+import ExercisePickerOverlay from '@/components/workout/ExercisePickerOverlay';
 
 interface HistoryEntry {
   date: string;
@@ -327,6 +328,7 @@ function WorkoutContent({
 }) {
   const { activeFocus, deactivate } = useNumberPad();
   const numberPadVisible = activeFocus !== null;
+  const [showExercisePicker, setShowExercisePicker] = useState(false);
 
   const unit = weightUnit(unitSystem);
 
@@ -552,7 +554,7 @@ function WorkoutContent({
         <Button
           variant="outline"
           fullWidth
-          onClick={() => router.push('/exercises?select=true')}
+          onClick={() => setShowExercisePicker(true)}
         >
           + Add Exercise
         </Button>
@@ -766,6 +768,16 @@ function WorkoutContent({
           </div>
         )}
       </Modal>
+
+      {/* Exercise Picker Overlay */}
+      <ExercisePickerOverlay
+        isOpen={showExercisePicker}
+        onClose={() => setShowExercisePicker(false)}
+        onSelect={(exercise) => {
+          store.addExercise(exercise);
+          setShowExercisePicker(false);
+        }}
+      />
     </div>
   );
 }
