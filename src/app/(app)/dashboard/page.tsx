@@ -27,37 +27,13 @@ interface ProgressSummary {
   weekWorkouts: number;
 }
 
-// Get the dates for the current week (Sun–Sat)
-function getCurrentWeekDates(): { date: Date; key: string }[] {
-  const today = new Date();
-  const dayOfWeek = today.getDay(); // 0 = Sunday
-  const sunday = new Date(today);
-  sunday.setDate(today.getDate() - dayOfWeek);
-
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(sunday);
-    d.setDate(sunday.getDate() + i);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    return { date: d, key };
-  });
-}
-
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
 export default function DashboardPage() {
   const router = useRouter();
   const supabase = createClient();
   const { isActive, workoutId, startWorkout, addExerciseWithSets } = useActiveWorkoutStore();
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [stats, setStats] = useState<ProgressSummary | null>(null);
-  const [weekWorkoutDates, setWeekWorkoutDates] = useState<Set<string>>(new Set());
   const [showHistory, setShowHistory] = useState(false);
-
-  const weekDates = getCurrentWeekDates();
-  const todayKey = weekDates.find((d) => {
-    const now = new Date();
-    return d.date.getDate() === now.getDate() && d.date.getMonth() === now.getMonth() && d.date.getFullYear() === now.getFullYear();
-  })?.key;
 
   useEffect(() => {
     async function load() {
@@ -86,19 +62,6 @@ export default function DashboardPage() {
         });
       }
 
-      // Get this week's workout dates for the week row dots
-      const weekStart = weekDates[0].key;
-      const weekEnd = weekDates[6].key;
-      const { data: weekWorkouts } = await supabase
-        .from('workouts')
-        .select('date')
-        .eq('user_id', user.id)
-        .gte('date', weekStart)
-        .lte('date', weekEnd + 'T23:59:59');
-      if (weekWorkouts) {
-        const dates = new Set(weekWorkouts.map((w) => (w.date as string).split('T')[0]));
-        setWeekWorkoutDates(dates);
-      }
     }
     load();
   }, []);
@@ -144,87 +107,20 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="bg-surface px-5 pt-8 pb-4 border-b border-border">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-black text-primary tracking-tight">reps</p>
-              <h1 className="text-2xl font-bold mt-1">Home</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Streak badge */}
-              <button
-                onClick={() => setShowHistory(true)}
-                className="flex items-center gap-1 bg-surface-light rounded-full pl-2 pr-2.5 py-1.5 hover:bg-border/50 transition-colors"
-              >
-                <span className="text-sm font-bold text-text">{stats?.currentStreak ?? 0}</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-warning">
-                  {/* Double bolt with energy sparks */}
-                  <path d="M13 2L5 13h6l-1 9 8-11h-6l1-9z" fill="currentColor" />
-                  <path d="M17 6l-3 5h3l-2 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  <line x1="2" y1="8" x2="3.5" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  <line x1="2" y1="12" x2="3" y2="11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  <line x1="20" y1="10" x2="21.5" y2="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  <line x1="20" y1="14" x2="21" y2="13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </button>
-              {/* Calendar icon */}
-              <button
-                onClick={() => setShowHistory(true)}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-surface-light hover:bg-border/50 transition-colors"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-text">
-                  {/* Rounded calendar with ring bindings and dot grid */}
-                  <rect x="3" y="5" width="18" height="17" rx="3" ry="3" fill="currentColor" />
-                  {/* Ring bindings */}
-                  <rect x="7" y="3" width="2.5" height="4" rx="1.25" fill="var(--color-surface)" />
-                  <rect x="14.5" y="3" width="2.5" height="4" rx="1.25" fill="var(--color-surface)" />
-                  {/* Header bar */}
-                  <rect x="3" y="5" width="18" height="5" rx="3" ry="0" fill="currentColor" />
-                  {/* Dot grid */}
-                  <circle cx="8" cy="14" r="1.3" fill="var(--color-surface)" />
-                  <circle cx="12" cy="14" r="1.3" fill="var(--color-surface)" />
-                  <circle cx="16" cy="14" r="1.3" fill="var(--color-surface)" />
-                  <circle cx="8" cy="18" r="1.3" fill="var(--color-surface)" />
-                  <circle cx="12" cy="18" r="1.3" fill="var(--color-surface)" />
-                  <circle cx="16" cy="18" r="1.3" fill="var(--color-surface)" />
-                </svg>
-              </button>
-            </div>
+            <p className="text-sm font-black text-primary tracking-tight">reps</p>
+            <button
+              onClick={() => setShowHistory(true)}
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-light transition-colors"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            </button>
           </div>
         </div>
-
-        {/* Week Row */}
-        <button
-          onClick={() => setShowHistory(true)}
-          className="w-full px-5 py-3 bg-surface border-b border-border hover:bg-surface-light/50 transition-colors"
-        >
-          <div className="flex items-center justify-around">
-            {weekDates.map((wd, i) => {
-              const isToday = wd.key === todayKey;
-              const hasWorkout = weekWorkoutDates.has(wd.key);
-
-              return (
-                <div key={wd.key} className="flex flex-col items-center gap-1">
-                  <span className={`text-[10px] font-medium ${isToday ? 'text-text' : 'text-text-muted'}`}>
-                    {DAY_LABELS[i]}
-                  </span>
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                      isToday
-                        ? 'bg-text text-white'
-                        : 'text-text'
-                    }`}
-                  >
-                    {wd.date.getDate()}
-                  </div>
-                  <div className="h-1.5 flex items-center justify-center">
-                    {hasWorkout && (
-                      <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-primary' : 'bg-text-muted'}`} />
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </button>
 
         {/* Start Workout Card */}
         <div className="p-5">
