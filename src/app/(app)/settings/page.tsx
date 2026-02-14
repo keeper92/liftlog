@@ -29,9 +29,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="px-5 pt-8 pb-4">
-      <p className="text-sm font-black text-text tracking-tight">reps</p>
-      <h1 className="text-3xl font-bold mt-1 mb-8">Settings</h1>
+    <div className="px-5 pt-4 pb-4">
+      <h1 className="text-xl font-bold mb-6">Settings</h1>
 
       <div className="space-y-4">
         <Card>

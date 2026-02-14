@@ -467,40 +467,18 @@ function TrainerContent() {
       )}
 
       {/* Header */}
-      <div className="bg-surface px-5 pt-8 pb-4 border-b border-border">
+      <div className="bg-surface px-5 pt-4 pb-3 border-b border-border">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-black text-primary tracking-tight">reps</p>
-            <h1 className="text-2xl font-bold mt-1">Trainer</h1>
+            <h1 className="text-xl font-bold">Trainer</h1>
             {exerciseName && (
-              <p className="text-sm text-text-muted mt-1">Helping with: {exerciseName}</p>
+              <p className="text-xs text-text-muted mt-0.5">Helping with: {exerciseName}</p>
             )}
             {profileMode && (
-              <p className="text-sm text-primary mt-1">Setting up your profile...</p>
+              <p className="text-xs text-primary mt-0.5">Setting up your profile...</p>
             )}
           </div>
           <div className="flex items-center gap-3">
-            {/* Profile icon */}
-            <button
-              onClick={() => {
-                if (trainerProfile) {
-                  setShowProfileCard(!showProfileCard);
-                } else {
-                  startProfileSetup();
-                }
-              }}
-              className={`p-1.5 rounded-full transition-colors ${
-                trainerProfile
-                  ? 'text-primary hover:bg-primary/10'
-                  : 'text-text-muted hover:text-text-secondary'
-              }`}
-              title={trainerProfile ? 'View training profile' : 'Set up training profile'}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </button>
             {messages.length > 0 && (
               <button
                 onClick={() => {
@@ -512,6 +490,24 @@ function TrainerContent() {
                 Clear
               </button>
             )}
+            {/* Profile button in cream pill */}
+            <button
+              onClick={() => {
+                if (trainerProfile) {
+                  setShowProfileCard(!showProfileCard);
+                } else {
+                  startProfileSetup();
+                }
+              }}
+              className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full bg-surface-light hover:bg-border/50 transition-colors"
+              title={trainerProfile ? 'View training profile' : 'Set up training profile'}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={trainerProfile ? 'text-primary' : 'text-text-muted'}>
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span className="text-[10px] font-medium text-text-muted">My Profile</span>
+            </button>
           </div>
         </div>
       </div>

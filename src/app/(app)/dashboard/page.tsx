@@ -105,7 +105,7 @@ export default function DashboardPage() {
 
       <div className="pb-24">
         {/* Header */}
-        <div className="bg-surface px-5 pt-8 pb-4 border-b border-border">
+        <div className="bg-surface px-5 pt-4 pb-3 border-b border-border">
           <div className="flex items-center justify-between">
             {/* App icon */}
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
