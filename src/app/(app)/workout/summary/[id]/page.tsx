@@ -7,8 +7,6 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { formatDuration, toDisplayWeight, weightUnit } from '@/lib/utils/units';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import Modal from '@/components/ui/Modal';
-import Input from '@/components/ui/Input';
 
 interface WorkoutData {
   id: string;
@@ -41,10 +39,8 @@ function WorkoutSummaryContent() {
   const supabase = createClient();
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const [workout, setWorkout] = useState<WorkoutData | null>(null);
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [templateName, setTemplateName] = useState('');
   const [saving, setSaving] = useState(false);
-  const [saveMode, setSaveMode] = useState<'new' | 'update'>('new');
+  const [savedTemplateName, setSavedTemplateName] = useState<string | null>(null);
   const [trainingNotes, setTrainingNotes] = useState<string | null>(null);
   const [loadingNotes, setLoadingNotes] = useState(false);
 
@@ -185,8 +181,10 @@ function WorkoutSummaryContent() {
   }, [workout, unitSystem]);
 
   async function handleSaveTemplate() {
-    if (!templateName.trim() || !workout) return;
+    if (!workout) return;
     setSaving(true);
+
+    const name = workout.name || 'My Template';
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -196,7 +194,7 @@ function WorkoutSummaryContent() {
 
     const { data: template, error: tErr } = await supabase
       .from('workout_templates')
-      .insert({ user_id: user.id, name: templateName.trim() })
+      .insert({ user_id: user.id, name })
       .select()
       .single();
 
@@ -223,8 +221,7 @@ function WorkoutSummaryContent() {
     await supabase.from('template_exercises').insert(templateExercises);
 
     setSaving(false);
-    setShowSaveModal(false);
-    setTemplateName('');
+    setSavedTemplateName(name);
   }
 
   async function handleUpdateTemplate() {
@@ -364,42 +361,28 @@ function WorkoutSummaryContent() {
         </Button>
       )}
 
-      <Button
-        variant="outline"
-        fullWidth
-        className="mb-3"
-        onClick={() => {
-          setTemplateName(workout.name || 'My Template');
-          setSaveMode('new');
-          setShowSaveModal(true);
-        }}
-      >
-        Save as New Template
-      </Button>
+      {savedTemplateName ? (
+        <div className="mb-3 flex items-center justify-center gap-2 py-3 rounded-xl bg-success/10 text-success text-sm font-medium">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          Saved as &ldquo;{savedTemplateName}&rdquo;
+        </div>
+      ) : (
+        <Button
+          variant="outline"
+          fullWidth
+          className="mb-3"
+          onClick={handleSaveTemplate}
+          loading={saving}
+        >
+          Save as Template
+        </Button>
+      )}
 
       <Button variant="primary" fullWidth onClick={() => router.push('/dashboard')}>
         Done
       </Button>
-
-      <Modal
-        isOpen={showSaveModal}
-        onClose={() => setShowSaveModal(false)}
-        title="Save as Template"
-        actions={[
-          { label: 'Cancel', onClick: () => setShowSaveModal(false), variant: 'ghost' },
-          { label: saving ? 'Saving...' : 'Save', onClick: handleSaveTemplate, variant: 'primary' },
-        ]}
-      >
-        <Input
-          label="Template Name"
-          value={templateName}
-          onChange={(e) => setTemplateName(e.target.value)}
-          placeholder="e.g., Push Day, Leg Day"
-        />
-        <p className="text-xs text-text-muted mt-3">
-          This will save the {exerciseMap.size} exercise{exerciseMap.size !== 1 ? 's' : ''} from this workout as a reusable template.
-        </p>
-      </Modal>
     </div>
   );
 }
