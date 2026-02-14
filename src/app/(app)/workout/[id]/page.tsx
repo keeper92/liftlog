@@ -330,10 +330,66 @@ function WorkoutContent({
   const numberPadVisible = activeFocus !== null;
   const [showExercisePicker, setShowExercisePicker] = useState(false);
 
+  // Drag-to-reorder state
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const exerciseRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const dragStartY = useRef(0);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
+  function handleDragStart(index: number, clientY: number) {
+    setDragIndex(index);
+    setDragOverIndex(index);
+    dragStartY.current = clientY;
+    // Haptic feedback if available
+    if (navigator.vibrate) navigator.vibrate(30);
+  }
+
+  function handleDragMove(clientY: number) {
+    if (dragIndex === null) return;
+    // Find which exercise card the touch is over
+    for (let i = 0; i < exerciseRefs.current.length; i++) {
+      const el = exerciseRefs.current[i];
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      if (clientY >= rect.top && clientY <= rect.bottom) {
+        setDragOverIndex(i);
+        return;
+      }
+    }
+  }
+
+  function handleDragEnd() {
+    if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
+      store.moveExercise(dragIndex, dragOverIndex);
+    }
+    setDragIndex(null);
+    setDragOverIndex(null);
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
+
+  function cancelDrag() {
+    setDragIndex(null);
+    setDragOverIndex(null);
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
+
   const unit = weightUnit(unitSystem);
 
   return (
-    <div className="flex flex-col min-h-dvh bg-background" onPointerDown={() => { if (numberPadVisible) deactivate(); }}>
+    <div
+      className="flex flex-col min-h-dvh bg-background"
+      onPointerDown={() => { if (numberPadVisible) deactivate(); }}
+      onTouchEnd={() => { if (dragIndex !== null) handleDragEnd(); }}
+      onTouchCancel={cancelDrag}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-surface border-b border-border">
         <button onClick={handleDiscard} className="text-error text-sm font-medium min-h-[44px] px-2 flex items-center">
@@ -349,32 +405,61 @@ function WorkoutContent({
       </div>
 
       {/* Exercise List */}
-      <div className={`flex-1 overflow-y-auto px-4 py-4 space-y-6 ${numberPadVisible ? 'pb-80' : 'pb-20'}`}>
+      <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto px-4 py-4 space-y-6 ${numberPadVisible ? 'pb-80' : 'pb-20'}`}>
         {store.exercises.map((ex, exIdx) => {
           const prev = store.previousPerformance[ex.exerciseId] || [];
+          const isDragging = dragIndex === exIdx;
+          const isDragOver = dragOverIndex === exIdx && dragIndex !== null && dragIndex !== exIdx;
           return (
-            <div key={ex.exerciseId + exIdx} className="bg-surface rounded-xl p-4">
+            <div
+              key={ex.exerciseId + exIdx}
+              ref={(el) => { exerciseRefs.current[exIdx] = el; }}
+              className={`bg-surface rounded-xl p-4 transition-all duration-150 ${
+                isDragging ? 'opacity-50 scale-[0.98]' : ''
+              } ${isDragOver ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+            >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="flex flex-col gap-0.5">
-                    <button
-                      onClick={() => store.moveExercise(exIdx, exIdx - 1)}
-                      disabled={exIdx === 0}
-                      className={`p-1 rounded ${exIdx === 0 ? 'text-text-muted/30' : 'text-text-muted hover:text-text'}`}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="18 15 12 9 6 15" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => store.moveExercise(exIdx, exIdx + 1)}
-                      disabled={exIdx === store.exercises.length - 1}
-                      className={`p-1 rounded ${exIdx === store.exercises.length - 1 ? 'text-text-muted/30' : 'text-text-muted hover:text-text'}`}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                    </button>
+                  {/* Drag handle — long press to reorder */}
+                  <div
+                    className="flex items-center justify-center w-8 h-10 -ml-1 cursor-grab active:cursor-grabbing touch-none"
+                    onTouchStart={(e) => {
+                      const touch = e.touches[0];
+                      longPressTimer.current = setTimeout(() => {
+                        handleDragStart(exIdx, touch.clientY);
+                      }, 300);
+                    }}
+                    onTouchMove={(e) => {
+                      if (dragIndex === null && longPressTimer.current) {
+                        // Cancel long press if finger moves before timer fires
+                        clearTimeout(longPressTimer.current);
+                        longPressTimer.current = null;
+                      }
+                      if (dragIndex !== null) {
+                        e.preventDefault();
+                        handleDragMove(e.touches[0].clientY);
+                      }
+                    }}
+                    onTouchEnd={() => {
+                      if (longPressTimer.current) {
+                        clearTimeout(longPressTimer.current);
+                        longPressTimer.current = null;
+                      }
+                      if (dragIndex !== null) handleDragEnd();
+                    }}
+                    onMouseDown={() => {
+                      // Desktop fallback: single click reorder not needed,
+                      // but show visual hint on hover
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted">
+                      <circle cx="9" cy="6" r="1.5" />
+                      <circle cx="15" cy="6" r="1.5" />
+                      <circle cx="9" cy="12" r="1.5" />
+                      <circle cx="15" cy="12" r="1.5" />
+                      <circle cx="9" cy="18" r="1.5" />
+                      <circle cx="15" cy="18" r="1.5" />
+                    </svg>
                   </div>
                   <div>
                       <h3 className="font-semibold text-text">{ex.exerciseName}</h3>
