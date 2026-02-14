@@ -107,12 +107,16 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="bg-surface px-5 pt-8 pb-4 border-b border-border">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-black text-primary tracking-tight">reps</p>
+            {/* App icon */}
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+              <span className="text-[11px] font-black text-white tracking-tight leading-none">reps</span>
+            </div>
+            {/* Calendar button in cream pill */}
             <button
               onClick={() => setShowHistory(true)}
-              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-light transition-colors"
+              className="h-10 px-3 flex items-center justify-center rounded-full bg-surface-light hover:bg-border/50 transition-colors"
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                 <line x1="16" y1="2" x2="16" y2="6" />
                 <line x1="8" y1="2" x2="8" y2="6" />
