@@ -26,7 +26,7 @@ export function useExerciseSearch(): UseExerciseSearchReturn {
   const [search, setSearch] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
   const [showCardio, setShowCardio] = useState(false);
-  const [showRecentlyUsed, setShowRecentlyUsed] = useState(false);
+  const [showRecentlyUsed, setShowRecentlyUsed] = useState(true);
   const [recentlyUsedIds, setRecentlyUsedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);

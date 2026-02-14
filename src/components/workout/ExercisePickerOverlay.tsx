@@ -231,18 +231,6 @@ function PickerContent({
           <button
             onClick={() => {
               setShowRecentlyUsed(false);
-              setShowCardio(false);
-              setSelectedMuscle(null);
-            }}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              !showRecentlyUsed && !showCardio && !selectedMuscle ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => {
-              setShowRecentlyUsed(false);
               setShowCardio(true);
               setSelectedMuscle(null);
             }}
