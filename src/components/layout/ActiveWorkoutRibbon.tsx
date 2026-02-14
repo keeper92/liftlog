@@ -38,9 +38,10 @@ export default function ActiveWorkoutRibbon() {
     return () => clearInterval(interval);
   }, [isActive, startTime]);
 
-  // Don't render on workout pages or when no active workout
+  // Don't render on workout pages, home (has its own resume button), or when no active workout
   const isOnWorkoutPage = pathname.startsWith('/workout');
-  if (!isActive || !workoutId || isOnWorkoutPage) {
+  const isOnDashboard = pathname === '/dashboard';
+  if (!isActive || !workoutId || isOnWorkoutPage || isOnDashboard) {
     return null;
   }
 
