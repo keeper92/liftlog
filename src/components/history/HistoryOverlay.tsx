@@ -130,12 +130,7 @@ export default function HistoryOverlay({ onClose, longestStreak, currentStreak, 
             <p className="text-xs text-text-muted mt-0.5">Longest Streak</p>
           </div>
           <div className="text-center">
-            <div className="flex items-center justify-center gap-1.5">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-warning">
-                <path d="M13 2L3 14h9l-1 10 10-12h-9l1-10z" />
-              </svg>
-              <p className="text-3xl font-bold text-text">{currentStreak}</p>
-            </div>
+            <p className="text-2xl font-bold text-text">{currentStreak}</p>
             <p className="text-xs text-text-muted mt-0.5">Current Streak</p>
           </div>
           <div className="text-center">
