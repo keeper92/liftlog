@@ -8,7 +8,6 @@ import { useChatStore, type ImportData, type TemplateData } from '@/stores/chatS
 import { useTrainerProfileStore } from '@/stores/trainerProfileStore';
 import { toDisplayWeight } from '@/lib/utils/units';
 import { FileUploadButton } from '@/components/chat';
-import TrainerProfileCard from '@/components/trainer/TrainerProfileCard';
 import type { TrainerProfile } from '@/lib/types/user';
 
 export const dynamic = 'force-dynamic';
@@ -122,7 +121,6 @@ function TrainerContent() {
   const [importingMessageId, setImportingMessageId] = useState<string | null>(null);
   const [savingTemplateId, setSavingTemplateId] = useState<string | null>(null);
   const [profileMode, setProfileMode] = useState(false);
-  const [showProfileCard, setShowProfileCard] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -291,7 +289,6 @@ function TrainerContent() {
 
   function startProfileSetup() {
     setProfileMode(true);
-    setShowProfileCard(false);
     clearChat();
     setTimeout(() => {
       addMessage('assistant', "Let's get to know your training style! I'll ask you a few quick questions so I can give you better, more personalized advice.\n\nFirst off — how long have you been lifting? Would you consider yourself a beginner, intermediate, or advanced lifter?");
@@ -306,6 +303,12 @@ function TrainerContent() {
   async function handleSend(text?: string) {
     const messageText = text || input.trim();
     if (!messageText || isLoading || !context) return;
+
+    // Auto-detect profile update requests
+    if (!profileMode && /update.*profile|edit.*profile|change.*profile|redo.*profile|set up.*profile|setup.*profile/i.test(messageText)) {
+      startProfileSetup();
+      return;
+    }
 
     setInput('');
     addMessage('user', messageText);
@@ -511,15 +514,6 @@ function TrainerContent() {
 
   return (
     <div className="flex flex-col h-[calc(100dvh-64px)] relative">
-      {/* Profile Card Overlay */}
-      {showProfileCard && trainerProfile && (
-        <TrainerProfileCard
-          profile={trainerProfile}
-          onUpdate={startProfileSetup}
-          onClose={() => setShowProfileCard(false)}
-        />
-      )}
-
       {/* Header */}
       <div className="bg-surface px-5 pt-4 pb-3 border-b border-border">
         <div className="flex items-center justify-between">
@@ -532,37 +526,17 @@ function TrainerContent() {
               <p className="text-xs text-primary mt-0.5">Setting up your profile...</p>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            {messages.length > 0 && (
-              <button
-                onClick={() => {
-                  clearChat();
-                  setProfileMode(false);
-                }}
-                className="text-xs text-text-muted hover:text-text-secondary transition-colors"
-              >
-                Clear
-              </button>
-            )}
-            {/* Profile button in cream pill */}
+          {messages.length > 0 && (
             <button
               onClick={() => {
-                if (trainerProfile) {
-                  setShowProfileCard(!showProfileCard);
-                } else {
-                  startProfileSetup();
-                }
+                clearChat();
+                setProfileMode(false);
               }}
-              className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full bg-surface-light hover:bg-border/50 transition-colors"
-              title={trainerProfile ? 'View training profile' : 'Set up training profile'}
+              className="text-xs text-text-muted hover:text-text-secondary transition-colors"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={trainerProfile ? 'text-primary' : 'text-text-muted'}>
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-              <span className="text-[10px] font-medium text-text-muted">My Profile</span>
+              Clear
             </button>
-          </div>
+          )}
         </div>
       </div>
 
