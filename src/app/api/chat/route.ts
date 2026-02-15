@@ -26,7 +26,16 @@ When presenting import previews, be concise. Example:
 "I found 3 workouts from Jan 10-15. Here's what I parsed:
 - Bench Press: 3 sets (135-175 lbs)
 - Squat: 4 sets (185-225 lbs)
-Ready to import? Just say 'yes' or let me know if anything needs fixing."`;
+Ready to import? Just say 'yes' or let me know if anything needs fixing."
+
+TEMPLATE CAPABILITY:
+When the user asks you to create a workout template, program, split, or routine:
+1. Use the create_template tool with a descriptive name and list of exercises
+2. Choose exercises that match the user's equipment and experience level (from their profile if available)
+3. Use standard, full exercise names (e.g., "Barbell Bench Press" not "bench", "Barbell Squat" not "squats")
+4. Include 4-8 exercises per template with 3-5 sets each
+5. Consider the user's goals and preferences when selecting exercises
+6. If the user asks for a multi-day program (e.g., Push/Pull/Legs), create ONE template at a time and ask if they want the next one`;
 
 const PROFILE_SETUP_SYSTEM_PROMPT = `You are a knowledgeable, motivating personal trainer inside the "reps" fitness app. Your name is Trainer.
 
@@ -135,6 +144,33 @@ const PROFILE_TOOL: Tool = {
       additionalNotes: { type: 'string', description: 'Any other relevant info (injuries, schedule constraints, upcoming events)' },
     },
     required: ['experienceLevel', 'goals'],
+  },
+};
+
+const TEMPLATE_TOOL: Tool = {
+  name: 'create_template',
+  description: 'Create a workout template that the user can reuse. Use this when the user asks you to build a workout, program, split, routine, or template.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      name: {
+        type: 'string',
+        description: 'Template name (e.g., "Push Day", "Upper Body A", "Leg Day")',
+      },
+      exercises: {
+        type: 'array',
+        description: 'List of exercises in the template',
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Full exercise name (e.g., "Barbell Bench Press", "Dumbbell Lateral Raise")' },
+            defaultSets: { type: 'number', description: 'Number of working sets (typically 3-5)' },
+          },
+          required: ['name', 'defaultSets'],
+        },
+      },
+    },
+    required: ['name', 'exercises'],
   },
 };
 
@@ -311,22 +347,39 @@ export async function POST(request: Request) {
 
   const systemWithContext = `${SYSTEM_PROMPT}\n\nUser's workout data:\n${contextParts.join('\n\n')}`;
 
-  // Check if the latest message might be import-related
+  // Check if the latest message might be import-related or template-related
   const lastMessage = messages[messages.length - 1]?.content || '';
+  const allMessagesText = messages.map(m => m.content.toLowerCase()).join(' ');
   const mightBeImport =
     lastMessage.length > 100 || // Long messages might be pasted data
     /import|paste|upload|csv|json|log|data/i.test(lastMessage) ||
     /\d+\s*x\s*\d+|\d+\s*lbs?|\d+\s*kg/i.test(lastMessage) || // Patterns like "135x10" or "135 lbs"
     messages.some(m => m.content.toLowerCase().includes('[file:'));
 
-  // Use tool mode for potential imports, streaming for regular chat
-  if (mightBeImport) {
+  const mightBeTemplate =
+    /template|program|split|routine|workout plan/i.test(lastMessage) ||
+    /create.*workout|build.*workout|make.*workout|design.*workout/i.test(lastMessage) ||
+    /create.*routine|build.*routine|make.*routine/i.test(lastMessage) ||
+    /push.*pull.*leg|upper.*lower|ppl|full body/i.test(lastMessage) ||
+    // Check conversation context — user might be confirming a template suggestion
+    (allMessagesText.includes('template') && /yes|sure|go ahead|do it|sounds good|let.s do/i.test(lastMessage));
+
+  // Use tool mode for potential imports or templates, streaming for regular chat
+  if (mightBeImport || mightBeTemplate) {
+    // Build the tools array based on what's relevant
+    const tools: Tool[] = [];
+    if (mightBeImport) tools.push(IMPORT_TOOL);
+    if (mightBeTemplate) tools.push(TEMPLATE_TOOL);
+    // If both could apply, include both and let the model decide
+    if (mightBeImport && !mightBeTemplate) tools.push(TEMPLATE_TOOL);
+    if (mightBeTemplate && !mightBeImport) tools.push(IMPORT_TOOL);
+
     // Non-streaming with tool use
     const response = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
       system: systemWithContext,
-      tools: [IMPORT_TOOL],
+      tools: [IMPORT_TOOL, TEMPLATE_TOOL],
       messages: messages.map((m): MessageParam => ({ role: m.role, content: m.content })),
     });
 
@@ -335,12 +388,24 @@ export async function POST(request: Request) {
     const textBlock = response.content.find((block): block is TextBlock => block.type === 'text');
 
     if (toolUse && toolUse.name === 'import_workouts') {
-      // Return structured response with tool use data
+      // Return structured response with import tool data
       return new Response(
         JSON.stringify({
           type: 'import',
           text: textBlock?.text || '',
           importData: toolUse.input,
+        }),
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (toolUse && toolUse.name === 'create_template') {
+      // Return structured response with template tool data
+      return new Response(
+        JSON.stringify({
+          type: 'template',
+          text: textBlock?.text || 'Here\'s the template I\'ve put together for you!',
+          templateData: toolUse.input,
         }),
         { headers: { 'Content-Type': 'application/json' } }
       );

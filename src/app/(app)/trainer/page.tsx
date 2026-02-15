@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { useChatStore, type ImportData } from '@/stores/chatStore';
+import { useChatStore, type ImportData, type TemplateData } from '@/stores/chatStore';
 import { useTrainerProfileStore } from '@/stores/trainerProfileStore';
 import { toDisplayWeight } from '@/lib/utils/units';
 import { FileUploadButton } from '@/components/chat';
@@ -14,9 +14,9 @@ import type { TrainerProfile } from '@/lib/types/user';
 export const dynamic = 'force-dynamic';
 
 const DEFAULT_SUGGESTIONS = [
+  'Create a workout template',
   'Suggest a workout for today',
   'Analyze my progress',
-  'Help me break a plateau',
   'Import workout data',
 ];
 
@@ -90,6 +90,15 @@ interface ProfileApiResponse {
   };
 }
 
+interface TemplateApiResponse {
+  type: 'template';
+  text: string;
+  templateData: {
+    name: string;
+    exercises: { name: string; defaultSets: number }[];
+  };
+}
+
 export default function TrainerPage() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-dvh text-text-muted">Loading...</div>}>
@@ -105,12 +114,13 @@ function TrainerContent() {
 
   const supabase = createClient();
   const unitSystem = useSettingsStore((s) => s.unitSystem);
-  const { messages, addMessage, updateMessage, updateImportStatus, clearChat } = useChatStore();
+  const { messages, addMessage, updateMessage, updateImportStatus, updateTemplateStatus, clearChat } = useChatStore();
   const { profile: trainerProfile, setProfile } = useTrainerProfileStore();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [context, setContext] = useState<WorkoutContext | null>(null);
   const [importingMessageId, setImportingMessageId] = useState<string | null>(null);
+  const [savingTemplateId, setSavingTemplateId] = useState<string | null>(null);
   const [profileMode, setProfileMode] = useState(false);
   const [showProfileCard, setShowProfileCard] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -381,6 +391,15 @@ function TrainerContent() {
           }
 
           updateMessage(assistantId, profileResponse.text);
+        } else if (data.type === 'template') {
+          // Template response
+          const templateResponse = data as TemplateApiResponse;
+          const templateData: TemplateData = {
+            name: templateResponse.templateData.name,
+            exercises: templateResponse.templateData.exercises,
+            status: 'pending',
+          };
+          updateMessage(assistantId, templateResponse.text, undefined, templateData);
         } else {
           // Import response
           const importData: ImportData = {
@@ -448,6 +467,41 @@ function TrainerContent() {
   function handleCancelImport(messageId: string) {
     updateImportStatus(messageId, 'cancelled');
     addMessage('assistant', 'Import cancelled. Let me know if you want to try again with different data.');
+  }
+
+  async function handleConfirmTemplate(messageId: string, templateData: TemplateData) {
+    setSavingTemplateId(messageId);
+    try {
+      const response = await fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: templateData.name,
+          exercises: templateData.exercises,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save template');
+      }
+
+      const result = await response.json();
+      updateTemplateStatus(messageId, 'saved');
+      const unmatchedMsg = result.unmatched && result.unmatched.length > 0
+        ? ` (${result.unmatched.length} exercise${result.unmatched.length !== 1 ? 's' : ''} couldn't be matched: ${result.unmatched.join(', ')})`
+        : '';
+      addMessage('assistant', `Saved "${result.name}" with ${result.exerciseCount} exercises! You can find it in your Saved Templates on the home screen.${unmatchedMsg}`);
+    } catch {
+      updateTemplateStatus(messageId, 'pending');
+      addMessage('assistant', 'Sorry, I couldn\'t save that template. Please try again.');
+    } finally {
+      setSavingTemplateId(null);
+    }
+  }
+
+  function handleCancelTemplate(messageId: string) {
+    updateTemplateStatus(messageId, 'cancelled');
+    addMessage('assistant', 'No problem! Let me know if you want me to create a different template.');
   }
 
   const hasUserMessage = messages.some((m) => m.role === 'user');
@@ -666,6 +720,74 @@ function TrainerContent() {
                 )}
 
                 {msg.importData && msg.importData.status === 'cancelled' && (
+                  <div className="mt-2 ml-0">
+                    <span className="inline-flex items-center gap-1 text-xs text-text-muted bg-surface px-2 py-1 rounded-full">
+                      Cancelled
+                    </span>
+                  </div>
+                )}
+
+                {/* Template Preview */}
+                {msg.templateData && msg.templateData.status === 'pending' && (
+                  <div className="mt-3 ml-0 max-w-[90%]">
+                    <div className="bg-surface-light border border-border rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="12" y1="18" x2="12" y2="12" />
+                          <line x1="9" y1="15" x2="15" y2="15" />
+                        </svg>
+                        <span className="text-sm font-medium">{msg.templateData.name}</span>
+                      </div>
+
+                      <div className="text-xs text-text-muted mb-3">
+                        {msg.templateData.exercises.length} exercise{msg.templateData.exercises.length !== 1 ? 's' : ''}
+                      </div>
+
+                      <div className="space-y-1.5 mb-4">
+                        {msg.templateData.exercises.map((exercise, i) => (
+                          <div key={i} className="text-xs bg-surface rounded-lg px-3 py-2 flex items-center justify-between">
+                            <span className="font-medium text-text">{exercise.name}</span>
+                            <span className="text-text-muted">{exercise.defaultSets} sets</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleConfirmTemplate(msg.id, msg.templateData!)}
+                          disabled={savingTemplateId === msg.id}
+                          className="flex-1 bg-primary text-white text-xs font-medium py-2 rounded-lg hover:bg-primary-light disabled:opacity-50 transition-colors"
+                        >
+                          {savingTemplateId === msg.id ? 'Saving...' : 'Save Template'}
+                        </button>
+                        <button
+                          onClick={() => handleCancelTemplate(msg.id)}
+                          disabled={savingTemplateId === msg.id}
+                          className="flex-1 bg-surface text-text-secondary text-xs font-medium py-2 rounded-lg hover:bg-surface-light disabled:opacity-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Template Saved Status */}
+                {msg.templateData && msg.templateData.status === 'saved' && (
+                  <div className="mt-2 ml-0">
+                    <span className="inline-flex items-center gap-1 text-xs text-success bg-success/10 px-2 py-1 rounded-full">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      Template Saved
+                    </span>
+                  </div>
+                )}
+
+                {/* Template Cancelled Status */}
+                {msg.templateData && msg.templateData.status === 'cancelled' && (
                   <div className="mt-2 ml-0">
                     <span className="inline-flex items-center gap-1 text-xs text-text-muted bg-surface px-2 py-1 rounded-full">
                       Cancelled
