@@ -40,6 +40,7 @@ function WorkoutSummaryContent() {
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const [workout, setWorkout] = useState<WorkoutData | null>(null);
   const [saving, setSaving] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
   const [savedTemplateName, setSavedTemplateName] = useState<string | null>(null);
   const [trainingNotes, setTrainingNotes] = useState<string | null>(null);
   const [loadingNotes, setLoadingNotes] = useState(false);
@@ -262,6 +263,17 @@ function WorkoutSummaryContent() {
     router.push('/dashboard');
   }
 
+  async function handleDiscardWorkout() {
+    if (!workout) return;
+    if (!window.confirm('Discard this workout? It will be permanently deleted.')) return;
+
+    setDiscarding(true);
+    // Delete sets first (foreign key), then the workout
+    await supabase.from('sets').delete().eq('workout_id', workout.id);
+    await supabase.from('workouts').delete().eq('id', workout.id);
+    router.push('/dashboard');
+  }
+
   if (!workout) {
     return <div className="flex items-center justify-center min-h-dvh text-text-muted">Loading...</div>;
   }
@@ -383,6 +395,14 @@ function WorkoutSummaryContent() {
       <Button variant="primary" fullWidth onClick={() => router.push('/dashboard')}>
         Done
       </Button>
+
+      <button
+        onClick={handleDiscardWorkout}
+        disabled={discarding}
+        className="w-full mt-4 mb-2 text-xs text-text-muted hover:text-error transition-colors disabled:opacity-50"
+      >
+        {discarding ? 'Discarding...' : 'Discard Workout'}
+      </button>
     </div>
   );
 }
