@@ -29,10 +29,12 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="px-5 pt-4 pb-4">
-      <h1 className="text-xl font-bold mb-6">Settings</h1>
+    <div className="pb-24">
+      <div className="bg-surface px-5 pt-4 pb-3 border-b border-border">
+        <h1 className="text-xl font-bold">Settings</h1>
+      </div>
 
-      <div className="space-y-4">
+      <div className="px-5 pt-4 space-y-4">
         <Card>
           <div className="flex items-center justify-between">
             <div>
@@ -118,7 +120,7 @@ export default function SettingsPage() {
         </Card>
       </div>
 
-      <div className="mt-10">
+      <div className="px-5 mt-10">
         <Button variant="outline" fullWidth onClick={handleSignOut}>
           Sign Out
         </Button>
