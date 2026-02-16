@@ -109,7 +109,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             {/* App icon */}
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <span className="text-[11px] font-black text-white tracking-tight leading-none">reps</span>
+              <span className="text-[22px] font-black text-white leading-none font-[family-name:var(--font-outfit)]">r</span>
             </div>
             {/* Calendar button in cream pill */}
             <button

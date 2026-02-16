@@ -87,7 +87,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             )}
           </div>
         ) : (
-          <p className="text-6xl font-black text-primary mb-8">reps</p>
+          <p className="text-6xl font-black text-primary mb-8 font-[family-name:var(--font-outfit)]">reps</p>
         )}
 
         <h1 className="text-2xl font-bold text-text mb-3">{slide.title}</h1>

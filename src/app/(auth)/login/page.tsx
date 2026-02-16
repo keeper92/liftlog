@@ -103,7 +103,7 @@ export default function LoginPage() {
   return (
     <div className="p-8">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-black text-text tracking-tight">reps</h1>
+        <h1 className="text-3xl font-black text-text tracking-tight font-[family-name:var(--font-outfit)]">reps</h1>
         <p className="mt-2 text-text-secondary">Sign in to your account</p>
       </div>
 
