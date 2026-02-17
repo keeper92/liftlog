@@ -291,7 +291,7 @@ function TrainerContent() {
     setProfileMode(true);
     clearChat();
     setTimeout(() => {
-      addMessage('assistant', "Let's get to know your training style! I'll ask you a few quick questions so I can give you better, more personalized advice.\n\nFirst off — how long have you been lifting? Would you consider yourself a beginner, intermediate, or advanced lifter?");
+      addMessage('assistant', "Let's get to know your training style so I can personalize things for you! How would you describe your experience level?\nsuggestions:Beginner|Intermediate|Advanced");
     }, 0);
     inputRef.current?.focus();
   }
@@ -512,6 +512,29 @@ function TrainerContent() {
   const showDefaultSuggestions = messages.length === 0 && !profileMode;
   const suggestions = exerciseSuggestions || DEFAULT_SUGGESTIONS;
 
+  // Parse suggestions from the last assistant message (format: "suggestions:Option A|Option B|Option C")
+  function parseSuggestions(content: string): { text: string; suggestions: string[] } {
+    const lines = content.split('\n');
+    const lastLine = lines[lines.length - 1]?.trim() || '';
+    if (lastLine.startsWith('suggestions:')) {
+      const suggestionsStr = lastLine.slice('suggestions:'.length);
+      const parsed = suggestionsStr.split('|').map((s) => s.trim()).filter(Boolean);
+      if (parsed.length > 0) {
+        return {
+          text: lines.slice(0, -1).join('\n').trimEnd(),
+          suggestions: parsed,
+        };
+      }
+    }
+    return { text: content, suggestions: [] };
+  }
+
+  // Get inline suggestions from the last assistant message (only if it's the most recent and not loading)
+  const lastMessage = messages[messages.length - 1];
+  const lastMessageSuggestions = !isLoading && lastMessage?.role === 'assistant' && lastMessage.content
+    ? parseSuggestions(lastMessage.content).suggestions
+    : [];
+
   return (
     <div className="flex flex-col h-[calc(100dvh-64px)] relative">
       {/* Header */}
@@ -602,7 +625,7 @@ function TrainerContent() {
                     {msg.content ? (
                       <span
                         dangerouslySetInnerHTML={{
-                          __html: msg.content
+                          __html: parseSuggestions(msg.content).text
                             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                             .replace(/\n/g, '<br />')
                         }}
@@ -773,6 +796,19 @@ function TrainerContent() {
             {showExerciseSuggestions && exerciseSuggestions && (
               <div className="flex flex-wrap gap-2 mt-4">
                 {exerciseSuggestions.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => handleSend(s)}
+                    className="px-4 py-2.5 rounded-full bg-surface text-text-secondary text-xs font-medium card-shadow hover:card-shadow-md transition-all"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+            {lastMessageSuggestions.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {lastMessageSuggestions.map((s) => (
                   <button
                     key={s}
                     onClick={() => handleSend(s)}
