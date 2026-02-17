@@ -92,6 +92,32 @@ body {
   animation: slide-up 0.3s ease-out forwards;
 }
 
+@keyframes pr-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pr-toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+}
+
+.animate-pr-toast {
+  animation: pr-toast-in 0.3s ease-out forwards, pr-toast-out 0.3s ease-in 1.7s forwards;
+}
+
 /* Autofill styles */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
