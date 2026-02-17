@@ -54,70 +54,250 @@ export async function POST() {
 }
 
 async function seedDemoData(supabase: SupabaseClient, userId: string) {
-  // Get some exercise IDs
+  // All exercises used across Push/Pull/Legs workouts
+  const exerciseNames = [
+    // Push
+    'Barbell Bench Press - Medium Grip',
+    'Incline Dumbbell Press',
+    'Standing Military Press',
+    'Side Lateral Raise',
+    'Triceps Pushdown',
+    'EZ-Bar Skullcrusher',
+    'Dumbbell Flyes',
+    'Cable Crossover',
+    'Dips - Triceps Version',
+    // Pull
+    'Barbell Deadlift',
+    'Bent Over Barbell Row',
+    'Pullups',
+    'Seated Cable Rows',
+    'Face Pull',
+    'Barbell Curl',
+    'Hammer Curls',
+    'Barbell Shrug',
+    // Legs
+    'Barbell Full Squat',
+    'Romanian Deadlift',
+    'Leg Press',
+    'Lying Leg Curls',
+    'Leg Extensions',
+    'Standing Calf Raises',
+    'Barbell Lunge',
+    'Barbell Hip Thrust',
+  ];
+
   const { data: exercises } = await supabase
     .from('exercises')
     .select('id, name')
-    .in('name', [
-      'Barbell Bench Press',
-      'Barbell Squat',
-      'Barbell Deadlift',
-      'Dumbbell Shoulder Press',
-      'Barbell Row',
-      'Pull Up',
-      'Dumbbell Bicep Curl',
-      'Tricep Dip',
-      'Leg Press',
-      'Dumbbell Lunges',
-    ]);
+    .in('name', exerciseNames);
 
   if (!exercises || exercises.length === 0) return;
 
   const exerciseMap = new Map(exercises.map((e) => [e.name, e.id]));
 
-  // Create workouts over the past 4 weeks
-  const workouts = [
-    { name: 'Upper Body', daysAgo: 1, exercises: ['Barbell Bench Press', 'Barbell Row', 'Dumbbell Shoulder Press', 'Dumbbell Bicep Curl'] },
-    { name: 'Lower Body', daysAgo: 3, exercises: ['Barbell Squat', 'Barbell Deadlift', 'Leg Press', 'Dumbbell Lunges'] },
-    { name: 'Upper Body', daysAgo: 5, exercises: ['Barbell Bench Press', 'Barbell Row', 'Dumbbell Shoulder Press', 'Tricep Dip'] },
-    { name: 'Lower Body', daysAgo: 7, exercises: ['Barbell Squat', 'Barbell Deadlift', 'Leg Press'] },
-    { name: 'Upper Body', daysAgo: 9, exercises: ['Barbell Bench Press', 'Pull Up', 'Dumbbell Shoulder Press', 'Dumbbell Bicep Curl'] },
-    { name: 'Lower Body', daysAgo: 11, exercises: ['Barbell Squat', 'Barbell Deadlift', 'Dumbbell Lunges'] },
-    { name: 'Upper Body', daysAgo: 14, exercises: ['Barbell Bench Press', 'Barbell Row', 'Dumbbell Shoulder Press'] },
-    { name: 'Lower Body', daysAgo: 17, exercises: ['Barbell Squat', 'Barbell Deadlift', 'Leg Press'] },
-    { name: 'Upper Body', daysAgo: 20, exercises: ['Barbell Bench Press', 'Pull Up', 'Dumbbell Bicep Curl'] },
-    { name: 'Lower Body', daysAgo: 23, exercises: ['Barbell Squat', 'Barbell Deadlift'] },
-    { name: 'Upper Body', daysAgo: 26, exercises: ['Barbell Bench Press', 'Barbell Row'] },
-    { name: 'Lower Body', daysAgo: 28, exercises: ['Barbell Squat', 'Leg Press'] },
-  ];
-
-  // Weights stored directly in lbs (standard plate configurations)
-  const weightProgression: Record<string, number[]> = {
-    'Barbell Bench Press': [125, 130, 135, 140],
-    'Barbell Squat': [175, 185, 195, 200],
-    'Barbell Deadlift': [215, 225, 235, 245],
-    'Dumbbell Shoulder Press': [25, 30, 30, 35],
-    'Barbell Row': [115, 125, 130, 135],
-    'Pull Up': [0, 0, 0, 0],
-    'Dumbbell Bicep Curl': [20, 25, 25, 30],
-    'Tricep Dip': [0, 0, 0, 0],
-    'Leg Press': [300, 350, 375, 400],
-    'Dumbbell Lunges': [25, 30, 35, 40],
+  // Workout templates for Push/Pull/Legs rotation
+  type WorkoutTemplate = {
+    name: string;
+    exercises: { name: string; sets: number; repRange: [number, number] }[];
   };
 
-  for (const workout of workouts) {
+  const pushDay: WorkoutTemplate = {
+    name: 'Push',
+    exercises: [
+      { name: 'Barbell Bench Press - Medium Grip', sets: 4, repRange: [6, 10] },
+      { name: 'Incline Dumbbell Press', sets: 3, repRange: [8, 12] },
+      { name: 'Standing Military Press', sets: 3, repRange: [6, 10] },
+      { name: 'Side Lateral Raise', sets: 3, repRange: [10, 15] },
+      { name: 'Triceps Pushdown', sets: 3, repRange: [10, 15] },
+      { name: 'EZ-Bar Skullcrusher', sets: 3, repRange: [8, 12] },
+    ],
+  };
+
+  const pullDay: WorkoutTemplate = {
+    name: 'Pull',
+    exercises: [
+      { name: 'Barbell Deadlift', sets: 3, repRange: [3, 6] },
+      { name: 'Bent Over Barbell Row', sets: 4, repRange: [6, 10] },
+      { name: 'Pullups', sets: 3, repRange: [5, 12] },
+      { name: 'Seated Cable Rows', sets: 3, repRange: [8, 12] },
+      { name: 'Face Pull', sets: 3, repRange: [12, 18] },
+      { name: 'Barbell Curl', sets: 3, repRange: [8, 12] },
+      { name: 'Hammer Curls', sets: 3, repRange: [8, 12] },
+    ],
+  };
+
+  const legsDay: WorkoutTemplate = {
+    name: 'Legs',
+    exercises: [
+      { name: 'Barbell Full Squat', sets: 4, repRange: [5, 8] },
+      { name: 'Romanian Deadlift', sets: 3, repRange: [8, 12] },
+      { name: 'Leg Press', sets: 3, repRange: [8, 12] },
+      { name: 'Lying Leg Curls', sets: 3, repRange: [10, 15] },
+      { name: 'Leg Extensions', sets: 3, repRange: [10, 15] },
+      { name: 'Standing Calf Raises', sets: 4, repRange: [12, 18] },
+    ],
+  };
+
+  // Alternate push/pull variants for variety
+  const pushDayB: WorkoutTemplate = {
+    name: 'Push',
+    exercises: [
+      { name: 'Standing Military Press', sets: 4, repRange: [5, 8] },
+      { name: 'Barbell Bench Press - Medium Grip', sets: 3, repRange: [8, 12] },
+      { name: 'Dumbbell Flyes', sets: 3, repRange: [10, 15] },
+      { name: 'Side Lateral Raise', sets: 3, repRange: [10, 15] },
+      { name: 'Cable Crossover', sets: 3, repRange: [10, 15] },
+      { name: 'Dips - Triceps Version', sets: 3, repRange: [6, 12] },
+    ],
+  };
+
+  const pullDayB: WorkoutTemplate = {
+    name: 'Pull',
+    exercises: [
+      { name: 'Bent Over Barbell Row', sets: 4, repRange: [5, 8] },
+      { name: 'Pullups', sets: 4, repRange: [5, 12] },
+      { name: 'Seated Cable Rows', sets: 3, repRange: [8, 12] },
+      { name: 'Face Pull', sets: 3, repRange: [12, 18] },
+      { name: 'Barbell Shrug', sets: 3, repRange: [8, 12] },
+      { name: 'Barbell Curl', sets: 3, repRange: [8, 12] },
+      { name: 'Hammer Curls', sets: 3, repRange: [8, 12] },
+    ],
+  };
+
+  const legsDayB: WorkoutTemplate = {
+    name: 'Legs',
+    exercises: [
+      { name: 'Barbell Full Squat', sets: 4, repRange: [5, 8] },
+      { name: 'Barbell Hip Thrust', sets: 3, repRange: [8, 12] },
+      { name: 'Barbell Lunge', sets: 3, repRange: [8, 12] },
+      { name: 'Lying Leg Curls', sets: 3, repRange: [10, 15] },
+      { name: 'Leg Extensions', sets: 3, repRange: [10, 15] },
+      { name: 'Standing Calf Raises', sets: 4, repRange: [12, 18] },
+    ],
+  };
+
+  // 6-week rotation: Push A, Pull A, Legs A, Push B, Pull B, Legs B (repeating)
+  const rotation: WorkoutTemplate[] = [
+    pushDay, pullDay, legsDay, pushDayB, pullDayB, legsDayB,
+  ];
+
+  // Starting weights (lbs) - realistic intermediate lifter
+  const startingWeights: Record<string, number> = {
+    'Barbell Bench Press - Medium Grip': 135,
+    'Incline Dumbbell Press': 45,
+    'Standing Military Press': 95,
+    'Side Lateral Raise': 15,
+    'Triceps Pushdown': 50,
+    'EZ-Bar Skullcrusher': 55,
+    'Dumbbell Flyes': 30,
+    'Cable Crossover': 25,
+    'Dips - Triceps Version': 0,
+    'Barbell Deadlift': 225,
+    'Bent Over Barbell Row': 135,
+    'Pullups': 0,
+    'Seated Cable Rows': 120,
+    'Face Pull': 40,
+    'Barbell Curl': 65,
+    'Hammer Curls': 30,
+    'Barbell Shrug': 155,
+    'Barbell Full Squat': 185,
+    'Romanian Deadlift': 155,
+    'Leg Press': 270,
+    'Lying Leg Curls': 80,
+    'Leg Extensions': 90,
+    'Standing Calf Raises': 135,
+    'Barbell Lunge': 95,
+    'Barbell Hip Thrust': 135,
+  };
+
+  // Weight gained over 6 months (lbs) - realistic progression
+  const weightGain6mo: Record<string, number> = {
+    'Barbell Bench Press - Medium Grip': 30,
+    'Incline Dumbbell Press': 15,
+    'Standing Military Press': 20,
+    'Side Lateral Raise': 5,
+    'Triceps Pushdown': 15,
+    'EZ-Bar Skullcrusher': 15,
+    'Dumbbell Flyes': 10,
+    'Cable Crossover': 10,
+    'Dips - Triceps Version': 0,
+    'Barbell Deadlift': 50,
+    'Bent Over Barbell Row': 25,
+    'Pullups': 0,
+    'Seated Cable Rows': 20,
+    'Face Pull': 10,
+    'Barbell Curl': 15,
+    'Hammer Curls': 10,
+    'Barbell Shrug': 30,
+    'Barbell Full Squat': 40,
+    'Romanian Deadlift': 30,
+    'Leg Press': 90,
+    'Lying Leg Curls': 15,
+    'Leg Extensions': 20,
+    'Standing Calf Raises': 25,
+    'Barbell Lunge': 20,
+    'Barbell Hip Thrust': 40,
+  };
+
+  // Seeded RNG for reproducible "random" variation
+  let rngState = 42;
+  function seededRandom(): number {
+    rngState = (rngState * 1664525 + 1013904223) & 0x7fffffff;
+    return rngState / 0x7fffffff;
+  }
+
+  // Generate 6 months of workouts, 3 per week
+  // Work backwards from today, placing workouts on Mon/Wed/Fri pattern
+  const totalWeeks = 26;
+  const totalDays = totalWeeks * 7;
+
+  interface PlannedWorkout {
+    daysAgo: number;
+    template: WorkoutTemplate;
+  }
+
+  const plannedWorkouts: PlannedWorkout[] = [];
+  let rotationIndex = 0;
+
+  for (let day = totalDays; day >= 0; day--) {
     const date = new Date();
-    date.setDate(date.getDate() - workout.daysAgo);
-    date.setHours(9 + Math.floor(Math.random() * 4), Math.floor(Math.random() * 60));
+    date.setDate(date.getDate() - day);
+    const dayOfWeek = date.getDay(); // 0=Sun, 1=Mon, ...
+
+    // Workout on Mon (1), Wed (3), Fri (5)
+    if (dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5) {
+      // ~10% chance of a missed workout for realism
+      if (seededRandom() < 0.1) {
+        rotationIndex++;
+        continue;
+      }
+
+      const template = rotation[rotationIndex % rotation.length];
+      rotationIndex++;
+      plannedWorkouts.push({ daysAgo: day, template });
+    }
+  }
+
+  // Insert workouts in batches for performance
+  for (const planned of plannedWorkouts) {
+    const { daysAgo, template } = planned;
+    const progress = 1 - daysAgo / totalDays; // 0 = oldest, 1 = newest
+
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo);
+    // Workout between 6-10am with some variation
+    const hour = 6 + Math.floor(seededRandom() * 5);
+    const minute = Math.floor(seededRandom() * 60);
+    date.setHours(hour, minute, 0, 0);
 
     const endTime = new Date(date);
-    endTime.setMinutes(endTime.getMinutes() + 45 + Math.floor(Math.random() * 30));
+    endTime.setMinutes(endTime.getMinutes() + 50 + Math.floor(seededRandom() * 30));
 
     const { data: workoutData } = await supabase
       .from('workouts')
       .insert({
         user_id: userId,
-        name: workout.name,
+        name: template.name,
         date: date.toISOString(),
         start_time: date.toISOString(),
         end_time: endTime.toISOString(),
@@ -127,25 +307,38 @@ async function seedDemoData(supabase: SupabaseClient, userId: string) {
 
     if (!workoutData) continue;
 
-    // Determine progression index based on how old the workout is (0 = oldest, 3 = newest)
-    const progressIndex = Math.min(3, Math.floor((28 - workout.daysAgo) / 7));
-
-    // Add sets for each exercise
     const sets = [];
-    for (const exerciseName of workout.exercises) {
-      const exerciseId = exerciseMap.get(exerciseName);
+    for (const ex of template.exercises) {
+      const exerciseId = exerciseMap.get(ex.name);
       if (!exerciseId) continue;
 
-      const weights = weightProgression[exerciseName] || [20, 20, 20, 20];
-      const weight = weights[progressIndex];
+      const start = startingWeights[ex.name] ?? 20;
+      const gain = weightGain6mo[ex.name] ?? 0;
+      // Non-linear progression (faster early, slower later)
+      const baseWeight = start + gain * (1 - Math.pow(1 - progress, 1.3));
+      // Round to nearest 5 for barbell/machine, nearest 2.5 for dumbbells/cables
+      const roundTo = ex.name.includes('Dumbbell') || ex.name.includes('Cable') ||
+        ex.name.includes('Lateral') || ex.name.includes('Hammer') ||
+        ex.name.includes('Face Pull')
+        ? 2.5
+        : 5;
+      const weight = Math.round(baseWeight / roundTo) * roundTo;
 
-      for (let setNum = 1; setNum <= 3; setNum++) {
+      for (let setNum = 1; setNum <= ex.sets; setNum++) {
+        // Last set(s) might have slightly fewer reps (fatigue)
+        const fatigueDropoff = setNum > 2 ? Math.floor(seededRandom() * 2) : 0;
+        const [minRep, maxRep] = ex.repRange;
+        const reps = Math.max(
+          minRep,
+          minRep + Math.floor(seededRandom() * (maxRep - minRep + 1)) - fatigueDropoff,
+        );
+
         sets.push({
           workout_id: workoutData.id,
           exercise_id: exerciseId,
           set_number: setNum,
           weight: weight > 0 ? weight : null,
-          reps: 8 + Math.floor(Math.random() * 5), // 8-12 reps
+          reps,
           is_warmup: false,
           is_completed: true,
         });
