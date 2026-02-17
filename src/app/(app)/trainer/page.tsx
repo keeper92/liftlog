@@ -7,7 +7,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { useChatStore, type ImportData, type TemplateData } from '@/stores/chatStore';
 import { useTrainerProfileStore } from '@/stores/trainerProfileStore';
 import { toDisplayWeight } from '@/lib/utils/units';
-import { FileUploadButton } from '@/components/chat';
+import { FileUploadButton, ChatSidebar } from '@/components/chat';
 import type { TrainerProfile } from '@/lib/types/user';
 
 export const dynamic = 'force-dynamic';
@@ -113,7 +113,8 @@ function TrainerContent() {
 
   const supabase = createClient();
   const unitSystem = useSettingsStore((s) => s.unitSystem);
-  const { messages, addMessage, updateMessage, updateImportStatus, updateTemplateStatus, clearChat } = useChatStore();
+  const { messages, addMessage, updateMessage, updateImportStatus, updateTemplateStatus, createConversation } = useChatStore();
+  const activeConversationId = useChatStore((s) => s.activeConversationId);
   const { profile: trainerProfile, setProfile } = useTrainerProfileStore();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -121,6 +122,7 @@ function TrainerContent() {
   const [importingMessageId, setImportingMessageId] = useState<string | null>(null);
   const [savingTemplateId, setSavingTemplateId] = useState<string | null>(null);
   const [profileMode, setProfileMode] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -134,12 +136,12 @@ function TrainerContent() {
   useEffect(() => {
     if (exerciseName && initializedExercise.current !== exerciseName) {
       initializedExercise.current = exerciseName;
-      clearChat();
+      createConversation();
       setTimeout(() => {
         addMessage('assistant', `Let's talk about **${exerciseName}**! I can help you with:\n\n• **Perfect form** — Tips to perform this exercise safely and effectively\n• **Weight & rep advice** — Personalized recommendations based on your history\n• **Similar exercises** — Alternatives that target the same muscles\n\nWhat would you like to know?`);
       }, 0);
     }
-  }, [exerciseName, clearChat, addMessage]);
+  }, [exerciseName, createConversation, addMessage]);
 
   useEffect(() => {
     async function loadContext() {
@@ -287,9 +289,15 @@ function TrainerContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Reset local state when switching conversations
+  useEffect(() => {
+    setProfileMode(false);
+    setInput('');
+  }, [activeConversationId]);
+
   function startProfileSetup() {
     setProfileMode(true);
-    clearChat();
+    createConversation();
     setTimeout(() => {
       addMessage('assistant', "Let's get to know your training style so I can personalize things for you! How would you describe your experience level?\nsuggestions:Beginner|Intermediate|Advanced");
     }, 0);
@@ -540,26 +548,27 @@ function TrainerContent() {
       {/* Header */}
       <div className="bg-surface px-5 pt-4 pb-3 border-b border-border">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">Trainer</h1>
-            {exerciseName && (
-              <p className="text-xs text-text-muted mt-0.5">Helping with: {exerciseName}</p>
-            )}
-            {profileMode && (
-              <p className="text-xs text-primary mt-0.5">Setting up your profile...</p>
-            )}
-          </div>
-          {messages.length > 0 && (
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => {
-                clearChat();
-                setProfileMode(false);
-              }}
-              className="text-xs text-text-muted hover:text-text-secondary transition-colors"
+              onClick={() => setSidebarOpen(true)}
+              className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-surface-light transition-colors"
             >
-              Clear
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
             </button>
-          )}
+            <div>
+              <h1 className="text-xl font-bold">Trainer</h1>
+              {exerciseName && (
+                <p className="text-xs text-text-muted mt-0.5">Helping with: {exerciseName}</p>
+              )}
+              {profileMode && (
+                <p className="text-xs text-primary mt-0.5">Setting up your profile...</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -860,6 +869,9 @@ function TrainerContent() {
           </button>
         </form>
       </div>
+
+      {/* Chat Sidebar */}
+      <ChatSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
     </div>
   );
 }
