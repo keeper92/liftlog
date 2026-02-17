@@ -33,7 +33,7 @@ export interface Conversation {
 }
 
 function generateTitle(firstUserMessage: string): string {
-  let text = firstUserMessage.replace(/^\[file:[^\]]*\]\s*/, '').trim();
+  const text = firstUserMessage.replace(/^\[file:[^\]]*\]\s*/, '').trim();
   if (text.length <= 50) return text;
   const truncated = text.slice(0, 50);
   const lastSpace = truncated.lastIndexOf(' ');

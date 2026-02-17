@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { formatRelativeDate, formatDuration } from '@/lib/utils/units';
 
@@ -35,7 +35,7 @@ interface HistoryOverlayProps {
 }
 
 export default function HistoryOverlay({ onClose, longestStreak, currentStreak, totalWorkouts }: HistoryOverlayProps) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [workouts, setWorkouts] = useState<HistoryWorkout[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -52,7 +52,7 @@ export default function HistoryOverlay({ onClose, longestStreak, currentStreak, 
       setLoading(false);
     }
     load();
-  }, []);
+  }, [supabase]);
 
   function groupByExercise(sets: WorkoutSet[]): GroupedExercise[] {
     const exerciseMap = new Map<string, { name: string; sets: { num: number; reps: number }[] }>();

@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { DEMO_TOUR_PENDING_KEY } from '@/lib/constants/onboarding';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import Modal from '@/components/ui/Modal';
+import DemoFeatureTour from '@/components/onboarding/DemoFeatureTour';
 
 import HistoryOverlay from '@/components/history/HistoryOverlay';
 import PRFeedOverlay from '@/components/pr/PRFeedOverlay';
@@ -31,12 +34,13 @@ interface ProgressSummary {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const { isActive, workoutId, startWorkout, addExerciseWithSets } = useActiveWorkoutStore();
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [stats, setStats] = useState<ProgressSummary | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showPRFeed, setShowPRFeed] = useState(false);
+  const [tourStage, setTourStage] = useState<'idle' | 'intro' | 'active'>('idle');
   const unreadCount = usePRStore((s) => s.unreadCount);
 
   useEffect(() => {
@@ -68,7 +72,25 @@ export default function DashboardPage() {
 
     }
     load();
+  }, [supabase]);
+
+  useEffect(() => {
+    const pendingTour = sessionStorage.getItem(DEMO_TOUR_PENDING_KEY);
+    if (pendingTour !== '1') return;
+    sessionStorage.removeItem(DEMO_TOUR_PENDING_KEY);
+    const frameId = window.requestAnimationFrame(() => {
+      setTourStage('intro');
+    });
+    return () => window.cancelAnimationFrame(frameId);
   }, []);
+
+  function closeTour() {
+    setTourStage('idle');
+  }
+
+  function startTour() {
+    setTourStage('active');
+  }
 
   function handleStartWorkout() {
     startWorkout();
@@ -97,6 +119,22 @@ export default function DashboardPage() {
 
   return (
     <>
+      <Modal
+        isOpen={tourStage === 'intro'}
+        onClose={closeTour}
+        title="Welcome to the demo"
+        actions={[
+          { label: 'Skip', variant: 'ghost', onClick: closeTour },
+          { label: 'Start Tour', onClick: startTour },
+        ]}
+      >
+        <p className="text-sm leading-relaxed">
+          This quick tour highlights the main features so you can explore the app in under a minute.
+        </p>
+      </Modal>
+
+      {tourStage === 'active' && <DemoFeatureTour onFinish={closeTour} />}
+
       {/* History Overlay */}
       {showHistory && stats && (
         <HistoryOverlay
@@ -118,6 +156,7 @@ export default function DashboardPage() {
           {/* PR Feed button */}
           <button
             onClick={() => setShowPRFeed(true)}
+            data-tour-anchor="pr-feed"
             className="relative h-10 px-3 flex items-center justify-center rounded-full bg-surface-light hover:bg-border/50 transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
@@ -132,6 +171,7 @@ export default function DashboardPage() {
           {/* Calendar button */}
           <button
             onClick={() => setShowHistory(true)}
+            data-tour-anchor="history"
             className="h-10 px-3 flex items-center justify-center rounded-full bg-surface-light hover:bg-border/50 transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
@@ -151,11 +191,21 @@ export default function DashboardPage() {
               {isActive ? 'You have a workout in progress.' : 'Start a quick workout or choose a template.'}
             </p>
             {isActive ? (
-              <Button variant="primary" fullWidth onClick={handleResumeWorkout}>
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={handleResumeWorkout}
+                data-tour-anchor="start-workout"
+              >
                 Resume Workout
               </Button>
             ) : (
-              <Button variant="primary" fullWidth onClick={handleStartWorkout}>
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={handleStartWorkout}
+                data-tour-anchor="start-workout"
+              >
                 Start Workout
               </Button>
             )}
@@ -163,7 +213,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Saved Templates */}
-        <div className="px-5 mt-6">
+        <div className="px-5 mt-6" data-tour-anchor="saved-templates">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-text">Saved Templates</h2>
             {templates.length > 0 && (

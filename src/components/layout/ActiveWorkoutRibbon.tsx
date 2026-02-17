@@ -2,41 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
-
-function formatDuration(totalSeconds: number): string {
-  const hrs = Math.floor(totalSeconds / 3600);
-  const mins = Math.floor((totalSeconds % 3600) / 60);
-  const secs = totalSeconds % 60;
-
-  if (hrs > 0) {
-    return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
 
 export default function ActiveWorkoutRibbon() {
   const pathname = usePathname();
-  const { isActive, workoutId, workoutName, startTime } = useActiveWorkoutStore();
-  const [elapsed, setElapsed] = useState(0);
-
-  // Tick the elapsed timer every second
-  useEffect(() => {
-    if (!isActive || !startTime) {
-      setElapsed(0);
-      return;
-    }
-
-    // Set initial value immediately
-    setElapsed(Math.floor((Date.now() - new Date(startTime).getTime()) / 1000));
-
-    const interval = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - new Date(startTime).getTime()) / 1000));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isActive, startTime]);
+  const { isActive, workoutId } = useActiveWorkoutStore();
 
   // Don't render on workout pages, home (has its own resume button), or when no active workout
   const isOnWorkoutPage = pathname.startsWith('/workout');

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { toDisplayWeight, weightUnit } from '@/lib/utils/units';
@@ -30,7 +30,7 @@ interface PersonalRecord {
 }
 
 export default function ProgressPage() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const [exercises, setExercises] = useState<ExerciseOption[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<string>('');
@@ -71,7 +71,7 @@ export default function ProgressPage() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [supabase]);
 
   // Load progress when exercise changes
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function ProgressPage() {
       else setProgressData([]);
     }
     loadProgress();
-  }, [selectedExercise]);
+  }, [selectedExercise, supabase]);
 
   if (loading) {
     return (
