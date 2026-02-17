@@ -23,6 +23,9 @@ import { NumberPadProvider, useNumberPad } from '@/components/workout/NumberPadC
 import SetInputCell from '@/components/workout/SetInputCell';
 import NumberPad from '@/components/workout/NumberPad';
 import ExercisePickerOverlay from '@/components/workout/ExercisePickerOverlay';
+import PRToast from '@/components/workout/PRToast';
+import { usePRStore } from '@/stores/prStore';
+import { detectPRs, type PRDetectionResult } from '@/lib/utils/prDetection';
 
 interface HistoryEntry {
   date: string;
@@ -61,6 +64,15 @@ export default function ActiveWorkoutPage() {
   const [exerciseDetails, setExerciseDetails] = useState<ExerciseDetails | null>(null);
   const [loadingTips, setLoadingTips] = useState(false);
   const [trainingGuideMenu, setTrainingGuideMenu] = useState<{ exerciseId: string; exerciseName: string } | null>(null);
+  const [toastQueue, setToastQueue] = useState<{ exerciseName: string; metric: 'weight' | 'reps'; previousValue: number; newValue: number }[]>([]);
+
+  const handlePRDetected = useCallback((exerciseName: string, pr: PRDetectionResult) => {
+    setToastQueue((prev) => [...prev, { exerciseName, metric: pr.metric, previousValue: pr.previousValue, newValue: pr.newValue }]);
+  }, []);
+
+  const dismissToast = useCallback(() => {
+    setToastQueue((prev) => prev.slice(1));
+  }, []);
 
   useEffect(() => {
     if (!store.isActive) {
@@ -129,6 +141,7 @@ export default function ActiveWorkoutPage() {
 
   const handleFinish = useCallback(async () => {
     setSaving(true);
+    usePRStore.getState().clearFiredNotifications();
     const result = store.finishWorkout();
     if (!result) { setSaving(false); return; }
 
@@ -178,6 +191,7 @@ export default function ActiveWorkoutPage() {
 
   const handleDiscard = useCallback(() => {
     if (window.confirm('Discard this workout? All progress will be lost.')) {
+      usePRStore.getState().clearFiredNotifications();
       store.discardWorkout();
       router.push('/dashboard');
     }
@@ -250,7 +264,7 @@ export default function ActiveWorkoutPage() {
   if (!store.isActive) return null;
 
   return (
-    <NumberPadProvider startRestTimer={startRestTimer}>
+    <NumberPadProvider startRestTimer={startRestTimer} onPRDetected={handlePRDetected}>
       <WorkoutContent
         store={store}
         unitSystem={unitSystem}
@@ -274,6 +288,9 @@ export default function ActiveWorkoutPage() {
         exerciseDetails={exerciseDetails}
         loadingTips={loadingTips}
         router={router}
+        toastQueue={toastQueue}
+        dismissToast={dismissToast}
+        onPRDetected={handlePRDetected}
       />
     </NumberPadProvider>
   );
@@ -302,6 +319,9 @@ function WorkoutContent({
   exerciseDetails,
   loadingTips,
   router,
+  toastQueue,
+  dismissToast,
+  onPRDetected,
 }: {
   store: ActiveWorkoutState;
   unitSystem: 'imperial' | 'metric';
@@ -325,6 +345,9 @@ function WorkoutContent({
   exerciseDetails: ExerciseDetails | null;
   loadingTips: boolean;
   router: ReturnType<typeof useRouter>;
+  toastQueue: { exerciseName: string; metric: 'weight' | 'reps'; previousValue: number; newValue: number }[];
+  dismissToast: () => void;
+  onPRDetected: (exerciseName: string, pr: PRDetectionResult) => void;
 }) {
   const { activeFocus, deactivate } = useNumberPad();
   const numberPadVisible = activeFocus !== null;
@@ -390,6 +413,19 @@ function WorkoutContent({
       onTouchEnd={() => { if (dragIndex !== null) handleDragEnd(); }}
       onTouchCancel={cancelDrag}
     >
+      {/* PR Toast */}
+      {toastQueue.length > 0 && (
+        <PRToast
+          key={`${toastQueue[0].exerciseName}-${toastQueue[0].metric}-${toastQueue[0].newValue}`}
+          exerciseName={toastQueue[0].exerciseName}
+          metric={toastQueue[0].metric}
+          previousValue={toastQueue[0].previousValue}
+          newValue={toastQueue[0].newValue}
+          unitSystem={unitSystem}
+          onDismiss={dismissToast}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-surface border-b border-border">
         <button onClick={handleDiscard} className="text-error text-sm font-medium min-h-[44px] px-2 flex items-center">
@@ -602,6 +638,25 @@ function WorkoutContent({
                         } else {
                           store.completeSet(exIdx, setIdx);
                           startRestTimer(ex.restTimerSeconds);
+                          // PR detection for manual checkmark
+                          const prevPerf = store.previousPerformance[ex.exerciseId] || [];
+                          const prs = detectPRs(s, ex, prevPerf);
+                          const prStoreState = usePRStore.getState();
+                          for (const pr of prs) {
+                            if (store.workoutId && !prStoreState.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
+                              prStoreState.markFired(store.workoutId, ex.exerciseId, pr.metric);
+                              prStoreState.addPR({
+                                exerciseId: ex.exerciseId,
+                                exerciseName: ex.exerciseName,
+                                metric: pr.metric,
+                                previousValue: pr.previousValue,
+                                newValue: pr.newValue,
+                                date: new Date().toISOString(),
+                                workoutId: store.workoutId,
+                              });
+                              onPRDetected(ex.exerciseName, pr);
+                            }
+                          }
                         }
                       }}
                       className={`w-10 h-10 rounded-full flex items-center justify-center ${

@@ -3,7 +3,9 @@
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { usePRStore } from '@/stores/prStore';
 import { toStorageWeight, toDisplayWeight } from '@/lib/utils/units';
+import { detectPRs, type PRDetectionResult } from '@/lib/utils/prDetection';
 
 interface NumberPadFocus {
   exerciseIndex: number;
@@ -33,9 +35,10 @@ export function useNumberPad() {
 interface NumberPadProviderProps {
   children: ReactNode;
   startRestTimer: (seconds: number) => void;
+  onPRDetected?: (exerciseName: string, pr: PRDetectionResult) => void;
 }
 
-export function NumberPadProvider({ children, startRestTimer }: NumberPadProviderProps) {
+export function NumberPadProvider({ children, startRestTimer, onPRDetected }: NumberPadProviderProps) {
   const store = useActiveWorkoutStore();
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const [activeFocus, setActiveFocus] = useState<NumberPadFocus | null>(null);
@@ -144,9 +147,32 @@ export function NumberPadProvider({ children, startRestTimer }: NumberPadProvide
       // Complete the set and start rest timer
       const ex = store.exercises[focus.exerciseIndex];
       if (ex) {
+        const setBeforeComplete = ex.sets[focus.setIndex];
         store.completeSet(focus.exerciseIndex, focus.setIndex);
         if (ex.exerciseCategory !== 'cardio') {
           startRestTimer(ex.restTimerSeconds);
+        }
+
+        // PR detection
+        if (setBeforeComplete && onPRDetected) {
+          const prev = store.previousPerformance[ex.exerciseId] || [];
+          const prs = detectPRs(setBeforeComplete, ex, prev);
+          const prStore = usePRStore.getState();
+          for (const pr of prs) {
+            if (store.workoutId && !prStore.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
+              prStore.markFired(store.workoutId, ex.exerciseId, pr.metric);
+              prStore.addPR({
+                exerciseId: ex.exerciseId,
+                exerciseName: ex.exerciseName,
+                metric: pr.metric,
+                previousValue: pr.previousValue,
+                newValue: pr.newValue,
+                date: new Date().toISOString(),
+                workoutId: store.workoutId,
+              });
+              onPRDetected(ex.exerciseName, pr);
+            }
+          }
         }
 
         // Auto-advance to next incomplete set in same exercise
@@ -182,7 +208,7 @@ export function NumberPadProvider({ children, startRestTimer }: NumberPadProvide
       setBuffer('');
       setActiveFocus(null);
     }
-  }, [flushBuffer, store, startRestTimer, unitSystem]);
+  }, [flushBuffer, store, startRestTimer, unitSystem, onPRDetected]);
 
   return (
     <NumberPadCtx.Provider

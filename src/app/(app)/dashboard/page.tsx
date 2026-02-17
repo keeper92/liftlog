@@ -8,6 +8,8 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 
 import HistoryOverlay from '@/components/history/HistoryOverlay';
+import PRFeedOverlay from '@/components/pr/PRFeedOverlay';
+import { usePRStore } from '@/stores/prStore';
 
 interface TemplateSummary {
   id: string;
@@ -34,6 +36,8 @@ export default function DashboardPage() {
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [stats, setStats] = useState<ProgressSummary | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [showPRFeed, setShowPRFeed] = useState(false);
+  const unreadCount = usePRStore((s) => s.unreadCount);
 
   useEffect(() => {
     async function load() {
@@ -103,10 +107,29 @@ export default function DashboardPage() {
         />
       )}
 
+      {/* PR Feed Overlay */}
+      {showPRFeed && (
+        <PRFeedOverlay onClose={() => setShowPRFeed(false)} />
+      )}
+
       <div className="pb-24">
         {/* Header */}
         <div className="bg-surface px-5 pt-4 pb-3 border-b border-border">
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-end gap-2">
+            {/* PR Feed button */}
+            <button
+              onClick={() => setShowPRFeed(true)}
+              className="relative h-10 px-3 flex items-center justify-center rounded-full bg-surface-light hover:bg-border/50 transition-colors"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
             {/* Calendar button in cream pill */}
             <button
               onClick={() => setShowHistory(true)}
