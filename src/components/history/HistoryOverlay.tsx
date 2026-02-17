@@ -108,8 +108,7 @@ export default function HistoryOverlay({ onClose, longestStreak, currentStreak, 
       {/* Header */}
       <div className="px-5 pt-8 pb-4 border-b border-border bg-surface flex items-center justify-between">
         <div>
-          <p className="text-sm font-black text-primary tracking-tight">reps</p>
-          <h1 className="text-2xl font-bold mt-1">History</h1>
+          <h1 className="text-2xl font-bold">History</h1>
         </div>
         <button
           onClick={onClose}
