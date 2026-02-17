@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { matchExercises, type ExerciseMatch } from '@/lib/utils/exerciseMatcher';
+import { matchExercises } from '@/lib/utils/exerciseMatcher';
 import { toStorageWeight } from '@/lib/utils/units';
 
 interface ImportSet {
@@ -84,7 +84,7 @@ async function handleImport(
   }
 
   // Match exercises if needed
-  let exerciseIdMap = new Map<string, string>();
+  const exerciseIdMap = new Map<string, string>();
   if (exerciseNames.size > 0) {
     const matches = await matchExercises(supabase, Array.from(exerciseNames));
     for (const match of matches) {

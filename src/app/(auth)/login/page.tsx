@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
+import { DEMO_TOUR_PENDING_KEY } from '@/lib/constants/onboarding';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
@@ -92,6 +93,7 @@ export default function LoginPage() {
         return;
       }
 
+      sessionStorage.setItem(DEMO_TOUR_PENDING_KEY, '1');
       router.push('/dashboard');
     } catch {
       setGeneralError('An unexpected error occurred. Please try again.');

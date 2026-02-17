@@ -36,6 +36,18 @@ const EQUIPMENT_OPTIONS = [
 
 type Step = 'closed' | 'body_parts' | 'equipment' | 'preview';
 
+function getRandomIndex(length: number): number {
+  if (length <= 1) return 0;
+
+  const randomValues = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(randomValues);
+  return randomValues[0] % length;
+}
+
+function pickRandomItem<T>(items: T[]): T {
+  return items[getRandomIndex(items.length)];
+}
+
 export default function WorkoutBuilder() {
   const router = useRouter();
   const supabase = createClient();
@@ -135,7 +147,7 @@ export default function WorkoutBuilder() {
       );
 
       if (candidates.length > 0) {
-        const picked = candidates[Math.floor(Math.random() * candidates.length)];
+        const picked = pickRandomItem(candidates);
         result.push(picked);
         usedIds.add(picked.id);
         picked.primary_muscles?.forEach((m) => {
@@ -200,7 +212,7 @@ export default function WorkoutBuilder() {
       const candidates = data.filter((ex) => !usedIds.has(ex.id));
 
       if (candidates.length > 0) {
-        const replacement = candidates[Math.floor(Math.random() * candidates.length)];
+        const replacement = pickRandomItem(candidates);
         const newExercises = [...exercises];
         newExercises[index] = {
           id: replacement.id,

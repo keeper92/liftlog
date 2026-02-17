@@ -7,7 +7,6 @@ import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import { PRELOADED_TEMPLATES } from '@/lib/constants/preloadedTemplates';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
-import Button from '@/components/ui/Button';
 
 interface ResolvedExercise {
   id: string;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { ExerciseRow } from '@/lib/types/exercise';
 
@@ -20,7 +20,7 @@ interface UseExerciseSearchReturn {
 }
 
 export function useExerciseSearch(): UseExerciseSearchReturn {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [exercises, setExercises] = useState<ExerciseRow[]>([]);
   const [search, setSearch] = useState('');
@@ -59,7 +59,7 @@ export function useExerciseSearch(): UseExerciseSearchReturn {
       }
     }
     loadRecentlyUsed();
-  }, []);
+  }, [supabase]);
 
   // Fetch exercises based on current filters (debounced 300ms)
   useEffect(() => {
@@ -113,7 +113,7 @@ export function useExerciseSearch(): UseExerciseSearchReturn {
 
     const debounce = setTimeout(load, 300);
     return () => clearTimeout(debounce);
-  }, [search, selectedMuscle, showCardio, showRecentlyUsed, recentlyUsedIds]);
+  }, [search, selectedMuscle, showCardio, showRecentlyUsed, recentlyUsedIds, supabase]);
 
   return {
     exercises,

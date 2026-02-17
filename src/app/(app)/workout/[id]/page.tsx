@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useActiveWorkoutStore, type ActiveWorkoutState } from '@/stores/activeWorkoutStore';
@@ -86,7 +86,7 @@ function WarmupToggle({ isWarmup, setNumber, onToggle }: { isWarmup: boolean; se
 
 export default function ActiveWorkoutPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const store = useActiveWorkoutStore();
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const [elapsed, setElapsed] = useState(0);
@@ -101,6 +101,9 @@ export default function ActiveWorkoutPage() {
   const [loadingTips, setLoadingTips] = useState(false);
   const [trainingGuideMenu, setTrainingGuideMenu] = useState<{ exerciseId: string; exerciseName: string } | null>(null);
   const [toastQueue, setToastQueue] = useState<{ exerciseName: string; metric: 'weight' | 'reps'; previousValue: number; newValue: number }[]>([]);
+  const exercises = store.exercises;
+  const previousPerformance = store.previousPerformance;
+  const setPreviousPerformance = store.setPreviousPerformance;
 
   const handlePRDetected = useCallback((exerciseName: string, pr: PRDetectionResult) => {
     setToastQueue((prev) => [...prev, { exerciseName, metric: pr.metric, previousValue: pr.previousValue, newValue: pr.newValue }]);
@@ -121,20 +124,28 @@ export default function ActiveWorkoutPage() {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [store.isActive, store.startTime]);
+  }, [store.isActive, store.startTime, router]);
 
   // Rest timer countdown
   useEffect(() => {
-    if (restTimer.isActive && restTimer.secondsRemaining > 0) {
-      restTimerRef.current = setTimeout(() => {
-        setRestTimer((prev) => ({
+    if (!restTimer.isActive || restTimer.secondsRemaining <= 0) return;
+
+    restTimerRef.current = setTimeout(() => {
+      setRestTimer((prev) => {
+        if (!prev.isActive) return prev;
+
+        const nextSeconds = prev.secondsRemaining - 1;
+        if (nextSeconds <= 0) {
+          return { isActive: false, secondsRemaining: 0, totalSeconds: 0 };
+        }
+
+        return {
           ...prev,
-          secondsRemaining: prev.secondsRemaining - 1,
-        }));
-      }, 1000);
-    } else if (restTimer.isActive && restTimer.secondsRemaining === 0) {
-      setRestTimer({ isActive: false, secondsRemaining: 0, totalSeconds: 0 });
-    }
+          secondsRemaining: nextSeconds,
+        };
+      });
+    }, 1000);
+
     return () => {
       if (restTimerRef.current) clearTimeout(restTimerRef.current);
     };
@@ -154,8 +165,8 @@ export default function ActiveWorkoutPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      for (const ex of store.exercises) {
-        if (store.previousPerformance[ex.exerciseId]) continue;
+      for (const ex of exercises) {
+        if (previousPerformance[ex.exerciseId]) continue;
         const { data } = await supabase
           .from('sets')
           .select('weight, reps, set_number, workouts!inner(user_id, date)')
@@ -165,15 +176,15 @@ export default function ActiveWorkoutPage() {
           .order('set_number')
           .limit(10);
         if (data && data.length > 0) {
-          store.setPreviousPerformance(
+          setPreviousPerformance(
             ex.exerciseId,
             data.map((s) => ({ weight: s.weight || 0, reps: s.reps || 0 })),
           );
         }
       }
     }
-    if (store.exercises.length > 0) loadPrevious();
-  }, [store.exercises.length]);
+    if (exercises.length > 0) loadPrevious();
+  }, [exercises, previousPerformance, setPreviousPerformance, supabase]);
 
   const handleFinish = useCallback(async () => {
     setSaving(true);

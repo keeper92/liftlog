@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -111,7 +111,7 @@ function TrainerContent() {
   const exerciseId = searchParams.get('exerciseId');
   const exerciseName = searchParams.get('exerciseName');
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const { messages, addMessage, updateMessage, updateImportStatus, updateTemplateStatus, createConversation } = useChatStore();
   const activeConversationId = useChatStore((s) => s.activeConversationId);
@@ -283,7 +283,7 @@ function TrainerContent() {
       setContext(ctx);
     }
     loadContext();
-  }, [unitSystem, exerciseId, exerciseName, trainerProfile]);
+  }, [unitSystem, exerciseId, exerciseName, trainerProfile, supabase]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

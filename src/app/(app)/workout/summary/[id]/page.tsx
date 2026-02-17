@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -36,7 +36,7 @@ function WorkoutSummaryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const templateId = searchParams.get('templateId');
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const [workout, setWorkout] = useState<WorkoutData | null>(null);
   const [saving, setSaving] = useState(false);
@@ -55,7 +55,7 @@ function WorkoutSummaryContent() {
       if (data) setWorkout(data as unknown as WorkoutData);
     }
     load();
-  }, [params.id]);
+  }, [params.id, supabase]);
 
   // Generate AI training notes
   useEffect(() => {
@@ -179,7 +179,7 @@ function WorkoutSummaryContent() {
     }
 
     generateNotes();
-  }, [workout, unitSystem]);
+  }, [workout, unitSystem, supabase]);
 
   async function handleSaveTemplate() {
     if (!workout) return;
