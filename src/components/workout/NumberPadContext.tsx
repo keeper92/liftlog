@@ -149,7 +149,7 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
       if (ex) {
         const setBeforeComplete = ex.sets[focus.setIndex];
         store.completeSet(focus.exerciseIndex, focus.setIndex);
-        if (ex.exerciseCategory !== 'cardio') {
+        if (ex.exerciseCategory !== 'cardio' && !setBeforeComplete?.isWarmup) {
           startRestTimer(ex.restTimerSeconds);
         }
 
