@@ -54,8 +54,7 @@ export default function PRFeedOverlay({ onClose }: PRFeedOverlayProps) {
       {/* Header */}
       <div className="px-5 pt-8 pb-4 border-b border-border bg-surface flex items-center justify-between">
         <div>
-          <p className="text-sm font-black text-primary tracking-tight">reps</p>
-          <h1 className="text-2xl font-bold mt-1">Personal Records</h1>
+          <h1 className="text-2xl font-bold">PR Feed</h1>
         </div>
         <button
           onClick={onClose}
