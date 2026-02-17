@@ -103,11 +103,6 @@ export default function ProgressPage() {
 
   return (
     <div className="pb-24">
-      {/* Header */}
-      <div className="bg-surface px-5 pt-4 pb-3 border-b border-border">
-        <h1 className="text-xl font-bold">Progress</h1>
-      </div>
-
       <div className="px-5 pt-4">
       {exercises.length === 0 ? (
         <div className="text-center py-12">

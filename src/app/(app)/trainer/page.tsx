@@ -545,30 +545,25 @@ function TrainerContent() {
 
   return (
     <div className="flex flex-col h-[calc(100dvh-64px)] relative">
-      {/* Header */}
-      <div className="bg-surface px-5 pt-4 pb-3 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-surface-light transition-colors"
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text">
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            </button>
-            <div>
-              <h1 className="text-xl font-bold">Trainer</h1>
-              {exerciseName && (
-                <p className="text-xs text-text-muted mt-0.5">Helping with: {exerciseName}</p>
-              )}
-              {profileMode && (
-                <p className="text-xs text-primary mt-0.5">Setting up your profile...</p>
-              )}
-            </div>
-          </div>
+      {/* Header icons */}
+      <div className="px-5 pt-4 pb-1 flex items-center justify-between">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-surface-light transition-colors"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+        <div className="text-right">
+          {exerciseName && (
+            <p className="text-xs text-text-muted">Helping with: {exerciseName}</p>
+          )}
+          {profileMode && (
+            <p className="text-xs text-primary">Setting up your profile...</p>
+          )}
         </div>
       </div>
 

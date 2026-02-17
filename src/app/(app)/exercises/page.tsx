@@ -179,16 +179,15 @@ function ExercisesContent() {
   return (
     <div className="flex flex-col min-h-dvh">
       <div className="px-4 pt-4 pb-2">
-        <div className="flex items-center gap-3 mb-4">
-          {isSelecting && (
+        {isSelecting && (
+          <div className="mb-4">
             <button onClick={() => router.back()} className="text-text-secondary min-h-[44px] flex items-center">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
-          )}
-          <h1 className="text-2xl font-bold">{isSelecting ? 'Add Exercise' : 'Exercises'}</h1>
-        </div>
+          </div>
+        )}
 
         {/* Search */}
         <div className="relative mb-3">

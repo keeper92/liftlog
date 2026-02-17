@@ -128,35 +128,26 @@ export default function HistoryPage() {
 
   return (
     <div className="pb-24">
-      {/* Header */}
-      <div className="bg-surface px-5 pt-8 pb-4 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-black text-primary tracking-tight">reps</p>
-            <h1 className="text-2xl font-bold mt-1">History</h1>
-          </div>
-          <div className="flex bg-surface-light rounded-full p-1">
-            <button
-              onClick={() => setView('list')}
-              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-colors ${
-                view === 'list' ? 'bg-surface text-text card-shadow' : 'text-text-muted'
-              }`}
-            >
-              List
-            </button>
-            <button
-              onClick={() => setView('calendar')}
-              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-colors ${
-                view === 'calendar' ? 'bg-surface text-text card-shadow' : 'text-text-muted'
-              }`}
-            >
-              Calendar
-            </button>
-          </div>
-        </div>
-      </div>
-
+      {/* View toggle */}
       <div className="px-5 pt-4">
+        <div className="flex bg-surface-light rounded-full p-1 mb-4">
+          <button
+            onClick={() => setView('list')}
+            className={`flex-1 px-4 py-1.5 text-xs font-medium rounded-full transition-colors ${
+              view === 'list' ? 'bg-surface text-text card-shadow' : 'text-text-muted'
+            }`}
+          >
+            List
+          </button>
+          <button
+            onClick={() => setView('calendar')}
+            className={`flex-1 px-4 py-1.5 text-xs font-medium rounded-full transition-colors ${
+              view === 'calendar' ? 'bg-surface text-text card-shadow' : 'text-text-muted'
+            }`}
+          >
+            Calendar
+          </button>
+        </div>
 
       {loading ? (
         <p className="text-text-muted text-sm text-center py-8">Loading...</p>

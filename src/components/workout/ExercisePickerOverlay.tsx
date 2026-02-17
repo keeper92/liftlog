@@ -183,9 +183,8 @@ function PickerContent({
 
   return (
     <div className="fixed inset-0 z-[100] bg-background flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <h1 className="text-lg font-bold">Add Exercise</h1>
+      {/* Close button */}
+      <div className="px-4 pt-3 flex justify-end">
         <button
           onClick={onClose}
           className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-light transition-colors"

@@ -105,11 +105,8 @@ export default function HistoryOverlay({ onClose, longestStreak, currentStreak, 
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
-      {/* Header */}
-      <div className="px-5 pt-8 pb-4 border-b border-border bg-surface flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">History</h1>
-        </div>
+      {/* Close button */}
+      <div className="px-5 pt-4 flex justify-end">
         <button
           onClick={onClose}
           className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-light transition-colors"
