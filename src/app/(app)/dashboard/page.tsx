@@ -106,9 +106,7 @@ export default function DashboardPage() {
       <div className="pb-24">
         {/* Header */}
         <div className="bg-surface px-5 pt-4 pb-3 border-b border-border">
-          <div className="flex items-center justify-between">
-            {/* App icon */}
-            <img src="/icons/icon-192.png" alt="reps" className="w-10 h-10 rounded-xl" />
+          <div className="flex items-center justify-end">
             {/* Calendar button in cream pill */}
             <button
               onClick={() => setShowHistory(true)}
