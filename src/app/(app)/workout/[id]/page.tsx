@@ -48,6 +48,42 @@ interface RestTimerState {
   totalSeconds: number;
 }
 
+function WarmupToggle({ isWarmup, setNumber, onToggle }: { isWarmup: boolean; setNumber: number; onToggle: () => void }) {
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didLongPress = useRef(false);
+
+  function startPress() {
+    didLongPress.current = false;
+    pressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      onToggle();
+      if (navigator.vibrate) navigator.vibrate(40);
+    }, 500);
+  }
+
+  function cancelPress() {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  }
+
+  return (
+    <button
+      className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium select-none touch-none ${
+        isWarmup ? 'text-warning bg-warning/10' : 'text-text-secondary'
+      }`}
+      onPointerDown={startPress}
+      onPointerUp={cancelPress}
+      onPointerLeave={cancelPress}
+      onPointerCancel={cancelPress}
+      title="Hold to toggle warm-up set"
+    >
+      {isWarmup ? 'W' : setNumber}
+    </button>
+  );
+}
+
 export default function ActiveWorkoutPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -607,9 +643,11 @@ function WorkoutContent({
                       s.isCompleted ? 'opacity-60' : ''
                     }`}
                   >
-                    <span className={`text-center text-sm font-medium ${s.isWarmup ? 'text-warning' : 'text-text-secondary'}`}>
-                      {s.isWarmup ? 'W' : s.setNumber}
-                    </span>
+                    <WarmupToggle
+                      isWarmup={s.isWarmup}
+                      setNumber={s.setNumber}
+                      onToggle={() => store.updateSet(exIdx, setIdx, { isWarmup: !s.isWarmup })}
+                    />
                     <span className="text-center text-sm text-text-muted">
                       {prev[setIdx] ? `${toDisplayWeight(prev[setIdx].weight, unitSystem)}×${prev[setIdx].reps}` : '-'}
                     </span>
@@ -637,7 +675,7 @@ function WorkoutContent({
                           store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
                         } else {
                           store.completeSet(exIdx, setIdx);
-                          startRestTimer(ex.restTimerSeconds);
+                          if (!s.isWarmup) startRestTimer(ex.restTimerSeconds);
                           // PR detection for manual checkmark
                           const prevPerf = store.previousPerformance[ex.exerciseId] || [];
                           const prs = detectPRs(s, ex, prevPerf);
