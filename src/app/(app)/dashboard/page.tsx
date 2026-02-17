@@ -77,7 +77,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const pendingTour = sessionStorage.getItem(DEMO_TOUR_PENDING_KEY);
     if (pendingTour !== '1') return;
-    sessionStorage.removeItem(DEMO_TOUR_PENDING_KEY);
     const frameId = window.requestAnimationFrame(() => {
       setTourStage('intro');
     });
@@ -85,10 +84,12 @@ export default function DashboardPage() {
   }, []);
 
   function closeTour() {
+    sessionStorage.removeItem(DEMO_TOUR_PENDING_KEY);
     setTourStage('idle');
   }
 
   function startTour() {
+    sessionStorage.removeItem(DEMO_TOUR_PENDING_KEY);
     setTourStage('active');
   }
 
