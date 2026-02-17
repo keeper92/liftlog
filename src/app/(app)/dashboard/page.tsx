@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
-import WorkoutBuilder from './_components/WorkoutBuilder';
+
 import HistoryOverlay from '@/components/history/HistoryOverlay';
 
 interface TemplateSummary {
@@ -140,13 +140,6 @@ export default function DashboardPage() {
             )}
           </Card>
         </div>
-
-        {/* Workout Builder */}
-        {!isActive && (
-          <div className="px-5">
-            <WorkoutBuilder />
-          </div>
-        )}
 
         {/* Saved Templates */}
         <div className="px-5 mt-6">
