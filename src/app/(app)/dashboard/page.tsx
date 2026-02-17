@@ -108,9 +108,7 @@ export default function DashboardPage() {
         <div className="bg-surface px-5 pt-4 pb-3 border-b border-border">
           <div className="flex items-center justify-between">
             {/* App icon */}
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <span className="text-[22px] font-black text-white leading-none font-[family-name:var(--font-outfit)]">r</span>
-            </div>
+            <img src="/icons/icon-192.png" alt="reps" className="w-10 h-10 rounded-xl" />
             {/* Calendar button in cream pill */}
             <button
               onClick={() => setShowHistory(true)}
