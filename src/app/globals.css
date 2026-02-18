@@ -129,6 +129,25 @@ body {
   animation: pr-toast-in 0.3s ease-out forwards, pr-toast-out 0.3s ease-in 1.7s forwards;
 }
 
+@keyframes tour-highlight-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 9999px rgba(18, 18, 18, 0.52),
+      0 0 0 1px rgba(255, 255, 255, 0.34) inset,
+      0 8px 20px rgba(123, 150, 169, 0.16);
+  }
+  50% {
+    box-shadow:
+      0 0 0 9999px rgba(18, 18, 18, 0.46),
+      0 0 0 1px rgba(255, 255, 255, 0.42) inset,
+      0 14px 32px rgba(123, 150, 169, 0.24);
+  }
+}
+
+.animate-tour-highlight {
+  animation: tour-highlight-pulse 2.2s ease-in-out infinite;
+}
+
 /* Autofill styles */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,

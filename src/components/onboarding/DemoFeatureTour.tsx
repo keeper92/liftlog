@@ -200,39 +200,55 @@ export default function DemoFeatureTour({ onFinish }: DemoFeatureTourProps) {
   const currentStep = STEPS[stepIndex];
   const canGoBack = findPreviousMountedStepIndex(stepIndex - 1) !== -1;
   const canGoNext = findNextMountedStepIndex(stepIndex + 1) !== -1;
+  const progressPercent = ((stepIndex + 1) / STEPS.length) * 100;
 
   return (
     <div className="fixed inset-0 z-[140]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.14),transparent_46%)]" />
+
       <div
-        className="pointer-events-none absolute rounded-2xl border-2 border-primary/90 bg-white/5 transition-all duration-200"
+        className="animate-tour-highlight pointer-events-none absolute rounded-3xl border-2 border-primary/90 bg-primary/10 transition-all duration-200"
         style={{
           ...highlightStyle,
-          boxShadow: '0 0 0 9999px rgba(18, 18, 18, 0.56)',
         }}
       />
 
       <div
         ref={tooltipRef}
-        className="absolute z-10 rounded-2xl border border-border bg-surface p-4 shadow-xl animate-fade-in"
+        className="ui-overlay-shell absolute z-10 rounded-3xl p-5 animate-fade-in"
         style={{
           top: tooltipPosition.top,
           left: tooltipPosition.left,
           width: tooltipPosition.width,
         }}
       >
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-          Demo Tour
-        </p>
-        <h3 className="mt-1 text-base font-semibold text-text">{currentStep.title}</h3>
+        <div className="flex items-center justify-between gap-3">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface-light/70 px-3 py-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">Demo Tour</p>
+          </div>
+          <p className="text-xs font-semibold text-text-muted">
+            {stepIndex + 1} / {STEPS.length}
+          </p>
+        </div>
+
+        <h3 className="mt-3 text-[18px] font-semibold tracking-tight text-text">{currentStep.title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-text-secondary">{currentStep.description}</p>
 
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 h-1.5 rounded-full bg-surface-light">
+          <div
+            className="h-full rounded-full bg-primary transition-all duration-200"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+
+        <div className="mt-5 flex items-center justify-between">
           <button
             type="button"
             onClick={onFinish}
             className="text-sm font-medium text-text-muted transition-colors hover:text-text"
           >
-            Skip
+            Skip tour
           </button>
 
           <div className="flex items-center gap-2">
