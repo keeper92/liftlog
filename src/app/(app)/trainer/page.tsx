@@ -544,7 +544,7 @@ function TrainerContent() {
     : [];
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-64px)] relative">
+    <div className="flex flex-col h-[calc(100dvh-64px)] relative" data-tour-anchor="trainer-page">
       {/* Header icons */}
       <div className="px-5 pt-4 pb-1 flex items-center justify-between">
         <button
@@ -602,7 +602,7 @@ function TrainerContent() {
               </button>
             )}
 
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex flex-wrap justify-center gap-2" data-tour-anchor="trainer-suggestions">
               {suggestions.map((s) => (
                 <button
                   key={s}
@@ -850,6 +850,7 @@ function TrainerContent() {
             onChange={(e) => setInput(e.target.value)}
             placeholder={profileMode ? 'Tell me about your training...' : 'Ask your trainer or paste workout data...'}
             disabled={isLoading || !context}
+            data-tour-anchor="trainer-input"
             className="flex-1 min-h-[44px] rounded-full bg-surface-light px-4 text-sm text-text placeholder:text-text-muted outline-none disabled:opacity-50"
           />
           <button
