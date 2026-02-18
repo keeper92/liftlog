@@ -17,6 +17,12 @@
   --color-warning: #D4A04A;
   --color-error: #C45B52;
   --color-border: #DDD8D0;
+
+  --shadow-card: 0 1px 1px rgba(20, 18, 15, 0.03), 0 10px 24px -14px rgba(20, 18, 15, 0.22);
+  --shadow-card-hover: 0 2px 3px rgba(20, 18, 15, 0.04), 0 16px 32px -16px rgba(20, 18, 15, 0.26);
+  --shadow-pill: 0 1px 1px rgba(20, 18, 15, 0.03), 0 8px 20px -14px rgba(20, 18, 15, 0.22);
+  --shadow-pill-hover: 0 2px 4px rgba(20, 18, 15, 0.04), 0 12px 24px -14px rgba(20, 18, 15, 0.26);
+  --shadow-pill-press: 0 1px 2px rgba(20, 18, 15, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 @theme inline {
@@ -129,9 +135,33 @@ input:-webkit-autofill:focus {
 
 /* Card shadow utility */
 .card-shadow {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-card);
 }
 
 .card-shadow-md {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.card-shadow-interactive {
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.card-shadow-interactive:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.card-shadow-interactive:active {
+  transform: translateY(1px) scale(0.995);
+}
+
+.button-soft-shadow {
+  box-shadow: var(--shadow-pill);
+}
+
+.button-soft-shadow:hover {
+  box-shadow: var(--shadow-pill-hover);
+}
+
+.button-soft-shadow:active {
+  box-shadow: var(--shadow-pill-press);
 }

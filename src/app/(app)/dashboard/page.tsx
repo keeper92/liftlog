@@ -158,7 +158,7 @@ export default function DashboardPage() {
           <button
             onClick={() => setShowPRFeed(true)}
             data-tour-anchor="pr-feed"
-            className="relative h-10 px-3 flex items-center justify-center rounded-full bg-surface-light hover:bg-border/50 transition-colors"
+            className="relative h-10 px-3 flex items-center justify-center rounded-full bg-surface-light card-shadow card-shadow-interactive hover:bg-border/50 transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -173,7 +173,7 @@ export default function DashboardPage() {
           <button
             onClick={() => setShowHistory(true)}
             data-tour-anchor="history"
-            className="h-10 px-3 flex items-center justify-center rounded-full bg-surface-light hover:bg-border/50 transition-colors"
+            className="h-10 px-3 flex items-center justify-center rounded-full bg-surface-light card-shadow card-shadow-interactive hover:bg-border/50 transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
