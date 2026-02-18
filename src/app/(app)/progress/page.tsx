@@ -45,7 +45,7 @@ export default function ProgressPage() {
 
   const unit = weightUnit(unitSystem);
   const selectedExerciseName = exercises.find((ex) => ex.id === selectedExercise)?.name ?? 'this exercise';
-  const chartUnlockThreshold = 3;
+  const chartUnlockThreshold: number = 3;
 
   // Load exercises the user has done
   useEffect(() => {
