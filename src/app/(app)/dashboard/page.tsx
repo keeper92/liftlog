@@ -103,6 +103,12 @@ export default function DashboardPage() {
     router.push(`/workout/${workoutId}`);
   }
 
+  function handleStartWorkoutFromOverlay() {
+    setShowHistory(false);
+    setShowPRFeed(false);
+    handleStartWorkout();
+  }
+
   function handleStartFromTemplate(template: TemplateSummary) {
     const sortedExercises = [...template.template_exercises].sort(
       (a, b) => a.order_index - b.order_index
@@ -140,6 +146,7 @@ export default function DashboardPage() {
       {showHistory && stats && (
         <HistoryOverlay
           onClose={() => setShowHistory(false)}
+          onStartWorkout={handleStartWorkoutFromOverlay}
           longestStreak={stats.longestStreak}
           currentStreak={stats.currentStreak}
           totalWorkouts={stats.totalWorkouts}
@@ -148,37 +155,43 @@ export default function DashboardPage() {
 
       {/* PR Feed Overlay */}
       {showPRFeed && (
-        <PRFeedOverlay onClose={() => setShowPRFeed(false)} />
+        <PRFeedOverlay
+          onClose={() => setShowPRFeed(false)}
+          onStartWorkout={handleStartWorkoutFromOverlay}
+        />
       )}
 
       <div className="pb-24">
-        {/* Icon buttons */}
+        {/* Header and utility actions */}
         <div className="px-5 pt-4 flex items-center justify-between gap-3">
           <div>
             <p className="ui-kicker">Dashboard</p>
             <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-text">Train with intent</h1>
           </div>
-          <div className="flex items-center gap-2">
-          {/* PR Feed button */}
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+          {/* Records button */}
           <button
             onClick={() => setShowPRFeed(true)}
             data-tour-anchor="pr-feed"
-            className="ui-icon-pill relative h-10 px-3 flex items-center justify-center rounded-full"
+            aria-label="Open personal records"
+            className="ui-icon-pill relative h-10 px-3 flex items-center justify-center gap-1.5 rounded-full text-xs font-medium text-text-secondary"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
+            <span>Records</span>
             {unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </button>
-          {/* Calendar button */}
+          {/* Consistency button */}
           <button
             onClick={() => setShowHistory(true)}
             data-tour-anchor="history"
-            className="ui-icon-pill h-10 px-3 flex items-center justify-center rounded-full"
+            aria-label="Open consistency calendar"
+            className="ui-icon-pill h-10 px-3 flex items-center justify-center gap-1.5 rounded-full text-xs font-medium text-text-secondary"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -186,6 +199,7 @@ export default function DashboardPage() {
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
+            <span>Consistency</span>
           </button>
           </div>
         </div>
@@ -195,7 +209,7 @@ export default function DashboardPage() {
           <Card className="!p-6">
             <p className="ui-kicker mb-2">Quick Start</p>
             <h2 className="text-lg font-bold mb-1">Ready to train?</h2>
-            <p className="text-sm text-text-muted mb-4">
+            <p className="text-sm text-text-secondary mb-4">
               {isActive ? 'You have a workout in progress.' : 'Start a quick workout or choose a template.'}
             </p>
             {isActive ? (
@@ -220,6 +234,27 @@ export default function DashboardPage() {
           </Card>
         </div>
 
+        {stats && (
+          <div className="px-5 pt-4">
+            <Card className="!p-4">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <p className="text-base font-semibold text-text">{stats.weekWorkouts}</p>
+                  <p className="text-[11px] text-text-muted mt-0.5">This Week</p>
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-text">{stats.currentStreak}</p>
+                  <p className="text-[11px] text-text-muted mt-0.5">Current Streak</p>
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-text">{stats.totalWorkouts}</p>
+                  <p className="text-[11px] text-text-muted mt-0.5">Sessions Logged</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
         {/* Saved Templates */}
         <div className="px-5 mt-6" data-tour-anchor="saved-templates">
           <div className="flex items-center justify-between mb-3">
@@ -242,6 +277,9 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-sm text-text-muted">No templates yet</p>
                 <p className="text-xs text-text-muted mt-1">Complete a workout and save it as a template</p>
+                <Button onClick={handleStartWorkout} size="sm" className="mt-4">
+                  Start First Workout
+                </Button>
               </div>
             </Card>
           ) : (

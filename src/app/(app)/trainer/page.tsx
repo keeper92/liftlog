@@ -138,7 +138,7 @@ function TrainerContent() {
       initializedExercise.current = exerciseName;
       createConversation();
       setTimeout(() => {
-        addMessage('assistant', `Let's talk about **${exerciseName}**! I can help you with:\n\n• **Perfect form** — Tips to perform this exercise safely and effectively\n• **Weight & rep advice** — Personalized recommendations based on your history\n• **Similar exercises** — Alternatives that target the same muscles\n\nWhat would you like to know?`);
+        addMessage('assistant', `Let's talk about **${exerciseName}**! I can help you with:\n\n• **Perfect form** — Tips to perform this exercise safely and effectively\n• **Weight & rep advice** — Personalized recommendations based on your training log\n• **Similar exercises** — Alternatives that target the same muscles\n\nWhat would you like to know?`);
       }, 0);
     }
   }, [exerciseName, createConversation, addMessage]);
@@ -466,7 +466,7 @@ function TrainerContent() {
 
       const result = await response.json();
       updateImportStatus(messageId, 'imported');
-      addMessage('assistant', `Imported ${result.imported} workout${result.imported !== 1 ? 's' : ''} with ${result.summary.totalSets} sets. Check your history to see them!`);
+      addMessage('assistant', `Imported ${result.imported} workout${result.imported !== 1 ? 's' : ''} with ${result.summary.totalSets} sets. Check your training log to see them!`);
     } catch {
       updateImportStatus(messageId, 'pending');
       addMessage('assistant', 'Sorry, the import failed. Please try again.');

@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import { toDisplayWeight, weightUnit } from '@/lib/utils/units';
 import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface ExerciseOption {
@@ -30,8 +33,10 @@ interface PersonalRecord {
 }
 
 export default function ProgressPage() {
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const unitSystem = useSettingsStore((s) => s.unitSystem);
+  const startWorkout = useActiveWorkoutStore((s) => s.startWorkout);
   const [exercises, setExercises] = useState<ExerciseOption[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<string>('');
   const [progressData, setProgressData] = useState<ProgressPoint[]>([]);
@@ -39,6 +44,8 @@ export default function ProgressPage() {
   const [loading, setLoading] = useState(true);
 
   const unit = weightUnit(unitSystem);
+  const selectedExerciseName = exercises.find((ex) => ex.id === selectedExercise)?.name ?? 'this exercise';
+  const chartUnlockThreshold = 3;
 
   // Load exercises the user has done
   useEffect(() => {
@@ -100,6 +107,15 @@ export default function ProgressPage() {
     date: new Date(p.workout_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
     maxWeight: Math.round(toDisplayWeight(p.best_weight, unitSystem)),
   }));
+  const sessionsNeeded = Math.max(chartUnlockThreshold - chartData.length, 0);
+
+  function handleStartWorkout() {
+    startWorkout();
+    const state = useActiveWorkoutStore.getState();
+    if (state.workoutId) {
+      router.push(`/workout/${state.workoutId}`);
+    }
+  }
 
   return (
     <div className="pb-24">
@@ -119,6 +135,9 @@ export default function ProgressPage() {
           </div>
           <p className="text-text-muted">No exercise data yet.</p>
           <p className="text-text-muted text-sm mt-1">Complete some workouts to see your progress!</p>
+          <Button onClick={handleStartWorkout} size="sm" className="mt-4">
+            Start Workout
+          </Button>
         </div>
       ) : (
         <>
@@ -141,7 +160,7 @@ export default function ProgressPage() {
           </div>
 
           {/* Chart */}
-          {chartData.length > 1 ? (
+          {chartData.length >= chartUnlockThreshold ? (
             <Card className="mb-4">
               <p className="ui-kicker mb-2">Lift Trend</p>
               <p className="text-sm font-semibold mb-3">Max Weight ({unit})</p>
@@ -158,16 +177,27 @@ export default function ProgressPage() {
                 </LineChart>
               </ResponsiveContainer>
             </Card>
-          ) : chartData.length === 1 ? (
+          ) : chartData.length > 0 ? (
             <Card className="mb-4 text-center">
-              <p className="text-sm text-text-muted">
-                Max Weight: <span className="font-bold text-primary">{chartData[0].maxWeight} {unit}</span>
+              <p className="text-sm text-text-secondary">
+                Max Weight: <span className="font-bold text-primary">{chartData[chartData.length - 1].maxWeight} {unit}</span>
               </p>
-              <p className="text-xs text-text-muted mt-1">Log more workouts to see a chart</p>
+              <p className="text-xs text-text-secondary mt-2">
+                Log {sessionsNeeded} more {selectedExerciseName.toLowerCase()} session{sessionsNeeded === 1 ? '' : 's'} to unlock trend chart.
+              </p>
+              <Button onClick={handleStartWorkout} size="sm" className="mt-4">
+                Log Session
+              </Button>
             </Card>
           ) : (
             <Card className="mb-4 text-center">
-              <p className="text-sm text-text-muted">No data for this exercise yet</p>
+              <p className="text-sm text-text-secondary">No logged sessions for this exercise yet.</p>
+              <p className="text-xs text-text-secondary mt-2">
+                Log {chartUnlockThreshold} {selectedExerciseName.toLowerCase()} session{chartUnlockThreshold === 1 ? '' : 's'} to unlock trend chart.
+              </p>
+              <Button onClick={handleStartWorkout} size="sm" className="mt-4">
+                Start Workout
+              </Button>
             </Card>
           )}
         </>

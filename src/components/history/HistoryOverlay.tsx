@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { formatRelativeDate, formatDuration } from '@/lib/utils/units';
+import Button from '@/components/ui/Button';
 
 interface WorkoutSet {
   exercise_id: string;
@@ -29,12 +30,13 @@ interface GroupedExercise {
 
 interface HistoryOverlayProps {
   onClose: () => void;
+  onStartWorkout?: () => void;
   longestStreak: number;
   currentStreak: number;
   totalWorkouts: number;
 }
 
-export default function HistoryOverlay({ onClose, longestStreak, currentStreak, totalWorkouts }: HistoryOverlayProps) {
+export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak, currentStreak, totalWorkouts }: HistoryOverlayProps) {
   const supabase = useMemo(() => createClient(), []);
   const [workouts, setWorkouts] = useState<HistoryWorkout[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,12 +106,12 @@ export default function HistoryOverlay({ onClose, longestStreak, currentStreak, 
   const selectedWorkouts = selectedDate ? getWorkoutsForDate(selectedDate) : [];
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+    <div className="fixed inset-0 z-[70] bg-background flex flex-col">
       {/* Close button */}
       <div className="px-5 pt-4 flex items-center justify-between">
         <div>
-          <p className="ui-kicker">History</p>
-          <h2 className="mt-1 text-lg font-semibold tracking-tight text-text">Consistency calendar</h2>
+          <p className="ui-kicker">Training Log</p>
+          <h2 className="mt-1 text-lg font-semibold tracking-tight text-text">Consistency</h2>
         </div>
         <button
           onClick={onClose}
@@ -127,7 +129,7 @@ export default function HistoryOverlay({ onClose, longestStreak, currentStreak, 
         <div className="ui-overlay-shell rounded-2xl px-4 py-4 flex items-center justify-around">
           <div className="text-center">
             <p className="text-2xl font-bold text-text">{longestStreak}</p>
-            <p className="text-xs text-text-muted mt-0.5">Longest Streak</p>
+            <p className="text-xs text-text-muted mt-0.5">Best Streak</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-text">{currentStreak}</p>
@@ -135,9 +137,14 @@ export default function HistoryOverlay({ onClose, longestStreak, currentStreak, 
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-text">{totalWorkouts}</p>
-            <p className="text-xs text-text-muted mt-0.5">Total Workouts</p>
+            <p className="text-xs text-text-muted mt-0.5">Total Sessions</p>
           </div>
         </div>
+        <p className="text-xs text-text-secondary text-center mt-3">
+          {currentStreak > 0
+            ? `${currentStreak}-day streak active. Keep the run going today.`
+            : 'No active streak. One workout today starts a new streak.'}
+        </p>
       </div>
 
       {/* Scrollable content */}
@@ -148,6 +155,11 @@ export default function HistoryOverlay({ onClose, longestStreak, currentStreak, 
           <div className="text-center py-12">
             <p className="text-text-muted">No workouts yet.</p>
             <p className="text-text-muted text-sm mt-1">Start your first workout!</p>
+            {onStartWorkout && (
+              <Button onClick={onStartWorkout} size="sm" className="mt-4">
+                Start Workout
+              </Button>
+            )}
           </div>
         ) : (
           <div>
@@ -216,6 +228,17 @@ export default function HistoryOverlay({ onClose, longestStreak, currentStreak, 
                   );
                 })}
               </div>
+
+              <div className="mt-3 flex items-center justify-center gap-4 text-[11px] text-text-secondary">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-primary" />
+                  <span>Workout logged</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-text" />
+                  <span>Today</span>
+                </div>
+              </div>
             </div>
 
             {/* Selected date details */}
@@ -265,7 +288,7 @@ export default function HistoryOverlay({ onClose, longestStreak, currentStreak, 
 
             {/* No date selected hint */}
             {!selectedDate && (
-              <p className="text-xs text-text-muted text-center mt-4">Tap a date with a workout to see details</p>
+              <p className="text-xs text-text-muted text-center mt-4">Tap a highlighted day to open that session</p>
             )}
           </div>
         )}
