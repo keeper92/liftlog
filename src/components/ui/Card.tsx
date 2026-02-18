@@ -12,9 +12,9 @@ export default function Card({ children, className = '', onClick, noPadding = fa
     <Component
       onClick={onClick}
       className={`
-        rounded-2xl bg-surface card-shadow
+        rounded-2xl border border-border/70 bg-surface card-shadow
         ${noPadding ? '' : 'p-4'}
-        ${onClick ? 'cursor-pointer card-shadow-interactive text-left w-full' : ''}
+        ${onClick ? 'cursor-pointer card-shadow-interactive hover:border-border-strong text-left w-full' : ''}
         ${className}
       `}
     >

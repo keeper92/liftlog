@@ -549,7 +549,7 @@ function TrainerContent() {
       <div className="px-5 pt-4 pb-1 flex items-center justify-between">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-surface-light transition-colors"
+          className="ui-icon-pill w-10 h-10 -ml-2 flex items-center justify-center rounded-full"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text">
             <line x1="3" y1="6" x2="21" y2="6" />
@@ -585,7 +585,7 @@ function TrainerContent() {
             {!trainerProfile && (
               <button
                 onClick={startProfileSetup}
-                className="w-full max-w-sm mb-6 p-4 rounded-2xl bg-primary/5 border border-primary/20 text-left hover:bg-primary/10 transition-colors"
+                className="w-full max-w-sm mb-6 p-4 rounded-2xl bg-primary/5 border border-primary/20 card-shadow card-shadow-interactive text-left hover:bg-primary/10 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -607,7 +607,7 @@ function TrainerContent() {
                 <button
                   key={s}
                   onClick={() => handleSend(s)}
-                  className="px-4 py-2.5 rounded-full bg-surface text-text-secondary text-xs font-medium card-shadow hover:card-shadow-md transition-all"
+                  className="ui-icon-pill px-4 py-2.5 rounded-full text-text-secondary text-xs font-medium"
                 >
                   {s}
                 </button>
@@ -623,7 +623,7 @@ function TrainerContent() {
                     className={`max-w-[85%] px-4 py-2.5 text-sm leading-relaxed ${
                       msg.role === 'user'
                         ? 'bg-primary text-white rounded-2xl rounded-br-md shadow-sm'
-                        : 'bg-surface text-text rounded-2xl rounded-bl-md card-shadow'
+                        : 'bg-surface text-text rounded-2xl rounded-bl-md border border-border/70 card-shadow'
                     }`}
                   >
                     {msg.content ? (
@@ -647,7 +647,7 @@ function TrainerContent() {
                 {/* Import Preview */}
                 {msg.importData && msg.importData.status === 'pending' && (
                   <div className="mt-3 ml-0 max-w-[90%]">
-                    <div className="bg-surface-light border border-border rounded-xl p-4">
+                    <div className="bg-surface border border-border/70 rounded-xl p-4 card-shadow">
                       <div className="flex items-center gap-2 mb-3">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary">
                           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
@@ -731,7 +731,7 @@ function TrainerContent() {
                 {/* Template Preview */}
                 {msg.templateData && msg.templateData.status === 'pending' && (
                   <div className="mt-3 ml-0 max-w-[90%]">
-                    <div className="bg-surface-light border border-border rounded-xl p-4">
+                    <div className="bg-surface border border-border/70 rounded-xl p-4 card-shadow">
                       <div className="flex items-center gap-2 mb-3">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -803,7 +803,7 @@ function TrainerContent() {
                   <button
                     key={s}
                     onClick={() => handleSend(s)}
-                    className="px-4 py-2.5 rounded-full bg-surface text-text-secondary text-xs font-medium card-shadow hover:card-shadow-md transition-all"
+                    className="ui-icon-pill px-4 py-2.5 rounded-full text-text-secondary text-xs font-medium"
                   >
                     {s}
                   </button>
@@ -816,7 +816,7 @@ function TrainerContent() {
                   <button
                     key={s}
                     onClick={() => handleSend(s)}
-                    className="px-4 py-2.5 rounded-full bg-surface text-text-secondary text-xs font-medium card-shadow hover:card-shadow-md transition-all"
+                    className="ui-icon-pill px-4 py-2.5 rounded-full text-text-secondary text-xs font-medium"
                   >
                     {s}
                   </button>
@@ -829,7 +829,7 @@ function TrainerContent() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-border bg-surface px-4 py-3">
+      <div className="border-t border-border/80 bg-background-elevated/95 backdrop-blur px-4 py-3">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -850,12 +850,12 @@ function TrainerContent() {
             onChange={(e) => setInput(e.target.value)}
             placeholder={profileMode ? 'Tell me about your training...' : 'Ask your trainer or paste workout data...'}
             disabled={isLoading || !context}
-            className="flex-1 min-h-[44px] rounded-full bg-surface-light px-4 text-sm text-text placeholder:text-text-muted outline-none disabled:opacity-50"
+            className="flex-1 min-h-[44px] rounded-full border border-border/70 bg-surface px-4 text-sm text-text placeholder:text-text-muted outline-none card-shadow focus:border-border-strong disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={!input.trim() || isLoading || !context}
-            className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-30 transition-opacity shadow-sm"
+            className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-30 transition-opacity button-soft-shadow"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="19" x2="12" y2="5" />

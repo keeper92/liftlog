@@ -52,7 +52,7 @@ export default function Modal({
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/35 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -62,16 +62,16 @@ export default function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 w-full max-w-md rounded-xl bg-background p-6 shadow-xl"
+        className="ui-overlay-shell relative z-10 w-full max-w-md rounded-3xl p-6"
       >
         {title && (
-          <h2 className="mb-4 text-lg font-semibold text-text">{title}</h2>
+          <h2 className="mb-3 text-xl font-semibold tracking-tight text-text">{title}</h2>
         )}
 
         <div className="text-text-secondary">{children}</div>
 
         {actions && actions.length > 0 && (
-          <div className="mt-6 flex justify-end gap-3">
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             {actions.map((action) => (
               <Button
                 key={action.label}

@@ -14,7 +14,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary:
     'bg-primary text-white hover:bg-primary-light active:bg-primary-dark button-soft-shadow',
   outline:
-    'border-2 border-primary bg-surface text-primary hover:bg-primary/5 active:bg-primary/10 button-soft-shadow',
+    'border border-border-strong bg-surface text-text-secondary hover:bg-surface-light hover:text-text active:bg-surface-light button-soft-shadow',
   ghost:
     'text-text-secondary hover:bg-surface-light hover:text-text active:bg-surface-light',
   danger:
@@ -22,9 +22,9 @@ const variantClasses: Record<ButtonVariant, string> = {
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'min-h-[36px] px-4 text-sm',
-  md: 'min-h-[48px] px-6 text-sm',
-  lg: 'min-h-[56px] px-8 text-base',
+  sm: 'min-h-[38px] px-4 text-sm',
+  md: 'min-h-[48px] px-5 text-sm',
+  lg: 'min-h-[56px] px-7 text-base',
 };
 
 export default function Button({
@@ -41,8 +41,9 @@ export default function Button({
     <button
       disabled={disabled || loading}
       className={`
-        inline-flex items-center justify-center gap-2 rounded-full font-semibold
+        inline-flex items-center justify-center gap-2 rounded-full font-semibold tracking-tight
         transition-all duration-150 ease-in-out
+        active:translate-y-[0.5px]
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background
         disabled:cursor-not-allowed disabled:opacity-50
         ${variantClasses[variant]}

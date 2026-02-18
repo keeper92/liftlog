@@ -11,7 +11,7 @@ export default function MainContent({ children }: { children: React.ReactNode })
   const showRibbon = isActive && !isOnWorkoutPage;
 
   return (
-    <main className={`flex-1 ${showRibbon ? 'pb-28' : 'pb-16'}`}>
+    <main className={`flex-1 ${showRibbon ? 'pb-36' : 'pb-24'}`}>
       {children}
     </main>
   );

@@ -18,10 +18,10 @@ export default function ActiveWorkoutRibbon() {
   return (
     <Link
       href={`/workout/${workoutId}`}
-      className="fixed bottom-[calc(56px+env(safe-area-inset-bottom))] left-0 right-0 z-50 animate-slide-up"
+      className="fixed bottom-[calc(86px+env(safe-area-inset-bottom))] left-0 right-0 z-50 animate-slide-up"
     >
       <div className="mx-auto max-w-lg">
-        <div className="mx-2 flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 shadow-lg">
+        <div className="mx-3 flex items-center justify-center rounded-2xl border border-primary/30 bg-primary px-4 py-3 button-soft-shadow">
           <span className="text-sm font-semibold text-white">
             Resume Workout &rarr;
           </span>
