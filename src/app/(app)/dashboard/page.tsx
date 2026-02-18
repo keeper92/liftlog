@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { DEMO_TOUR_PENDING_KEY } from '@/lib/constants/onboarding';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import Modal from '@/components/ui/Modal';
+import DemoFeatureTour from '@/components/onboarding/DemoFeatureTour';
 
 import HistoryOverlay from '@/components/history/HistoryOverlay';
 import PRFeedOverlay from '@/components/pr/PRFeedOverlay';
@@ -37,6 +40,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<ProgressSummary | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showPRFeed, setShowPRFeed] = useState(false);
+  const [tourStage, setTourStage] = useState<'idle' | 'intro' | 'active'>('idle');
   const unreadCount = usePRStore((s) => s.unreadCount);
 
   useEffect(() => {
@@ -71,23 +75,23 @@ export default function DashboardPage() {
   }, [supabase]);
 
   useEffect(() => {
-    const openPRFeed = () => setShowPRFeed(true);
-    const closePRFeed = () => setShowPRFeed(false);
-    const openHistory = () => setShowHistory(true);
-    const closeHistory = () => setShowHistory(false);
-
-    window.addEventListener('tour:open-pr-feed', openPRFeed);
-    window.addEventListener('tour:close-pr-feed', closePRFeed);
-    window.addEventListener('tour:open-history', openHistory);
-    window.addEventListener('tour:close-history', closeHistory);
-
-    return () => {
-      window.removeEventListener('tour:open-pr-feed', openPRFeed);
-      window.removeEventListener('tour:close-pr-feed', closePRFeed);
-      window.removeEventListener('tour:open-history', openHistory);
-      window.removeEventListener('tour:close-history', closeHistory);
-    };
+    const pendingTour = sessionStorage.getItem(DEMO_TOUR_PENDING_KEY);
+    if (pendingTour !== '1') return;
+    const frameId = window.requestAnimationFrame(() => {
+      setTourStage('intro');
+    });
+    return () => window.cancelAnimationFrame(frameId);
   }, []);
+
+  function closeTour() {
+    sessionStorage.removeItem(DEMO_TOUR_PENDING_KEY);
+    setTourStage('idle');
+  }
+
+  function startTour() {
+    sessionStorage.removeItem(DEMO_TOUR_PENDING_KEY);
+    setTourStage('active');
+  }
 
   function handleStartWorkout() {
     startWorkout();
@@ -116,13 +120,29 @@ export default function DashboardPage() {
 
   return (
     <>
+      <Modal
+        isOpen={tourStage === 'intro'}
+        onClose={closeTour}
+        title="Welcome to the demo"
+        actions={[
+          { label: 'Skip', variant: 'ghost', onClick: closeTour },
+          { label: 'Start Tour', onClick: startTour },
+        ]}
+      >
+        <p className="text-sm leading-relaxed">
+          This quick tour highlights the main features so you can explore the app in under a minute.
+        </p>
+      </Modal>
+
+      {tourStage === 'active' && <DemoFeatureTour onFinish={closeTour} />}
+
       {/* History Overlay */}
-      {showHistory && (
+      {showHistory && stats && (
         <HistoryOverlay
           onClose={() => setShowHistory(false)}
-          longestStreak={stats?.longestStreak ?? 0}
-          currentStreak={stats?.currentStreak ?? 0}
-          totalWorkouts={stats?.totalWorkouts ?? 0}
+          longestStreak={stats.longestStreak}
+          currentStreak={stats.currentStreak}
+          totalWorkouts={stats.totalWorkouts}
         />
       )}
 
