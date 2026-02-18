@@ -50,7 +50,7 @@ export default function PRFeedOverlay({ onClose }: PRFeedOverlayProps) {
   const grouped = groupByDate(records);
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+    <div data-tour-anchor="pr-feed-overlay" className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Close button */}
       <div className="px-5 pt-4 flex justify-end">
         <button

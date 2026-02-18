@@ -455,6 +455,7 @@ function WorkoutContent({
 
   return (
     <div
+      data-tour-anchor="workout-page"
       className="flex flex-col min-h-dvh bg-background"
       onPointerDown={() => { if (numberPadVisible) deactivate(); }}
       onTouchEnd={() => { if (dragIndex !== null) handleDragEnd(); }}
@@ -475,7 +476,11 @@ function WorkoutContent({
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-surface border-b border-border">
-        <button onClick={handleDiscard} className="text-error text-sm font-medium min-h-[44px] px-2 flex items-center">
+        <button
+          onClick={handleDiscard}
+          data-tour-anchor="discard-workout"
+          className="text-error text-sm font-medium min-h-[44px] px-2 flex items-center"
+        >
           Discard
         </button>
         <div className="text-center">

@@ -92,7 +92,7 @@ export default function ProgressPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-dvh text-text-muted">Loading...</div>
+      <div data-tour-anchor="progress-page" className="flex items-center justify-center min-h-dvh text-text-muted">Loading...</div>
     );
   }
 
@@ -102,7 +102,7 @@ export default function ProgressPage() {
   }));
 
   return (
-    <div className="pb-24">
+    <div className="pb-24" data-tour-anchor="progress-page">
       <div className="px-5 pt-4">
       {exercises.length === 0 ? (
         <div className="text-center py-12">
