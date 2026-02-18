@@ -153,12 +153,17 @@ export default function DashboardPage() {
 
       <div className="pb-24">
         {/* Icon buttons */}
-        <div className="px-5 pt-4 flex items-center justify-end gap-2">
+        <div className="px-5 pt-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="ui-kicker">Dashboard</p>
+            <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-text">Train with intent</h1>
+          </div>
+          <div className="flex items-center gap-2">
           {/* PR Feed button */}
           <button
             onClick={() => setShowPRFeed(true)}
             data-tour-anchor="pr-feed"
-            className="relative h-10 px-3 flex items-center justify-center rounded-full bg-surface-light card-shadow card-shadow-interactive hover:bg-border/50 transition-colors"
+            className="ui-icon-pill relative h-10 px-3 flex items-center justify-center rounded-full"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -173,7 +178,7 @@ export default function DashboardPage() {
           <button
             onClick={() => setShowHistory(true)}
             data-tour-anchor="history"
-            className="h-10 px-3 flex items-center justify-center rounded-full bg-surface-light card-shadow card-shadow-interactive hover:bg-border/50 transition-colors"
+            className="ui-icon-pill h-10 px-3 flex items-center justify-center rounded-full"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -182,11 +187,13 @@ export default function DashboardPage() {
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           </button>
+          </div>
         </div>
 
         {/* Start Workout Card */}
-        <div className="p-5">
-          <Card className="!p-5">
+        <div className="px-5 pt-5">
+          <Card className="!p-6">
+            <p className="ui-kicker mb-2">Quick Start</p>
             <h2 className="text-lg font-bold mb-1">Ready to train?</h2>
             <p className="text-sm text-text-muted mb-4">
               {isActive ? 'You have a workout in progress.' : 'Start a quick workout or choose a template.'}
@@ -216,7 +223,7 @@ export default function DashboardPage() {
         {/* Saved Templates */}
         <div className="px-5 mt-6" data-tour-anchor="saved-templates">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-text">Saved Templates</h2>
+            <h2 className="ui-kicker">Saved Templates</h2>
             {templates.length > 0 && (
               <span className="text-xs text-text-muted">{templates.length} saved</span>
             )}
@@ -225,7 +232,7 @@ export default function DashboardPage() {
           {templates.length === 0 ? (
             <Card>
               <div className="text-center py-4">
-                <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center mx-auto mb-3">
+                <div className="w-12 h-12 rounded-full border border-border/80 bg-surface-light flex items-center justify-center mx-auto mb-3">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-muted">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
@@ -256,7 +263,7 @@ export default function DashboardPage() {
                           {moreCount > 0 && ` +${moreCount}`}
                         </p>
                       </div>
-                      <div className="ml-3 text-text-muted">
+                      <div className="ml-3 w-8 h-8 rounded-full bg-surface-light text-text-muted flex items-center justify-center">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="9 18 15 12 9 6" />
                         </svg>

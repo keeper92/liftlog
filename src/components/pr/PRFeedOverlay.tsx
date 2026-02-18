@@ -52,10 +52,14 @@ export default function PRFeedOverlay({ onClose }: PRFeedOverlayProps) {
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Close button */}
-      <div className="px-5 pt-4 flex justify-end">
+      <div className="px-5 pt-4 flex items-center justify-between">
+        <div>
+          <p className="ui-kicker">PR Feed</p>
+          <h2 className="mt-1 text-lg font-semibold tracking-tight text-text">Recent records</h2>
+        </div>
         <button
           onClick={onClose}
-          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-light transition-colors"
+          className="ui-icon-pill w-10 h-10 flex items-center justify-center rounded-full"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -68,7 +72,7 @@ export default function PRFeedOverlay({ onClose }: PRFeedOverlayProps) {
       <div className="flex-1 overflow-y-auto px-5 pt-4 pb-8">
         {records.length === 0 ? (
           <div className="text-center py-12">
-            <div className="w-12 h-12 rounded-full bg-surface-light flex items-center justify-center mx-auto mb-3">
+            <div className="w-12 h-12 rounded-full border border-border/80 bg-surface-light flex items-center justify-center mx-auto mb-3">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-muted">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
@@ -85,7 +89,7 @@ export default function PRFeedOverlay({ onClose }: PRFeedOverlayProps) {
                 </h3>
                 <div className="space-y-2">
                   {items.map((pr) => (
-                    <div key={pr.id} className="bg-surface rounded-2xl p-4 card-shadow flex items-center gap-3">
+                    <div key={pr.id} className="bg-surface rounded-2xl border border-border/70 p-4 card-shadow flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-primary">
                           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />

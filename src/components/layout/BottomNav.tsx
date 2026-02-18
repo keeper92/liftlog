@@ -56,8 +56,9 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-surface border-t border-border pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto flex max-w-lg items-center justify-around py-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[calc(env(safe-area-inset-bottom)+10px)]">
+      <div className="mx-auto max-w-lg px-3">
+        <div className="ui-overlay-shell rounded-3xl px-2 py-2 flex items-center justify-around">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
@@ -65,10 +66,10 @@ export default function BottomNav() {
               key={item.href}
               href={item.href}
               data-tour-anchor={item.href === '/trainer' ? 'nav-trainer' : undefined}
-              className={`flex flex-col items-center justify-center gap-0.5 px-4 py-1.5 transition-colors ${
+              className={`flex flex-col items-center justify-center gap-0.5 px-4 py-2 rounded-2xl transition-colors ${
                 isActive
-                  ? 'text-primary'
-                  : 'text-text-muted hover:text-text-secondary'
+                  ? 'bg-background-elevated text-primary'
+                  : 'text-text-muted hover:text-text-secondary hover:bg-surface-light/70'
               }`}
             >
               {item.icon(isActive)}
@@ -76,6 +77,7 @@ export default function BottomNav() {
             </Link>
           );
         })}
+        </div>
       </div>
     </nav>
   );

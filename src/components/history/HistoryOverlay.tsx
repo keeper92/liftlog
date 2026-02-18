@@ -106,10 +106,14 @@ export default function HistoryOverlay({ onClose, longestStreak, currentStreak, 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Close button */}
-      <div className="px-5 pt-4 flex justify-end">
+      <div className="px-5 pt-4 flex items-center justify-between">
+        <div>
+          <p className="ui-kicker">History</p>
+          <h2 className="mt-1 text-lg font-semibold tracking-tight text-text">Consistency calendar</h2>
+        </div>
         <button
           onClick={onClose}
-          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-light transition-colors"
+          className="ui-icon-pill w-10 h-10 flex items-center justify-center rounded-full"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -119,8 +123,8 @@ export default function HistoryOverlay({ onClose, longestStreak, currentStreak, 
       </div>
 
       {/* Streak Stats */}
-      <div className="px-5 py-5 bg-surface border-b border-border">
-        <div className="flex items-center justify-around">
+      <div className="px-5 py-4">
+        <div className="ui-overlay-shell rounded-2xl px-4 py-4 flex items-center justify-around">
           <div className="text-center">
             <p className="text-2xl font-bold text-text">{longestStreak}</p>
             <p className="text-xs text-text-muted mt-0.5">Longest Streak</p>
@@ -148,7 +152,7 @@ export default function HistoryOverlay({ onClose, longestStreak, currentStreak, 
         ) : (
           <div>
             {/* Calendar Card */}
-            <div className="bg-surface rounded-2xl p-4 card-shadow">
+            <div className="bg-surface rounded-2xl border border-border/70 p-4 card-shadow">
               {/* Calendar Header */}
               <div className="flex items-center justify-between mb-4">
                 <button onClick={prevMonth} className="p-2 -ml-2 text-text-muted hover:text-text transition-colors rounded-full hover:bg-surface-light">
@@ -232,7 +236,7 @@ export default function HistoryOverlay({ onClose, longestStreak, currentStreak, 
                       : 0;
 
                     return (
-                      <div key={w.id} className="bg-surface rounded-2xl p-4 card-shadow">
+                      <div key={w.id} className="bg-surface rounded-2xl border border-border/70 p-4 card-shadow">
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <p className="font-semibold text-sm">{w.name || 'Workout'}</p>

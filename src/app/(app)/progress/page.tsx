@@ -92,7 +92,7 @@ export default function ProgressPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-dvh text-text-muted">Loading...</div>
+      <div className="flex items-center justify-center min-h-dvh text-text-muted">Loading progress...</div>
     );
   }
 
@@ -104,9 +104,13 @@ export default function ProgressPage() {
   return (
     <div className="pb-24">
       <div className="px-5 pt-4">
+      <div className="mb-5">
+        <p className="ui-kicker">Progress</p>
+        <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-text">Track your momentum</h1>
+      </div>
       {exercises.length === 0 ? (
         <div className="text-center py-12">
-          <div className="w-12 h-12 rounded-full bg-surface flex items-center justify-center mx-auto mb-3 card-shadow">
+          <div className="w-12 h-12 rounded-full border border-border/80 bg-surface flex items-center justify-center mx-auto mb-3 card-shadow">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-muted">
               <line x1="18" y1="20" x2="18" y2="10" />
               <line x1="12" y1="20" x2="12" y2="4" />
@@ -119,21 +123,27 @@ export default function ProgressPage() {
       ) : (
         <>
           {/* Exercise Picker */}
-          <div className="bg-surface rounded-2xl card-shadow mb-4">
+          <div className="relative bg-surface rounded-2xl border border-border/70 card-shadow mb-4">
             <select
               value={selectedExercise}
               onChange={(e) => setSelectedExercise(e.target.value)}
-              className="w-full bg-transparent px-4 py-3.5 min-h-[48px] text-sm font-medium focus:outline-none appearance-none cursor-pointer"
+              className="w-full bg-transparent px-4 py-3.5 pr-10 min-h-[48px] text-sm font-medium focus:outline-none appearance-none cursor-pointer"
             >
               {exercises.map((ex) => (
                 <option key={ex.id} value={ex.id}>{ex.name}</option>
               ))}
             </select>
+            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-text-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
           </div>
 
           {/* Chart */}
           {chartData.length > 1 ? (
             <Card className="mb-4">
+              <p className="ui-kicker mb-2">Lift Trend</p>
               <p className="text-sm font-semibold mb-3">Max Weight ({unit})</p>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={chartData}>
@@ -166,23 +176,23 @@ export default function ProgressPage() {
       {/* Personal Records */}
       {records.length > 0 && (
         <div className="mt-6">
-          <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">Personal Records</h2>
+          <h2 className="ui-kicker mb-3">Personal Records</h2>
           <div className="space-y-3">
             {records.map((pr) => (
               <Card key={pr.exercise_id}>
                 <p className="font-semibold text-sm mb-3">{pr.exercise_name}</p>
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="text-center bg-surface-light rounded-xl py-2">
+                  <div className="text-center bg-background-elevated rounded-xl py-2">
                     <p className="text-lg font-bold text-primary">
                       {toDisplayWeight(pr.max_weight, unitSystem)}
                     </p>
                     <p className="text-xs text-text-muted">Max {unit}</p>
                   </div>
-                  <div className="text-center bg-surface-light rounded-xl py-2">
+                  <div className="text-center bg-background-elevated rounded-xl py-2">
                     <p className="text-lg font-bold text-primary">{pr.max_reps}</p>
                     <p className="text-xs text-text-muted">Max Reps</p>
                   </div>
-                  <div className="text-center bg-surface-light rounded-xl py-2">
+                  <div className="text-center bg-background-elevated rounded-xl py-2">
                     <p className="text-lg font-bold text-primary">
                       {Math.round(toDisplayWeight(pr.estimated_1rm, unitSystem))}
                     </p>
