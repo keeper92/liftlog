@@ -54,6 +54,11 @@ const navItems: NavItem[] = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const isWorkoutSession = pathname.startsWith('/workout/') && !pathname.startsWith('/workout/summary/');
+
+  if (isWorkoutSession) {
+    return null;
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[calc(env(safe-area-inset-bottom)+10px)]">

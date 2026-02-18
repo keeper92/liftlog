@@ -8,10 +8,12 @@ export default function MainContent({ children }: { children: React.ReactNode })
   const isActive = useActiveWorkoutStore((s) => s.isActive);
 
   const isOnWorkoutPage = pathname.startsWith('/workout');
+  const isWorkoutSession = pathname.startsWith('/workout/') && !pathname.startsWith('/workout/summary/');
   const showRibbon = isActive && !isOnWorkoutPage;
+  const bottomPadding = isWorkoutSession ? 'pb-0' : showRibbon ? 'pb-36' : 'pb-24';
 
   return (
-    <main className={`flex-1 ${showRibbon ? 'pb-36' : 'pb-24'}`}>
+    <main className={`flex-1 ${bottomPadding}`}>
       {children}
     </main>
   );

@@ -733,7 +733,7 @@ function WorkoutContent({
                   onClick={() => openHistory(ex.exerciseId, ex.exerciseName)}
                   className="flex-1 py-2 text-sm text-text-muted hover:text-text"
                 >
-                  History
+                  Training Log
                 </button>
               </div>
             </div>
@@ -784,7 +784,7 @@ function WorkoutContent({
       <Modal
         isOpen={!!historyModal}
         onClose={() => setHistoryModal(null)}
-        title={historyModal?.exerciseName ? `${historyModal.exerciseName} History` : 'History'}
+        title={historyModal?.exerciseName ? `${historyModal.exerciseName} Training Log` : 'Training Log'}
         actions={[
           { label: 'Close', onClick: () => setHistoryModal(null), variant: 'ghost' },
         ]}
@@ -792,7 +792,7 @@ function WorkoutContent({
         {loadingHistory ? (
           <p className="text-text-muted text-sm text-center py-4">Loading...</p>
         ) : historyData.length === 0 ? (
-          <p className="text-text-muted text-sm text-center py-4">No history found for this exercise.</p>
+          <p className="text-text-muted text-sm text-center py-4">No logged sets found for this exercise yet.</p>
         ) : (
           <div className="space-y-4 max-h-80 overflow-y-auto">
             {historyData.map((entry, idx) => (

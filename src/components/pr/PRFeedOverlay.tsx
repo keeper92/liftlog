@@ -4,9 +4,11 @@ import { useEffect } from 'react';
 import { usePRStore, type PRRecord } from '@/stores/prStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { toDisplayWeight, weightUnit } from '@/lib/utils/units';
+import Button from '@/components/ui/Button';
 
 interface PRFeedOverlayProps {
   onClose: () => void;
+  onStartWorkout?: () => void;
 }
 
 function formatPRImprovement(pr: PRRecord, unitSystem: 'imperial' | 'metric'): string {
@@ -38,7 +40,7 @@ function groupByDate(records: PRRecord[]): { dateLabel: string; items: PRRecord[
   return Array.from(groups.entries()).map(([dateLabel, items]) => ({ dateLabel, items }));
 }
 
-export default function PRFeedOverlay({ onClose }: PRFeedOverlayProps) {
+export default function PRFeedOverlay({ onClose, onStartWorkout }: PRFeedOverlayProps) {
   const records = usePRStore((s) => s.records);
   const markAllRead = usePRStore((s) => s.markAllRead);
   const unitSystem = useSettingsStore((s) => s.unitSystem);
@@ -50,12 +52,12 @@ export default function PRFeedOverlay({ onClose }: PRFeedOverlayProps) {
   const grouped = groupByDate(records);
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+    <div className="fixed inset-0 z-[70] bg-background flex flex-col">
       {/* Close button */}
       <div className="px-5 pt-4 flex items-center justify-between">
         <div>
-          <p className="ui-kicker">PR Feed</p>
-          <h2 className="mt-1 text-lg font-semibold tracking-tight text-text">Recent records</h2>
+          <p className="ui-kicker">Training Log</p>
+          <h2 className="mt-1 text-lg font-semibold tracking-tight text-text">Personal records</h2>
         </div>
         <button
           onClick={onClose}
@@ -77,8 +79,13 @@ export default function PRFeedOverlay({ onClose }: PRFeedOverlayProps) {
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
             </div>
-            <p className="text-text-muted">No personal records yet</p>
-            <p className="text-text-muted text-sm mt-1">Beat a previous best to see your PRs here!</p>
+            <p className="text-text-muted">No records yet</p>
+            <p className="text-text-muted text-sm mt-1">Log a few workouts, then beat your baseline to unlock PRs.</p>
+            {onStartWorkout && (
+              <Button onClick={onStartWorkout} size="sm" className="mt-4">
+                Start Workout
+              </Button>
+            )}
           </div>
         ) : (
           <div className="space-y-6">
