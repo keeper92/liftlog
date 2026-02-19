@@ -110,6 +110,7 @@ function TrainerContent() {
   const searchParams = useSearchParams();
   const exerciseId = searchParams.get('exerciseId');
   const exerciseName = searchParams.get('exerciseName');
+  const intent = searchParams.get('intent');
 
   const supabase = useMemo(() => createClient(), []);
   const unitSystem = useSettingsStore((s) => s.unitSystem);
@@ -125,6 +126,9 @@ function TrainerContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const initializedIntent = useRef<string | null>(null);
+  const shouldAutoSendTemplateIntent = useRef(false);
+  const handleSendRef = useRef<(text?: string) => Promise<void>>(async () => {});
 
   const exerciseSuggestions = exerciseName ? [
     'Tips for perfect form',
@@ -142,6 +146,20 @@ function TrainerContent() {
       }, 0);
     }
   }, [exerciseName, createConversation, addMessage]);
+
+  useEffect(() => {
+    if (intent !== 'create-template') return;
+    if (initializedIntent.current === intent) return;
+
+    initializedIntent.current = intent;
+    shouldAutoSendTemplateIntent.current = true;
+    createConversation();
+    const frameId = window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [intent, createConversation]);
 
   useEffect(() => {
     async function loadContext() {
@@ -446,6 +464,17 @@ function TrainerContent() {
       inputRef.current?.focus();
     }
   }
+  handleSendRef.current = handleSend;
+
+  useEffect(() => {
+    if (intent !== 'create-template') return;
+    if (!shouldAutoSendTemplateIntent.current) return;
+    if (!context || isLoading) return;
+    if (messages.length > 0) return;
+
+    shouldAutoSendTemplateIntent.current = false;
+    void handleSendRef.current('Create a workout template');
+  }, [intent, context, isLoading, messages.length]);
 
   async function handleConfirmImport(messageId: string, importData: ImportData) {
     setImportingMessageId(messageId);
