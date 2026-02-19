@@ -7,10 +7,18 @@ import { usePRStore } from '@/stores/prStore';
 import { toStorageWeight, toDisplayWeight } from '@/lib/utils/units';
 import { detectPRs, type PRDetectionResult } from '@/lib/utils/prDetection';
 
+export type NumberPadField =
+  | 'weight'
+  | 'reps'
+  | 'leftWeight'
+  | 'leftReps'
+  | 'rightWeight'
+  | 'rightReps';
+
 interface NumberPadFocus {
   exerciseIndex: number;
   setIndex: number;
-  field: 'weight' | 'reps';
+  field: NumberPadField;
 }
 
 interface NumberPadContextValue {
@@ -25,6 +33,21 @@ interface NumberPadContextValue {
 }
 
 const NumberPadCtx = createContext<NumberPadContextValue | null>(null);
+
+function isRepsField(field: NumberPadField): boolean {
+  return field === 'reps' || field === 'leftReps' || field === 'rightReps';
+}
+
+function isWeightField(field: NumberPadField): boolean {
+  return field === 'weight' || field === 'leftWeight' || field === 'rightWeight';
+}
+
+function getNextFieldForSplit(field: NumberPadField): NumberPadField {
+  if (field === 'leftWeight') return 'leftReps';
+  if (field === 'leftReps') return 'rightWeight';
+  if (field === 'rightWeight') return 'rightReps';
+  return 'rightReps';
+}
 
 export function useNumberPad() {
   const ctx = useContext(NumberPadCtx);
@@ -47,14 +70,16 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
   const focusRef = useRef<NumberPadFocus | null>(null);
 
   const flushBuffer = useCallback((buf: string, focus: NumberPadFocus) => {
-    if (focus.field === 'weight') {
+    if (isWeightField(focus.field)) {
       const parsed = parseFloat(buf);
       const val = isNaN(parsed) || buf === '' ? null : toStorageWeight(parsed, unitSystem);
-      store.updateSet(focus.exerciseIndex, focus.setIndex, { weight: val });
+      const updateField: Partial<Record<NumberPadField, number | null>> = { [focus.field]: val };
+      store.updateSet(focus.exerciseIndex, focus.setIndex, updateField);
     } else {
       const parsed = parseInt(buf);
       const val = isNaN(parsed) || buf === '' ? null : parsed;
-      store.updateSet(focus.exerciseIndex, focus.setIndex, { reps: val });
+      const updateField: Partial<Record<NumberPadField, number | null>> = { [focus.field]: val };
+      store.updateSet(focus.exerciseIndex, focus.setIndex, updateField);
     }
   }, [store, unitSystem]);
 
@@ -66,7 +91,7 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
 
     let initBuf = '';
     if (initialValue !== null && initialValue !== 0) {
-      if (focus.field === 'weight') {
+      if (isWeightField(focus.field)) {
         const display = toDisplayWeight(initialValue, unitSystem);
         initBuf = String(display);
       } else {
@@ -105,7 +130,7 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
 
   const pressDecimal = useCallback(() => {
     const focus = focusRef.current;
-    if (!focus || focus.field === 'reps') return;
+    if (!focus || isRepsField(focus.field)) return;
     if (bufferRef.current.includes('.')) return;
 
     const next = bufferRef.current + '.';
@@ -129,16 +154,36 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
 
     flushBuffer(bufferRef.current, focus);
 
-    if (focus.field === 'weight') {
-      // Move to reps of same set
+    if (focus.field === 'weight' || focus.field === 'leftWeight' || focus.field === 'rightWeight') {
+      // Move to reps field for the current side.
       const set = store.exercises[focus.exerciseIndex]?.sets[focus.setIndex];
-      const repsVal = set?.reps ?? null;
+      const nextField =
+        focus.field === 'weight'
+          ? 'reps'
+          : focus.field === 'leftWeight'
+            ? 'leftReps'
+            : 'rightReps';
+      const repsVal = set?.[nextField] ?? null;
       let initBuf = '';
       if (repsVal !== null && repsVal !== 0) {
         initBuf = String(repsVal);
       }
 
-      const newFocus: NumberPadFocus = { ...focus, field: 'reps' };
+      const newFocus: NumberPadFocus = { ...focus, field: nextField };
+      bufferRef.current = initBuf;
+      focusRef.current = newFocus;
+      setBuffer(initBuf);
+      setActiveFocus(newFocus);
+    } else if (focus.field === 'leftReps') {
+      // Split mode: jump from left reps to right weight.
+      const set = store.exercises[focus.exerciseIndex]?.sets[focus.setIndex];
+      const rightWeight = set?.rightWeight ?? null;
+      let initBuf = '';
+      if (rightWeight !== null && rightWeight !== 0) {
+        initBuf = String(toDisplayWeight(rightWeight, unitSystem));
+      }
+
+      const newFocus: NumberPadFocus = { ...focus, field: getNextFieldForSplit(focus.field) };
       bufferRef.current = initBuf;
       focusRef.current = newFocus;
       setBuffer(initBuf);
@@ -182,7 +227,8 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
 
         if (nextSetIdx !== -1) {
           const nextSet = ex.sets[nextSetIdx];
-          const weightVal = nextSet.weight;
+          const nextField: NumberPadField = ex.logMode === 'split_lr' ? 'leftWeight' : 'weight';
+          const weightVal = nextField === 'leftWeight' ? nextSet.leftWeight : nextSet.weight;
           let initBuf = '';
           if (weightVal !== null && weightVal !== 0) {
             const display = toDisplayWeight(weightVal, unitSystem);
@@ -192,7 +238,7 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
           const newFocus: NumberPadFocus = {
             exerciseIndex: focus.exerciseIndex,
             setIndex: nextSetIdx,
-            field: 'weight',
+            field: nextField,
           };
           bufferRef.current = initBuf;
           focusRef.current = newFocus;

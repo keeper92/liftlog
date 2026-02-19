@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { ExerciseRow } from '@/lib/types/exercise';
+import { isUnilateralVariantName } from '@/lib/utils/exerciseNaming';
 
 interface UseExerciseSearchReturn {
   exercises: ExerciseRow[];
@@ -78,7 +79,8 @@ export function useExerciseSearch(): UseExerciseSearchReturn {
 
         const { data } = await query;
         if (data) {
-          const sorted = [...data].sort(
+          const visible = data.filter((exercise) => !isUnilateralVariantName(exercise.name));
+          const sorted = [...visible].sort(
             (a, b) => recentlyUsedIds.indexOf(a.id) - recentlyUsedIds.indexOf(b.id)
           );
           setExercises(sorted);
@@ -88,7 +90,7 @@ export function useExerciseSearch(): UseExerciseSearchReturn {
           .from('exercises')
           .select('id, name, category, primary_muscles, equipment, is_custom, user_id')
           .order('name')
-          .limit(50);
+          .limit(150);
 
         if (search) {
           query = query.ilike('name', `%${search}%`);
@@ -106,7 +108,9 @@ export function useExerciseSearch(): UseExerciseSearchReturn {
         }
 
         const { data } = await query;
-        if (data) setExercises(data);
+        if (data) {
+          setExercises(data.filter((exercise) => !isUnilateralVariantName(exercise.name)));
+        }
       }
       setLoading(false);
     }

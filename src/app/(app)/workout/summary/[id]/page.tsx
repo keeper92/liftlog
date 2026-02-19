@@ -17,10 +17,34 @@ interface WorkoutData {
     exercise_id: string;
     weight: number | null;
     reps: number | null;
+    left_weight: number | null;
+    left_reps: number | null;
+    right_weight: number | null;
+    right_reps: number | null;
+    is_split_lr: boolean;
     set_number: number;
     is_warmup: boolean;
     exercises: { name: string };
   }[];
+}
+
+function getComparableSet(set: WorkoutData['sets'][number]): { weight: number; reps: number } {
+  if (!set.is_split_lr) {
+    return {
+      weight: set.weight || 0,
+      reps: set.reps || 0,
+    };
+  }
+
+  const left = { weight: set.left_weight || 0, reps: set.left_reps || 0 };
+  const right = { weight: set.right_weight || 0, reps: set.right_reps || 0 };
+
+  if (left.weight > right.weight) return left;
+  if (right.weight > left.weight) return right;
+  return {
+    weight: left.weight || right.weight,
+    reps: Math.max(left.reps, right.reps),
+  };
 }
 
 export default function WorkoutSummaryPage() {
@@ -49,7 +73,7 @@ function WorkoutSummaryContent() {
     async function load() {
       const { data } = await supabase
         .from('workouts')
-        .select('id, name, start_time, end_time, sets(exercise_id, weight, reps, set_number, is_warmup, exercises(name))')
+        .select('id, name, start_time, end_time, sets(exercise_id, weight, reps, left_weight, left_reps, right_weight, right_reps, is_split_lr, set_number, is_warmup, exercises(name))')
         .eq('id', params.id as string)
         .single();
       if (data) setWorkout(data as unknown as WorkoutData);
@@ -90,8 +114,9 @@ function WorkoutSummaryContent() {
         // Find best set in current workout (highest weight, then highest reps)
         const currentBest = exerciseSets.reduce(
           (best, s) => {
-            const weight = s.weight || 0;
-            const reps = s.reps || 0;
+            const comparable = getComparableSet(s);
+            const weight = comparable.weight;
+            const reps = comparable.reps;
             if (weight > best.weight || (weight === best.weight && reps > best.reps)) {
               return { weight, reps };
             }
@@ -287,7 +312,12 @@ function WorkoutSummaryContent() {
     existing.sets.push(s);
     exerciseMap.set(s.exercise_id, existing);
   }
-  const totalVolume = workout.sets.reduce((sum, s) => sum + ((s.weight || 0) * (s.reps || 0)), 0);
+  const totalVolume = workout.sets.reduce((sum, s) => {
+    if (s.is_split_lr) {
+      return sum + ((s.left_weight || 0) * (s.left_reps || 0)) + ((s.right_weight || 0) * (s.right_reps || 0));
+    }
+    return sum + ((s.weight || 0) * (s.reps || 0));
+  }, 0);
   const unit = weightUnit(unitSystem);
 
   return (
@@ -353,7 +383,17 @@ function WorkoutSummaryContent() {
                 .map((s, i) => (
                   <p key={i} className="text-sm text-text-secondary">
                     {s.is_warmup ? 'Warmup' : `Set ${s.set_number}`}:{' '}
-                    {s.weight ? `${toDisplayWeight(s.weight, unitSystem)} ${unit}` : '-'} × {s.reps || '-'} reps
+                    {s.is_split_lr ? (
+                      <>
+                        L {s.left_weight ? `${toDisplayWeight(s.left_weight, unitSystem)} ${unit}` : '-'} x {s.left_reps || '-'}
+                        {' '}|{' '}
+                        R {s.right_weight ? `${toDisplayWeight(s.right_weight, unitSystem)} ${unit}` : '-'} x {s.right_reps || '-'}
+                      </>
+                    ) : (
+                      <>
+                        {s.weight ? `${toDisplayWeight(s.weight, unitSystem)} ${unit}` : '-'} x {s.reps || '-'} reps
+                      </>
+                    )}
                   </p>
                 ))}
             </div>

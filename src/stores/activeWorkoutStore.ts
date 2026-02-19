@@ -10,6 +10,10 @@ export interface ActiveSet {
   setNumber: number;
   weight: number | null;
   reps: number | null;
+  leftWeight: number | null;
+  leftReps: number | null;
+  rightWeight: number | null;
+  rightReps: number | null;
   time: number | null;      // For cardio: duration in seconds
   distance: number | null;  // For cardio: distance in miles (stored as miles)
   isWarmup: boolean;
@@ -17,10 +21,13 @@ export interface ActiveSet {
   timestamp: string | null;
 }
 
+export type ExerciseLogMode = 'combined' | 'split_lr';
+
 export interface WorkoutExercise {
   exerciseId: string;
   exerciseName: string;
   exerciseCategory: string;  // 'cardio', 'barbell', 'dumbbell', etc.
+  logMode: ExerciseLogMode;
   sets: ActiveSet[];
   restTimerSeconds: number;
   notes: string;
@@ -40,6 +47,7 @@ export interface ActiveWorkoutState {
   addExerciseWithSets: (exercise: { id: string; name: string; category: string }, setCount: number) => void;
   removeExercise: (exerciseId: string) => void;
   moveExercise: (fromIndex: number, toIndex: number) => void;
+  setExerciseLogMode: (exerciseIndex: number, mode: ExerciseLogMode) => void;
   addSet: (exerciseIndex: number) => void;
   updateSet: (exerciseIndex: number, setIndex: number, data: Partial<ActiveSet>) => void;
   completeSet: (exerciseIndex: number, setIndex: number) => void;
@@ -47,6 +55,56 @@ export interface ActiveWorkoutState {
   setPreviousPerformance: (exerciseId: string, sets: { weight: number; reps: number }[]) => void;
   finishWorkout: () => { workoutId: string; exercises: WorkoutExercise[]; startTime: string; workoutName: string; templateId: string | null } | null;
   discardWorkout: () => void;
+}
+
+function deriveCombinedFromSplit(set: ActiveSet): { weight: number | null; reps: number | null } {
+  const leftWeight = set.leftWeight ?? 0;
+  const rightWeight = set.rightWeight ?? 0;
+  const leftReps = set.leftReps ?? 0;
+  const rightReps = set.rightReps ?? 0;
+
+  if (leftWeight === 0 && rightWeight === 0 && leftReps === 0 && rightReps === 0) {
+    return { weight: null, reps: null };
+  }
+
+  if (leftWeight > rightWeight) {
+    return { weight: leftWeight || null, reps: leftReps || null };
+  }
+
+  if (rightWeight > leftWeight) {
+    return { weight: rightWeight || null, reps: rightReps || null };
+  }
+
+  return {
+    weight: leftWeight || rightWeight || null,
+    reps: Math.max(leftReps, rightReps) || null,
+  };
+}
+
+function withSplitDefaults(set: ActiveSet): ActiveSet {
+  const leftWeight = set.leftWeight ?? set.weight;
+  const rightWeight = set.rightWeight ?? set.weight;
+  const leftReps = set.leftReps ?? set.reps;
+  const rightReps = set.rightReps ?? set.reps;
+
+  const next: ActiveSet = {
+    ...set,
+    leftWeight,
+    rightWeight,
+    leftReps,
+    rightReps,
+  };
+
+  const combined = deriveCombinedFromSplit(next);
+  return { ...next, ...combined };
+}
+
+function toCombinedFromSplit(set: ActiveSet): ActiveSet {
+  const combined = deriveCombinedFromSplit(set);
+  return {
+    ...set,
+    ...combined,
+  };
 }
 
 export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
@@ -85,6 +143,10 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
               setNumber: 1,
               weight: null,
               reps: null,
+              leftWeight: null,
+              leftReps: null,
+              rightWeight: null,
+              rightReps: null,
               time: null,
               distance: null,
               isWarmup: false,
@@ -92,6 +154,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
               timestamp: null,
             },
           ],
+          logMode: 'combined',
           restTimerSeconds: 90,
           notes: '',
         };
@@ -106,6 +169,10 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
           setNumber: i + 1,
           weight: null,
           reps: null,
+          leftWeight: null,
+          leftReps: null,
+          rightWeight: null,
+          rightReps: null,
           time: null,
           distance: null,
           isWarmup: false,
@@ -116,6 +183,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
           exerciseId: exercise.id,
           exerciseName: exercise.name,
           exerciseCategory: exercise.category,
+          logMode: 'combined',
           sets,
           restTimerSeconds: 90,
           notes: '',
@@ -142,6 +210,24 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
         set({ exercises });
       },
 
+      setExerciseLogMode: (exerciseIndex, mode) => {
+        const state = get();
+        const exercises = [...state.exercises];
+        const currentExercise = exercises[exerciseIndex];
+        if (!currentExercise || currentExercise.exerciseCategory === 'cardio') return;
+        const exercise = { ...currentExercise };
+        if (exercise.logMode === mode) return;
+
+        const sets = exercise.sets.map((set) =>
+          mode === 'split_lr' ? withSplitDefaults(set) : toCombinedFromSplit(set)
+        );
+
+        exercise.logMode = mode;
+        exercise.sets = sets;
+        exercises[exerciseIndex] = exercise;
+        set({ exercises });
+      },
+
       addSet: (exerciseIndex) => {
         const state = get();
         const exercises = [...state.exercises];
@@ -152,23 +238,33 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
 
         const prefillWeight = lastSet?.weight ?? prev?.[exercise.sets.length]?.weight ?? null;
         const prefillReps = lastSet?.reps ?? prev?.[exercise.sets.length]?.reps ?? null;
+        const prefillLeftWeight = lastSet?.leftWeight ?? prefillWeight;
+        const prefillRightWeight = lastSet?.rightWeight ?? prefillWeight;
+        const prefillLeftReps = lastSet?.leftReps ?? prefillReps;
+        const prefillRightReps = lastSet?.rightReps ?? prefillReps;
         const prefillTime = lastSet?.time ?? null;
         const prefillDistance = lastSet?.distance ?? null;
 
+        const nextSet: ActiveSet = {
+          id: uuidv4(),
+          exerciseId: exercise.exerciseId,
+          setNumber: nextSetNum,
+          weight: prefillWeight,
+          reps: prefillReps,
+          leftWeight: prefillLeftWeight,
+          leftReps: prefillLeftReps,
+          rightWeight: prefillRightWeight,
+          rightReps: prefillRightReps,
+          time: prefillTime,
+          distance: prefillDistance,
+          isWarmup: false,
+          isCompleted: false,
+          timestamp: null,
+        };
+
         exercise.sets = [
           ...exercise.sets,
-          {
-            id: uuidv4(),
-            exerciseId: exercise.exerciseId,
-            setNumber: nextSetNum,
-            weight: prefillWeight,
-            reps: prefillReps,
-            time: prefillTime,
-            distance: prefillDistance,
-            isWarmup: false,
-            isCompleted: false,
-            timestamp: null,
-          },
+          exercise.logMode === 'split_lr' ? withSplitDefaults(nextSet) : nextSet,
         ];
         exercises[exerciseIndex] = exercise;
         set({ exercises });
@@ -179,7 +275,8 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
         const exercises = [...state.exercises];
         const exercise = { ...exercises[exerciseIndex] };
         const sets = [...exercise.sets];
-        sets[setIndex] = { ...sets[setIndex], ...data };
+        const nextSet = { ...sets[setIndex], ...data } as ActiveSet;
+        sets[setIndex] = exercise.logMode === 'split_lr' ? toCombinedFromSplit(nextSet) : nextSet;
         exercise.sets = sets;
         exercises[exerciseIndex] = exercise;
         set({ exercises });

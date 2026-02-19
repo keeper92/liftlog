@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
@@ -23,7 +23,7 @@ function ExercisesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isSelecting = searchParams.get('select') === 'true';
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const addExercise = useActiveWorkoutStore((s) => s.addExercise);
 
   const {
@@ -50,6 +50,18 @@ function ExercisesContent() {
     primaryMuscle: 'chest' as string,
   });
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  // Merge modal state
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [mergeSourceExercise, setMergeSourceExercise] = useState<ExerciseRow | null>(null);
+  const [mergeSearch, setMergeSearch] = useState('');
+  const [mergeResults, setMergeResults] = useState<ExerciseRow[]>([]);
+  const [mergeTarget, setMergeTarget] = useState<ExerciseRow | null>(null);
+  const [mergeLoading, setMergeLoading] = useState(false);
+  const [mergeSaving, setMergeSaving] = useState(false);
+  const [mergeError, setMergeError] = useState<string | null>(null);
 
   function handleSelectExercise(exercise: ExerciseRow) {
     if (isSelecting) {
@@ -61,6 +73,7 @@ function ExercisesContent() {
   function openCreateModal() {
     setEditingExercise(null);
     setExerciseForm({ name: search || '', category: 'barbell', primaryMuscle: 'chest' });
+    setActionError(null);
     setShowCreateModal(true);
   }
 
@@ -71,13 +84,82 @@ function ExercisesContent() {
       category: exercise.category,
       primaryMuscle: exercise.primary_muscles[0] || 'chest',
     });
+    setActionError(null);
     setShowCreateModal(true);
   }
 
+  function closeCreateModal() {
+    if (saving || deleting) return;
+    setShowCreateModal(false);
+    setActionError(null);
+  }
+
+  function openMergeModal(exercise: ExerciseRow) {
+    setShowCreateModal(false);
+    setMergeSourceExercise(exercise);
+    setMergeSearch(exercise.name);
+    setMergeResults([]);
+    setMergeTarget(null);
+    setMergeError(null);
+    setShowMergeModal(true);
+  }
+
+  function closeMergeModal() {
+    if (mergeSaving) return;
+    setShowMergeModal(false);
+    setMergeSourceExercise(null);
+    setMergeSearch('');
+    setMergeResults([]);
+    setMergeTarget(null);
+    setMergeError(null);
+  }
+
+  useEffect(() => {
+    if (!showMergeModal || !mergeSourceExercise) return;
+    if (!mergeSearch.trim()) return;
+
+    let cancelled = false;
+    const debounce = setTimeout(async () => {
+      setMergeLoading(true);
+      const { data, error } = await supabase
+        .from('exercises')
+        .select('id, name, category, primary_muscles, equipment, is_custom, user_id')
+        .neq('id', mergeSourceExercise.id)
+        .ilike('name', `%${mergeSearch.trim()}%`)
+        .order('name')
+        .limit(12);
+
+      if (cancelled) return;
+
+      if (error) {
+        setMergeResults([]);
+        setMergeTarget(null);
+        setMergeError('Unable to search exercises right now.');
+      } else {
+        const rows = (data ?? []) as ExerciseRow[];
+        setMergeResults(rows);
+        if (!rows.some((row) => row.id === mergeTarget?.id)) {
+          setMergeTarget(null);
+        }
+      }
+      setMergeLoading(false);
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(debounce);
+    };
+  }, [mergeSearch, mergeSourceExercise, mergeTarget?.id, showMergeModal, supabase]);
+
   async function handleSaveExercise() {
-    if (!exerciseForm.name.trim()) return;
+    const trimmedName = exerciseForm.name.trim();
+    if (!trimmedName) {
+      setActionError('Exercise name is required.');
+      return;
+    }
 
     setSaving(true);
+    setActionError(null);
 
     const isOwnCustom = editingExercise?.is_custom && editingExercise?.user_id === currentUserId;
 
@@ -86,17 +168,23 @@ function ExercisesContent() {
       const { error } = await supabase
         .from('exercises')
         .update({
-          name: exerciseForm.name.trim(),
+          name: trimmedName,
           category: exerciseForm.category,
           primary_muscles: [exerciseForm.primaryMuscle],
         })
         .eq('id', editingExercise.id);
 
+      if (error) {
+        setActionError(error.message || 'Could not save exercise changes.');
+        setSaving(false);
+        return;
+      }
+
       if (!error) {
         setExercises((prev) =>
           prev.map((ex) =>
             ex.id === editingExercise.id
-              ? { ...ex, name: exerciseForm.name.trim(), category: exerciseForm.category, primary_muscles: [exerciseForm.primaryMuscle] }
+              ? { ...ex, name: trimmedName, category: exerciseForm.category, primary_muscles: [exerciseForm.primaryMuscle] }
               : ex
           )
         );
@@ -106,7 +194,7 @@ function ExercisesContent() {
       const { data, error } = await supabase
         .from('exercises')
         .insert({
-          name: exerciseForm.name.trim(),
+          name: trimmedName,
           category: exerciseForm.category,
           primary_muscles: [exerciseForm.primaryMuscle],
           secondary_muscles: [],
@@ -116,7 +204,13 @@ function ExercisesContent() {
         .select('id, name, category, primary_muscles, equipment, is_custom, user_id')
         .single();
 
-      if (!error && data) {
+      if (error) {
+        setActionError(error.message || 'Could not create exercise.');
+        setSaving(false);
+        return;
+      }
+
+      if (data) {
         // If selecting, add to workout immediately
         if (isSelecting) {
           addExercise({ id: data.id, name: data.name, category: data.category });
@@ -133,7 +227,7 @@ function ExercisesContent() {
       const { data, error } = await supabase
         .from('exercises')
         .insert({
-          name: exerciseForm.name.trim(),
+          name: trimmedName,
           category: exerciseForm.category,
           primary_muscles: [exerciseForm.primaryMuscle],
           secondary_muscles: [],
@@ -143,7 +237,13 @@ function ExercisesContent() {
         .select('id, name, category, primary_muscles, equipment, is_custom, user_id')
         .single();
 
-      if (!error && data) {
+      if (error) {
+        setActionError(error.message || 'Could not create exercise.');
+        setSaving(false);
+        return;
+      }
+
+      if (data) {
         // If selecting, add to workout immediately
         if (isSelecting) {
           addExercise({ id: data.id, name: data.name, category: data.category });
@@ -163,17 +263,168 @@ function ExercisesContent() {
 
   async function handleDeleteExercise() {
     if (!editingExercise) return;
-    if (!window.confirm('Delete this custom exercise? This cannot be undone.')) return;
 
-    setSaving(true);
-    const { error } = await supabase.from('exercises').delete().eq('id', editingExercise.id);
+    const isOwnCustom = editingExercise.is_custom && editingExercise.user_id === currentUserId;
+    if (!isOwnCustom) return;
 
-    if (!error) {
-      setExercises((prev) => prev.filter((ex) => ex.id !== editingExercise.id));
+    setActionError(null);
+
+    const [{ count: setCount }, { count: templateCount }] = await Promise.all([
+      supabase.from('sets').select('*', { count: 'exact', head: true }).eq('exercise_id', editingExercise.id),
+      supabase.from('template_exercises').select('*', { count: 'exact', head: true }).eq('exercise_id', editingExercise.id),
+    ]);
+
+    const usageWarnings: string[] = [];
+    if ((setCount || 0) > 0) {
+      usageWarnings.push(`${setCount} logged set${setCount === 1 ? '' : 's'}`);
+    }
+    if ((templateCount || 0) > 0) {
+      usageWarnings.push(`${templateCount} template entr${templateCount === 1 ? 'y' : 'ies'}`);
     }
 
-    setSaving(false);
+    const warningText = usageWarnings.length
+      ? `This will also delete ${usageWarnings.join(' and ')} tied to this exercise.`
+      : 'This cannot be undone.';
+
+    if (!window.confirm(`Delete "${editingExercise.name}"?\n\n${warningText}`)) return;
+
+    setDeleting(true);
+
+    const { error: templateDeleteError } = await supabase
+      .from('template_exercises')
+      .delete()
+      .eq('exercise_id', editingExercise.id);
+    if (templateDeleteError) {
+      setActionError(templateDeleteError.message || 'Could not remove template references.');
+      setDeleting(false);
+      return;
+    }
+
+    const { error: setsDeleteError } = await supabase
+      .from('sets')
+      .delete()
+      .eq('exercise_id', editingExercise.id);
+    if (setsDeleteError) {
+      setActionError(setsDeleteError.message || 'Could not delete exercise history.');
+      setDeleting(false);
+      return;
+    }
+
+    const { error: exerciseDeleteError } = await supabase
+      .from('exercises')
+      .delete()
+      .eq('id', editingExercise.id);
+    if (exerciseDeleteError) {
+      setActionError(exerciseDeleteError.message || 'Could not delete exercise.');
+      setDeleting(false);
+      return;
+    }
+
+    setExercises((prev) => prev.filter((ex) => ex.id !== editingExercise.id));
+    setDeleting(false);
     setShowCreateModal(false);
+  }
+
+  async function handleMergeExercises() {
+    if (!mergeSourceExercise || !mergeTarget) return;
+
+    const confirmed = window.confirm(
+      `Merge "${mergeSourceExercise.name}" into "${mergeTarget.name}"?\n\nThis will move all logged history and template references, then delete "${mergeSourceExercise.name}".`
+    );
+    if (!confirmed) return;
+
+    setMergeSaving(true);
+    setMergeError(null);
+
+    const { error: moveSetsError } = await supabase
+      .from('sets')
+      .update({ exercise_id: mergeTarget.id })
+      .eq('exercise_id', mergeSourceExercise.id);
+    if (moveSetsError) {
+      setMergeError(moveSetsError.message || 'Could not move exercise history.');
+      setMergeSaving(false);
+      return;
+    }
+
+    type TemplateExerciseRef = {
+      template_id: string;
+      order_index: number;
+      default_sets: number;
+    };
+
+    const { data: sourceTemplateRefs, error: sourceTemplateRefsError } = await supabase
+      .from('template_exercises')
+      .select('template_id, order_index, default_sets')
+      .eq('exercise_id', mergeSourceExercise.id);
+    if (sourceTemplateRefsError) {
+      setMergeError(sourceTemplateRefsError.message || 'Could not read template references.');
+      setMergeSaving(false);
+      return;
+    }
+
+    const sourceRefs = (sourceTemplateRefs ?? []) as TemplateExerciseRef[];
+    if (sourceRefs.length > 0) {
+      const templateIds = Array.from(new Set(sourceRefs.map((ref) => ref.template_id)));
+      const { data: existingTargetRefs, error: existingTargetRefsError } = await supabase
+        .from('template_exercises')
+        .select('template_id')
+        .in('template_id', templateIds)
+        .eq('exercise_id', mergeTarget.id);
+
+      if (existingTargetRefsError) {
+        setMergeError(existingTargetRefsError.message || 'Could not check existing template references.');
+        setMergeSaving(false);
+        return;
+      }
+
+      const existingTemplateIds = new Set(
+        ((existingTargetRefs ?? []) as { template_id: string }[]).map((row) => row.template_id)
+      );
+      const rowsToInsert = sourceRefs
+        .filter((ref) => !existingTemplateIds.has(ref.template_id))
+        .map((ref) => ({
+          template_id: ref.template_id,
+          exercise_id: mergeTarget.id,
+          order_index: ref.order_index,
+          default_sets: ref.default_sets,
+        }));
+
+      const { error: deleteSourceTemplateRefsError } = await supabase
+        .from('template_exercises')
+        .delete()
+        .eq('exercise_id', mergeSourceExercise.id);
+
+      if (deleteSourceTemplateRefsError) {
+        setMergeError(deleteSourceTemplateRefsError.message || 'Could not remove old template references.');
+        setMergeSaving(false);
+        return;
+      }
+
+      if (rowsToInsert.length > 0) {
+        const { error: insertTargetTemplateRefsError } = await supabase
+          .from('template_exercises')
+          .insert(rowsToInsert);
+        if (insertTargetTemplateRefsError) {
+          setMergeError(insertTargetTemplateRefsError.message || 'Could not add merged template references.');
+          setMergeSaving(false);
+          return;
+        }
+      }
+    }
+
+    const { error: deleteSourceExerciseError } = await supabase
+      .from('exercises')
+      .delete()
+      .eq('id', mergeSourceExercise.id);
+    if (deleteSourceExerciseError) {
+      setMergeError(deleteSourceExerciseError.message || 'Could not delete source exercise.');
+      setMergeSaving(false);
+      return;
+    }
+
+    setExercises((prev) => prev.filter((ex) => ex.id !== mergeSourceExercise.id));
+    setMergeSaving(false);
+    closeMergeModal();
   }
 
   return (
@@ -217,6 +468,18 @@ function ExercisesContent() {
             }`}
           >
             Recently Used
+          </button>
+          <button
+            onClick={() => {
+              setShowRecentlyUsed(false);
+              setShowCardio(false);
+              setSelectedMuscle(null);
+            }}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              !showRecentlyUsed && !showCardio && !selectedMuscle ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
+            }`}
+          >
+            All
           </button>
           <button
             onClick={() => {
@@ -305,7 +568,7 @@ function ExercisesContent() {
                   <button
                     onClick={() => openEditModal(ex)}
                     className="p-2 text-text-muted hover:text-text transition-colors rounded-lg hover:bg-surface-light"
-                    aria-label={isOwnCustom ? 'Edit exercise' : 'Rename exercise'}
+                    aria-label={isOwnCustom ? 'Manage exercise' : 'Rename exercise'}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -322,7 +585,7 @@ function ExercisesContent() {
       {/* Create/Edit Exercise Modal */}
       <Modal
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        onClose={closeCreateModal}
         title={
           editingExercise
             ? editingExercise.is_custom && editingExercise.user_id === currentUserId
@@ -331,18 +594,46 @@ function ExercisesContent() {
             : 'Create Custom Exercise'
         }
         actions={[
-          ...(editingExercise?.is_custom && editingExercise?.user_id === currentUserId
-            ? [{ label: 'Delete', onClick: handleDeleteExercise, variant: 'ghost' as const }]
-            : []),
-          { label: 'Cancel', onClick: () => setShowCreateModal(false), variant: 'ghost' as const },
-          { label: saving ? 'Saving...' : 'Save', onClick: handleSaveExercise, variant: 'primary' as const },
+          { label: 'Cancel', onClick: closeCreateModal, variant: 'ghost' as const, disabled: saving || deleting },
+          { label: saving ? 'Saving...' : 'Save', onClick: handleSaveExercise, variant: 'primary' as const, disabled: deleting },
         ]}
       >
         <div className="space-y-4">
+          {actionError && (
+            <p className="text-xs text-error bg-error/10 rounded-lg px-3 py-2">{actionError}</p>
+          )}
           {editingExercise && !(editingExercise.is_custom && editingExercise.user_id === currentUserId) && (
             <p className="text-xs text-text-muted bg-surface-light rounded-lg px-3 py-2">
               This will create a custom copy with your preferred name. The original exercise will remain unchanged.
             </p>
+          )}
+          {editingExercise?.is_custom && editingExercise.user_id === currentUserId && (
+            <div className="bg-surface-light rounded-lg px-3 py-3 space-y-2">
+              <p className="text-xs text-text-muted">
+                Move this exercise&apos;s history into another exercise, or delete it with all linked history.
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openMergeModal(editingExercise)}
+                  disabled={saving || deleting}
+                  className="sm:flex-1"
+                >
+                  Merge Into...
+                </Button>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={handleDeleteExercise}
+                  disabled={saving || deleting}
+                  loading={deleting}
+                  className="sm:flex-1"
+                >
+                  Delete Exercise
+                </Button>
+              </div>
+            </div>
           )}
           <div>
             <label className="block text-sm font-medium mb-1.5">Exercise Name</label>
@@ -385,6 +676,87 @@ function ExercisesContent() {
               ))}
             </select>
           </div>
+        </div>
+      </Modal>
+
+      {/* Merge Exercises Modal */}
+      <Modal
+        isOpen={showMergeModal}
+        onClose={closeMergeModal}
+        title="Merge Exercise"
+        actions={[
+          { label: 'Cancel', onClick: closeMergeModal, variant: 'ghost' as const, disabled: mergeSaving },
+          {
+            label: mergeSaving ? 'Merging...' : 'Merge',
+            onClick: handleMergeExercises,
+            variant: 'primary' as const,
+            disabled: mergeSaving || !mergeTarget,
+          },
+        ]}
+      >
+        <div className="space-y-4">
+          {mergeError && (
+            <p className="text-xs text-error bg-error/10 rounded-lg px-3 py-2">{mergeError}</p>
+          )}
+          {mergeSourceExercise && (
+            <div className="text-xs text-text-muted bg-surface-light rounded-lg px-3 py-2">
+              Merging from: <span className="text-text font-medium">{mergeSourceExercise.name}</span>
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Merge Into</label>
+            <input
+              type="text"
+              value={mergeSearch}
+              onChange={(e) => {
+                const value = e.target.value;
+                setMergeSearch(value);
+                if (!value.trim()) {
+                  setMergeResults([]);
+                  setMergeTarget(null);
+                }
+              }}
+              placeholder="Search exercise name..."
+              className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm focus:border-primary outline-none"
+              autoFocus
+            />
+          </div>
+
+          <div className="max-h-64 overflow-y-auto space-y-1">
+            {mergeLoading ? (
+              <p className="text-xs text-text-muted py-3 text-center">Searching...</p>
+            ) : mergeResults.length === 0 ? (
+              <p className="text-xs text-text-muted py-3 text-center">No exercises found.</p>
+            ) : (
+              mergeResults.map((exercise) => {
+                const selected = mergeTarget?.id === exercise.id;
+                const isOwnCustom = exercise.is_custom && exercise.user_id === currentUserId;
+                return (
+                  <button
+                    key={exercise.id}
+                    onClick={() => setMergeTarget(exercise)}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors ${
+                      selected ? 'border-primary bg-primary/5' : 'border-border hover:bg-surface-light'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-text">{CARDIO_DISPLAY_NAMES[exercise.name] || exercise.name}</p>
+                      {isOwnCustom && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">Custom</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-text-muted capitalize mt-0.5">{exercise.category.replace('_', ' ')}</p>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          {mergeTarget && (
+            <p className="text-xs text-text-muted bg-surface-light rounded-lg px-3 py-2">
+              Target: <span className="text-text font-medium">{mergeTarget.name}</span>
+            </p>
+          )}
         </div>
       </Modal>
     </div>
