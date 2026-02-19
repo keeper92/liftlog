@@ -70,7 +70,13 @@ export default function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              data-tour-anchor={item.href === '/trainer' ? 'nav-trainer' : undefined}
+              data-tour-anchor={
+                item.href === '/trainer'
+                  ? 'nav-trainer'
+                  : item.href === '/progress'
+                    ? 'nav-progress'
+                    : undefined
+              }
               className={`flex flex-col items-center justify-center gap-0.5 px-4 py-2 rounded-2xl transition-colors ${
                 isActive
                   ? 'bg-background-elevated text-primary'
