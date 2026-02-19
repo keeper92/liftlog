@@ -109,6 +109,12 @@ export default function DashboardPage() {
     handleStartWorkout();
   }
 
+  function handleCreateTemplateWithAI() {
+    setShowHistory(false);
+    setShowPRFeed(false);
+    router.push('/trainer?intent=create-template');
+  }
+
   function handleStartFromTemplate(template: TemplateSummary) {
     const sortedExercises = [...template.template_exercises].sort(
       (a, b) => a.order_index - b.order_index
@@ -276,9 +282,9 @@ export default function DashboardPage() {
                   </svg>
                 </div>
                 <p className="text-sm text-text-muted">No templates yet</p>
-                <p className="text-xs text-text-muted mt-1">Complete a workout and save it as a template</p>
-                <Button onClick={handleStartWorkout} size="sm" className="mt-4">
-                  Start First Workout
+                <p className="text-xs text-text-muted mt-1">Build your first one with AI Trainer</p>
+                <Button onClick={handleCreateTemplateWithAI} size="sm" className="mt-4">
+                  Create Template with AI
                 </Button>
               </div>
             </Card>
