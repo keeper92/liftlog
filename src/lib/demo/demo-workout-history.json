@@ -1,0 +1,2806 @@
+[
+  {
+    "date": "2025-12-01",
+    "name": "Workout 2025-12-01",
+    "exercises": [
+      {
+        "name": "Ab Crunch Machine",
+        "sets": [
+          {
+            "weight": 235,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB curl",
+        "sets": [
+          {
+            "weight": 35,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 35,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Lat pulldown (V-bar)",
+        "sets": [
+          {
+            "weight": 220,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 220,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 220,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2025-12-07",
+    "name": "Workout 2025-12-07",
+    "exercises": [
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 30,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 30,
+            "reps": 11,
+            "time": null
+          },
+          {
+            "weight": 30,
+            "reps": 9,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Lat pulldown (V-bar)",
+        "sets": [
+          {
+            "weight": 220,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 220,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 220,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Pushups",
+        "sets": [
+          {
+            "weight": null,
+            "reps": 20,
+            "time": null
+          },
+          {
+            "weight": null,
+            "reps": 20,
+            "time": null
+          },
+          {
+            "weight": null,
+            "reps": 15,
+            "time": null
+          },
+          {
+            "weight": null,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Reverse-grip triceps extension",
+        "sets": [
+          {
+            "weight": 10,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 10,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2025-12-09",
+    "name": "Workout 2025-12-09",
+    "exercises": [
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 10,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 10,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 10,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable bar curl",
+        "sets": [
+          {
+            "weight": 25,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable reverse triceps",
+        "sets": [
+          {
+            "weight": 15,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 15,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2025-12-19",
+    "name": "Workout 2025-12-19",
+    "exercises": [
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 10,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 10,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 10,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable reverse triceps",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 15,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB curl",
+        "sets": [
+          {
+            "weight": 35,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Seated row",
+        "sets": [
+          {
+            "weight": 205,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 205,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 205,
+            "reps": 7,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2025-12-22",
+    "name": "Workout 2025-12-22",
+    "exercises": [
+      {
+        "name": "Cable Front Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 10,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 10,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 10,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 12.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 12.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 12.5,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable reverse triceps",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Forearm cable curl",
+        "sets": [
+          {
+            "weight": 15,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 15,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Lat pulldown (V-bar)",
+        "sets": [
+          {
+            "weight": 220,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 220,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 220,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 25,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Seated row",
+        "sets": [
+          {
+            "weight": 205,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 205,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 205,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2025-12-27",
+    "name": "Workout 2025-12-27",
+    "exercises": [
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 15,
+            "reps": 6,
+            "time": null
+          },
+          {
+            "weight": 12.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 10,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable reverse triceps",
+        "sets": [
+          {
+            "weight": 22.5,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2025-12-30",
+    "name": "Workout 2025-12-30",
+    "exercises": [
+      {
+        "name": "Ab Crunch Machine",
+        "sets": [
+          {
+            "weight": 220,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 220,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 220,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable Front Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 12.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 10,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable bar curl",
+        "sets": [
+          {
+            "weight": 30,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable reverse triceps",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB lateral raise",
+        "sets": [
+          {
+            "weight": 25,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Forearm cable curl",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 6,
+            "time": null
+          },
+          {
+            "weight": 15,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 25,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Overhead triceps extension",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Seated row",
+        "sets": [
+          {
+            "weight": 205,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 205,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 205,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "V-up",
+        "sets": [
+          {
+            "weight": null,
+            "reps": 15,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2025-12-31",
+    "name": "Workout 2025-12-31",
+    "exercises": [
+      {
+        "name": "Leg extension",
+        "sets": [
+          {
+            "weight": 160,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 160,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 160,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Stair stepper",
+        "sets": [
+          {
+            "weight": null,
+            "reps": null,
+            "time": 600
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-01",
+    "name": "Workout 2026-01-01",
+    "exercises": [
+      {
+        "name": "Cable Front Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 12.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 12.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 12.5,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 12.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 12.5,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 12.5,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable reverse triceps",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB curl",
+        "sets": [
+          {
+            "weight": 35,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 35,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 30,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Forearm cable curl",
+        "sets": [
+          {
+            "weight": 17.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Pushups",
+        "sets": [
+          {
+            "weight": null,
+            "reps": 20,
+            "time": null
+          },
+          {
+            "weight": null,
+            "reps": 20,
+            "time": null
+          },
+          {
+            "weight": null,
+            "reps": 20,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-02",
+    "name": "Workout 2026-01-02",
+    "exercises": [
+      {
+        "name": "Ab Crunch Machine",
+        "sets": [
+          {
+            "weight": 235,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Deadlift (hex bar)",
+        "sets": [
+          {
+            "weight": 25,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 35,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 50,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 50,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 50,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Inner thigh machine",
+        "sets": [
+          {
+            "weight": 70,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 60,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 60,
+            "reps": 7,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Outer thigh machine",
+        "sets": [
+          {
+            "weight": 70,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 70,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 70,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Squat",
+        "sets": [
+          {
+            "weight": 135,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 135,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 135,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-06",
+    "name": "Workout 2026-01-06",
+    "exercises": [
+      {
+        "name": "Cable Front Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 15,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 12.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 12.5,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 12.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 12.5,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 12.5,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable reverse triceps",
+        "sets": [
+          {
+            "weight": 22.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 6,
+            "time": null
+          },
+          {
+            "weight": 22.5,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB curl",
+        "sets": [
+          {
+            "weight": 30,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-08",
+    "name": "Workout 2026-01-08",
+    "exercises": [
+      {
+        "name": "DB curl",
+        "sets": [
+          {
+            "weight": 35,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 35,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB front raise",
+        "sets": [
+          {
+            "weight": 15,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 15,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 15,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB lateral raise",
+        "sets": [
+          {
+            "weight": 25,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB mid-high fly",
+        "sets": [
+          {
+            "weight": 35,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 35,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 25,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Seated row",
+        "sets": [
+          {
+            "weight": 205,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 205,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 205,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-10",
+    "name": "Workout 2026-01-10",
+    "exercises": [
+      {
+        "name": "Cable Front Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 15,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 15,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 15,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 15,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 15,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 15,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable reverse triceps",
+        "sets": [
+          {
+            "weight": 25,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 6,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB mid-high fly",
+        "sets": [
+          {
+            "weight": 40,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 40,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Overhead triceps extension",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Seated row",
+        "sets": [
+          {
+            "weight": 220,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 220,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 220,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-12",
+    "name": "Workout 2026-01-12",
+    "exercises": [
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 25,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 7,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Seated row",
+        "sets": [
+          {
+            "weight": 220,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 220,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 220,
+            "reps": 7,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-14",
+    "name": "Workout 2026-01-14",
+    "exercises": [
+      {
+        "name": "Cable Front Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 15,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 15,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 15,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB curl",
+        "sets": [
+          {
+            "weight": 35,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 35,
+            "reps": 7,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB lateral raise",
+        "sets": [
+          {
+            "weight": 30,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 30,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 30,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB mid-high fly",
+        "sets": [
+          {
+            "weight": 40,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 40,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-16",
+    "name": "Workout 2026-01-16",
+    "exercises": [
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 15,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 15,
+            "reps": 9,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB lateral raise",
+        "sets": [
+          {
+            "weight": 35,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 35,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 30,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB mid-high fly",
+        "sets": [
+          {
+            "weight": 40,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 45,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Overhead triceps extension",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 7,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-17",
+    "name": "Workout 2026-01-17",
+    "exercises": [
+      {
+        "name": "Cable Front Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 15,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 5,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable bar curl",
+        "sets": [
+          {
+            "weight": 60,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable reverse triceps",
+        "sets": [
+          {
+            "weight": 50,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 55,
+            "reps": 5,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB jump lunge",
+        "sets": [
+          {
+            "weight": 30,
+            "reps": 20,
+            "time": null
+          },
+          {
+            "weight": 30,
+            "reps": 15,
+            "time": null
+          },
+          {
+            "weight": 30,
+            "reps": 9,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Deadlift",
+        "sets": [
+          {
+            "weight": 45,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 70,
+            "reps": 7,
+            "time": null
+          },
+          {
+            "weight": 70,
+            "reps": 7,
+            "time": null
+          },
+          {
+            "weight": 70,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Seated row",
+        "sets": [
+          {
+            "weight": 235,
+            "reps": 11,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 6,
+            "time": null
+          },
+          {
+            "weight": 220,
+            "reps": 7,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Squat",
+        "sets": [
+          {
+            "weight": 45,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 45,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 45,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Triceps rope pushdown",
+        "sets": [
+          {
+            "weight": 35,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 35,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-19",
+    "name": "Workout 2026-01-19",
+    "exercises": [
+      {
+        "name": "Cable bar curl",
+        "sets": [
+          {
+            "weight": 60,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 65,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 65,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable bar shoulder row",
+        "sets": [
+          {
+            "weight": 50,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 50,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 50,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Triceps rope pushdown",
+        "sets": [
+          {
+            "weight": 40,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 40,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 40,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-22",
+    "name": "Workout 2026-01-22",
+    "exercises": [
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 15,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable bar curl",
+        "sets": [
+          {
+            "weight": 65,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 65,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 65,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Seated row",
+        "sets": [
+          {
+            "weight": 235,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-28",
+    "name": "Workout 2026-01-28",
+    "exercises": [
+      {
+        "name": "Cable Front Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 17.5,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 17.5,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable bar curl",
+        "sets": [
+          {
+            "weight": 65,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 65,
+            "reps": 9,
+            "time": null
+          },
+          {
+            "weight": 65,
+            "reps": 7,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB curl",
+        "sets": [
+          {
+            "weight": 35,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 35,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB lateral raise",
+        "sets": [
+          {
+            "weight": 35,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 35,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Forearm cable curl",
+        "sets": [
+          {
+            "weight": 35,
+            "reps": 6,
+            "time": null
+          },
+          {
+            "weight": 30,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 25,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 7,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 5,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Seated row",
+        "sets": [
+          {
+            "weight": 235,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 7,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Triceps rope pushdown",
+        "sets": [
+          {
+            "weight": 40,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 40,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 40,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-29",
+    "name": "Workout 2026-01-29",
+    "exercises": [
+      {
+        "name": "DB jump lunge",
+        "sets": [
+          {
+            "weight": 30,
+            "reps": 20,
+            "time": null
+          },
+          {
+            "weight": 35,
+            "reps": 16,
+            "time": null
+          },
+          {
+            "weight": 40,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 40,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Deadlift",
+        "sets": [
+          {
+            "weight": 135,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 155,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 185,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 185,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Pushups",
+        "sets": [
+          {
+            "weight": null,
+            "reps": 25,
+            "time": null
+          },
+          {
+            "weight": null,
+            "reps": 25,
+            "time": null
+          },
+          {
+            "weight": null,
+            "reps": 25,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Squat",
+        "sets": [
+          {
+            "weight": 135,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 155,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 185,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 185,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-30",
+    "name": "Workout 2026-01-30",
+    "exercises": [
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 17.5,
+            "reps": 11,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 9,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable bar curl",
+        "sets": [
+          {
+            "weight": 70,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 70,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 70,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 25,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 30,
+            "reps": 5,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 25,
+            "reps": 5,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Seated row",
+        "sets": [
+          {
+            "weight": 235,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 6,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 4,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-02-05",
+    "name": "Workout 2026-02-05",
+    "exercises": [
+      {
+        "name": "Cable Front Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 17.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 17.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 11,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable bar curl",
+        "sets": [
+          {
+            "weight": 72.5,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 72.5,
+            "reps": 5,
+            "time": null
+          },
+          {
+            "weight": 72.5,
+            "reps": 4,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB hammer curl",
+        "sets": [
+          {
+            "weight": 35,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 35,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 35,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 25,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 27.5,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 27.5,
+            "reps": 5,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Seated row",
+        "sets": [
+          {
+            "weight": 235,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-02-07",
+    "name": "Workout 2026-02-07",
+    "exercises": [
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 17.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 17.5,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable bar curl",
+        "sets": [
+          {
+            "weight": 72.5,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 72.5,
+            "reps": 6,
+            "time": null
+          },
+          {
+            "weight": 72.5,
+            "reps": 5,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB front raise",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Low-to-high chop",
+        "sets": [
+          {
+            "weight": 30,
+            "reps": 12,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 27.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 27.5,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 27.5,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-02-09",
+    "name": "Workout 2026-02-09",
+    "exercises": [
+      {
+        "name": "DB jump lunge",
+        "sets": [
+          {
+            "weight": 40,
+            "reps": 20,
+            "time": null
+          },
+          {
+            "weight": 40,
+            "reps": 14,
+            "time": null
+          },
+          {
+            "weight": 40,
+            "reps": 10,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Deadlift",
+        "sets": [
+          {
+            "weight": 135,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 185,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 205,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 225,
+            "reps": 4,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Squat",
+        "sets": [
+          {
+            "weight": 135,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 185,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 185,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 185,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-02-12",
+    "name": "Workout 2026-02-12",
+    "exercises": [
+      {
+        "name": "Ab Crunch Machine",
+        "sets": [
+          {
+            "weight": 235,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 7,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable bar curl",
+        "sets": [
+          {
+            "weight": 72.5,
+            "reps": 9,
+            "time": null
+          },
+          {
+            "weight": 72.5,
+            "reps": 7,
+            "time": null
+          },
+          {
+            "weight": 72.5,
+            "reps": 5,
+            "time": null
+          },
+          {
+            "weight": 72.5,
+            "reps": 4,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable reverse triceps",
+        "sets": [
+          {
+            "weight": 40,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 50,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 55,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB hammer curl",
+        "sets": [
+          {
+            "weight": 35,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 35,
+            "reps": 9,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 30,
+            "reps": 6,
+            "time": null
+          },
+          {
+            "weight": 27.5,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 27.5,
+            "reps": 6,
+            "time": null
+          },
+          {
+            "weight": 27.5,
+            "reps": 5,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-02-14",
+    "name": "Workout 2026-02-14",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": [
+          {
+            "weight": 185,
+            "reps": 6,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 5,
+            "time": null
+          },
+          {
+            "weight": 235,
+            "reps": 3,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Squat",
+        "sets": [
+          {
+            "weight": 135,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 185,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 195,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 195,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-02-16",
+    "name": "Workout 2026-02-16",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": [
+          {
+            "weight": 235,
+            "reps": 4,
+            "time": null
+          },
+          {
+            "weight": 205,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 205,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Squat",
+        "sets": [
+          {
+            "weight": 135,
+            "reps": 6,
+            "time": null
+          },
+          {
+            "weight": 205,
+            "reps": 6,
+            "time": null
+          },
+          {
+            "weight": 205,
+            "reps": 6,
+            "time": null
+          },
+          {
+            "weight": 205,
+            "reps": 4,
+            "time": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-02-18",
+    "name": "Workout 2026-02-18",
+    "exercises": [
+      {
+        "name": "Cable Lateral Raise (Single-Arm Low Pulley)",
+        "sets": [
+          {
+            "weight": 20,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 10,
+            "time": null
+          },
+          {
+            "weight": 20,
+            "reps": 8,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Cable bar curl",
+        "sets": [
+          {
+            "weight": 72.5,
+            "reps": 9,
+            "time": null
+          },
+          {
+            "weight": 72.5,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 72.5,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "DB hammer curl",
+        "sets": [
+          {
+            "weight": 40,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 40,
+            "reps": 7,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Mid cable fly",
+        "sets": [
+          {
+            "weight": 27.5,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 27.5,
+            "reps": 9,
+            "time": null
+          },
+          {
+            "weight": 27.5,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      },
+      {
+        "name": "Seated row",
+        "sets": [
+          {
+            "weight": 240,
+            "reps": 12,
+            "time": null
+          },
+          {
+            "weight": 240,
+            "reps": 8,
+            "time": null
+          },
+          {
+            "weight": 240,
+            "reps": 6,
+            "time": null
+          }
+        ]
+      }
+    ]
+  }
+]
