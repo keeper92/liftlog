@@ -138,6 +138,7 @@ function ExercisesContent() {
       } else {
         const rows = (data ?? []) as ExerciseRow[];
         setMergeResults(rows);
+        setMergeError(null);
         if (!rows.some((row) => row.id === mergeTarget?.id)) {
           setMergeTarget(null);
         }
