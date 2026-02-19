@@ -1,4 +1,4 @@
-import type { ActiveSet, WorkoutExercise } from '@/stores/activeWorkoutStore';
+import type { ActiveSet, PerformanceSet, WorkoutExercise } from '@/stores/activeWorkoutStore';
 
 export interface PRDetectionResult {
   metric: 'weight' | 'reps';
@@ -9,7 +9,7 @@ export interface PRDetectionResult {
 export function detectPRs(
   completedSet: ActiveSet,
   exercise: WorkoutExercise,
-  previousPerformance: { weight: number; reps: number }[],
+  previousPerformance: PerformanceSet[],
 ): PRDetectionResult[] {
   // Skip cardio exercises (no weight/reps comparison)
   if (exercise.exerciseCategory === 'cardio') return [];

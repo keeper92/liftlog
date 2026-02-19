@@ -341,7 +341,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
           .in('id', setIdsToDelete);
       }
 
-      const setUpdatePromises: Promise<unknown>[] = [];
+      const setUpdatePromises: PromiseLike<unknown>[] = [];
       const setsToInsert: Array<{
         workout_id: string;
         exercise_id: string;

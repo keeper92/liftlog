@@ -33,13 +33,19 @@ export interface WorkoutExercise {
   notes: string;
 }
 
+export interface PerformanceSet {
+  weight: number;
+  reps: number;
+  setNumber?: number;
+}
+
 export interface ActiveWorkoutState {
   workoutId: string | null;
   workoutName: string;
   startTime: string | null;
   exercises: WorkoutExercise[];
   isActive: boolean;
-  previousPerformance: Record<string, { weight: number; reps: number }[]>;
+  previousPerformance: Record<string, PerformanceSet[]>;
   templateId: string | null;
 
   startWorkout: (name?: string, templateId?: string) => void;
@@ -52,7 +58,7 @@ export interface ActiveWorkoutState {
   updateSet: (exerciseIndex: number, setIndex: number, data: Partial<ActiveSet>) => void;
   completeSet: (exerciseIndex: number, setIndex: number) => void;
   removeSet: (exerciseIndex: number, setIndex: number) => void;
-  setPreviousPerformance: (exerciseId: string, sets: { weight: number; reps: number }[]) => void;
+  setPreviousPerformance: (exerciseId: string, sets: PerformanceSet[]) => void;
   finishWorkout: () => { workoutId: string; exercises: WorkoutExercise[]; startTime: string; workoutName: string; templateId: string | null } | null;
   discardWorkout: () => void;
 }
@@ -235,9 +241,10 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
         const lastSet = exercise.sets[exercise.sets.length - 1];
         const prev = state.previousPerformance[exercise.exerciseId];
         const nextSetNum = exercise.sets.length + 1;
+        const prevForSetNumber = prev?.find((s) => s.setNumber === nextSetNum) ?? prev?.[exercise.sets.length];
 
-        const prefillWeight = lastSet?.weight ?? prev?.[exercise.sets.length]?.weight ?? null;
-        const prefillReps = lastSet?.reps ?? prev?.[exercise.sets.length]?.reps ?? null;
+        const prefillWeight = lastSet?.weight ?? prevForSetNumber?.weight ?? null;
+        const prefillReps = lastSet?.reps ?? prevForSetNumber?.reps ?? null;
         const prefillLeftWeight = lastSet?.leftWeight ?? prefillWeight;
         const prefillRightWeight = lastSet?.rightWeight ?? prefillWeight;
         const prefillLeftReps = lastSet?.leftReps ?? prefillReps;
