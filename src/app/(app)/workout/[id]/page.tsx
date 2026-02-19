@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { useActiveWorkoutStore, type ActiveWorkoutState } from '@/stores/activeWorkoutStore';
+import { useActiveWorkoutStore, type ActiveWorkoutState, type PerformanceSet } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import {
   formatDuration,
@@ -55,6 +55,37 @@ interface RestTimerState {
   isActive: boolean;
   secondsRemaining: number;
   totalSeconds: number;
+}
+
+interface PreviousPerformanceRow {
+  id: string;
+  weight: number | null;
+  reps: number | null;
+  left_weight: number | null;
+  left_reps: number | null;
+  right_weight: number | null;
+  right_reps: number | null;
+  is_split_lr: boolean | null;
+  set_number: number | null;
+}
+
+function normalizePreviousPerformanceRow(row: PreviousPerformanceRow): PerformanceSet | null {
+  const splitWeight = Math.max(row.left_weight ?? 0, row.right_weight ?? 0);
+  const splitReps = Math.max(row.left_reps ?? 0, row.right_reps ?? 0);
+  const weight = row.weight ?? (row.is_split_lr ? splitWeight : 0);
+  const reps = row.reps ?? (row.is_split_lr ? splitReps : 0);
+
+  if (weight <= 0 && reps <= 0) return null;
+
+  return {
+    weight,
+    reps,
+    setNumber: row.set_number || undefined,
+  };
+}
+
+function getPreviousSetForNumber(sets: PerformanceSet[], setNumber: number) {
+  return sets.find((s) => s.setNumber === setNumber) ?? sets[setNumber - 1];
 }
 
 function WarmupToggle({ isWarmup, setNumber, onToggle }: { isWarmup: boolean; setNumber: number; onToggle: () => void }) {
@@ -170,29 +201,58 @@ export default function ActiveWorkoutPage() {
 
   // Load previous performance for exercises
   useEffect(() => {
+    let cancelled = false;
+
+    async function fetchPerformanceHistory(userId: string, exerciseId: string): Promise<PerformanceSet[]> {
+      const pageSize = 1000;
+      let from = 0;
+      const history: PerformanceSet[] = [];
+
+      while (!cancelled) {
+        const to = from + pageSize - 1;
+        const { data, error } = await supabase
+          .from('sets')
+          .select('id, weight, reps, left_weight, left_reps, right_weight, right_reps, is_split_lr, set_number, workouts!inner(user_id, date)')
+          .eq('exercise_id', exerciseId)
+          .eq('workouts.user_id', userId)
+          .eq('is_completed', true)
+          .eq('is_warmup', false)
+          .order('workouts(date)', { ascending: false })
+          .order('set_number', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to);
+
+        if (error || !data || data.length === 0) break;
+
+        for (const row of data as unknown as PreviousPerformanceRow[]) {
+          const normalized = normalizePreviousPerformanceRow(row);
+          if (normalized) history.push(normalized);
+        }
+
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+
+      return history;
+    }
+
     async function loadPrevious() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      for (const ex of exercises) {
-        if (previousPerformance[ex.exerciseId]) continue;
-        const { data } = await supabase
-          .from('sets')
-          .select('weight, reps, set_number, workouts!inner(user_id, date)')
-          .eq('exercise_id', ex.exerciseId)
-          .eq('is_completed', true)
-          .eq('is_warmup', false)
-          .order('set_number')
-          .limit(10);
-        if (data && data.length > 0) {
-          setPreviousPerformance(
-            ex.exerciseId,
-            data.map((s) => ({ weight: s.weight || 0, reps: s.reps || 0 })),
-          );
-        }
+      const missingExercises = exercises.filter((ex) => previousPerformance[ex.exerciseId] === undefined);
+
+      for (const ex of missingExercises) {
+        const history = await fetchPerformanceHistory(user.id, ex.exerciseId);
+        if (cancelled) return;
+        setPreviousPerformance(ex.exerciseId, history);
       }
     }
+
     if (exercises.length > 0) loadPrevious();
+    return () => {
+      cancelled = true;
+    };
   }, [exercises, previousPerformance, setPreviousPerformance, supabase]);
 
   const handleFinish = useCallback(async () => {
@@ -798,7 +858,12 @@ function WorkoutContent({
                         onToggle={() => store.updateSet(exIdx, setIdx, { isWarmup: !s.isWarmup })}
                       />
                       <span className="text-center text-sm text-text-muted">
-                        {prev[setIdx] ? `${toDisplayWeight(prev[setIdx].weight, unitSystem)}×${prev[setIdx].reps}` : '-'}
+                        {(() => {
+                          const previousSet = getPreviousSetForNumber(prev, setIdx + 1);
+                          return previousSet
+                            ? `${toDisplayWeight(previousSet.weight, unitSystem)}×${previousSet.reps}`
+                            : '-';
+                        })()}
                       </span>
                       <SetInputCell
                         exerciseIndex={exIdx}
