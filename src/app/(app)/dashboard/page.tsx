@@ -172,7 +172,6 @@ export default function DashboardPage() {
         <div className="px-5 pt-4 flex items-center justify-between gap-3">
           <div>
             <p className="ui-kicker">Dashboard</p>
-            <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-text">Train with intent</h1>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
           {/* Records button */}
@@ -180,12 +179,11 @@ export default function DashboardPage() {
             onClick={() => setShowPRFeed(true)}
             data-tour-anchor="pr-feed"
             aria-label="Open personal records"
-            className="ui-icon-pill relative h-10 px-3 flex items-center justify-center gap-1.5 rounded-full text-xs font-medium text-text-secondary"
+            className="ui-icon-pill relative w-10 h-10 flex items-center justify-center rounded-full text-text-secondary"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            <span>Records</span>
             {unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                 {unreadCount > 9 ? '9+' : unreadCount}
@@ -197,7 +195,7 @@ export default function DashboardPage() {
             onClick={() => setShowHistory(true)}
             data-tour-anchor="history"
             aria-label="Open consistency calendar"
-            className="ui-icon-pill h-10 px-3 flex items-center justify-center gap-1.5 rounded-full text-xs font-medium text-text-secondary"
+            className="ui-icon-pill w-10 h-10 flex items-center justify-center rounded-full text-text-secondary"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -205,7 +203,6 @@ export default function DashboardPage() {
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            <span>Consistency</span>
           </button>
           </div>
         </div>
