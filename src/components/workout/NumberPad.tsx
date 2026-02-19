@@ -18,7 +18,15 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
 
   if (!activeFocus) return null;
 
-  const isReps = activeFocus.field === 'reps';
+  const isReps = activeFocus.field === 'reps' || activeFocus.field === 'leftReps' || activeFocus.field === 'rightReps';
+  const fieldLabelMap: Record<typeof activeFocus.field, string> = {
+    weight: 'Weight',
+    reps: 'Reps',
+    leftWeight: 'Left Weight',
+    leftReps: 'Left Reps',
+    rightWeight: 'Right Weight',
+    rightReps: 'Right Reps',
+  };
 
   const handlePointerDown = (e: React.PointerEvent, action: () => void) => {
     e.stopPropagation();
@@ -67,7 +75,7 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
       {/* Field indicator */}
       <div className="flex items-center justify-center mb-2">
         <span className="text-xs text-white/50 uppercase tracking-wide">
-          {isReps ? 'Reps' : 'Weight'}
+          {fieldLabelMap[activeFocus.field]}
         </span>
       </div>
 

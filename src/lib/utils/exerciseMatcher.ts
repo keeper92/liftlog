@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { getExerciseSearchCandidates, isUnilateralVariantName } from '@/lib/utils/exerciseNaming';
 
 export interface ExerciseMatch {
   inputName: string;
@@ -23,21 +24,44 @@ export async function matchExercises(
 
   for (const inputName of exerciseNames) {
     const normalizedInput = inputName.toLowerCase().trim();
+    const searchCandidates = getExerciseSearchCandidates(normalizedInput);
 
-    // Query using trigram similarity
-    const { data: matches, error } = await supabase
-      .rpc('match_exercise_name', { search_name: normalizedInput })
-      .limit(5);
+    type MatchRow = { id: string; name: string; category: string; similarity: number };
+    let matches: MatchRow[] = [];
 
-    if (error || !matches || matches.length === 0) {
-      // Fallback to ILIKE search if trigram fails
-      const { data: fallbackMatches } = await supabase
-        .from('exercises')
-        .select('id, name, category')
-        .ilike('name', `%${normalizedInput}%`)
-        .limit(5);
+    // Query using trigram similarity, preferring canonicalized search terms.
+    for (const searchTerm of searchCandidates) {
+      const { data, error } = await supabase
+        .rpc('match_exercise_name', { search_name: searchTerm })
+        .limit(8);
 
-      if (fallbackMatches && fallbackMatches.length > 0) {
+      if (error || !data || data.length === 0) continue;
+
+      const filtered = (data as MatchRow[]).filter((match) => !isUnilateralVariantName(match.name));
+      matches = filtered.length > 0 ? filtered : (data as MatchRow[]);
+      if (matches.length > 0) break;
+    }
+
+    if (matches.length === 0) {
+      // Fallback to ILIKE search if trigram fails.
+      type FallbackRow = { id: string; name: string; category: string };
+      let fallbackMatches: FallbackRow[] = [];
+
+      for (const searchTerm of searchCandidates) {
+        const { data } = await supabase
+          .from('exercises')
+          .select('id, name, category')
+          .ilike('name', `%${searchTerm}%`)
+          .limit(8);
+
+        if (!data || data.length === 0) continue;
+
+        const filtered = (data as FallbackRow[]).filter((match) => !isUnilateralVariantName(match.name));
+        fallbackMatches = filtered.length > 0 ? filtered : (data as FallbackRow[]);
+        if (fallbackMatches.length > 0) break;
+      }
+
+      if (fallbackMatches.length > 0) {
         const best = fallbackMatches[0];
         results.push({
           inputName,
@@ -46,10 +70,10 @@ export async function matchExercises(
             name: best.name,
             category: best.category,
           },
-          confidence: 0.6, // Medium confidence for ILIKE matches
-          alternatives: fallbackMatches.slice(1).map((m) => ({
-            id: m.id,
-            name: m.name,
+          confidence: 0.6,
+          alternatives: fallbackMatches.slice(1).map((match) => ({
+            id: match.id,
+            name: match.name,
             score: 0.5,
           })),
         });
@@ -64,14 +88,12 @@ export async function matchExercises(
       continue;
     }
 
-    const best = matches[0] as { id: string; name: string; category: string; similarity: number };
-    const alternatives = (matches as { id: string; name: string; category: string; similarity: number }[])
-      .slice(1)
-      .map((m) => ({
-        id: m.id,
-        name: m.name,
-        score: m.similarity,
-      }));
+    const best = matches[0];
+    const alternatives = matches.slice(1).map((match) => ({
+      id: match.id,
+      name: match.name,
+      score: match.similarity,
+    }));
 
     results.push({
       inputName,

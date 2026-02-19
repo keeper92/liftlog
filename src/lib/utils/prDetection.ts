@@ -20,8 +20,24 @@ export function detectPRs(
   // Skip first-time exercises (no previous data to compare against)
   if (!previousPerformance || previousPerformance.length === 0) return [];
 
-  const currentWeight = completedSet.weight || 0;
-  const currentReps = completedSet.reps || 0;
+  let currentWeight = completedSet.weight || 0;
+  let currentReps = completedSet.reps || 0;
+
+  if (exercise.logMode === 'split_lr') {
+    const sides = [
+      { weight: completedSet.leftWeight || 0, reps: completedSet.leftReps || 0 },
+      { weight: completedSet.rightWeight || 0, reps: completedSet.rightReps || 0 },
+    ].filter((side) => side.weight > 0 || side.reps > 0);
+
+    if (sides.length > 0) {
+      sides.sort((a, b) => {
+        if (b.weight !== a.weight) return b.weight - a.weight;
+        return b.reps - a.reps;
+      });
+      currentWeight = sides[0].weight;
+      currentReps = sides[0].reps;
+    }
+  }
 
   // Skip sets with no meaningful data
   if (currentWeight === 0 && currentReps === 0) return [];

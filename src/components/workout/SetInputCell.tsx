@@ -1,12 +1,12 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
-import { useNumberPad } from './NumberPadContext';
+import { useNumberPad, type NumberPadField } from './NumberPadContext';
 
 interface SetInputCellProps {
   exerciseIndex: number;
   setIndex: number;
-  field: 'weight' | 'reps';
+  field: NumberPadField;
   displayValue: string;
   rawValue: number | null;
   placeholder: string;

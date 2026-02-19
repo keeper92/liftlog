@@ -29,7 +29,16 @@ import { detectPRs, type PRDetectionResult } from '@/lib/utils/prDetection';
 
 interface HistoryEntry {
   date: string;
-  sets: { weight: number | null; reps: number | null; set_number: number }[];
+  sets: {
+    weight: number | null;
+    reps: number | null;
+    left_weight: number | null;
+    left_reps: number | null;
+    right_weight: number | null;
+    right_reps: number | null;
+    is_split_lr: boolean;
+    set_number: number;
+  }[];
 }
 
 interface ExerciseDetails {
@@ -219,6 +228,11 @@ export default function ActiveWorkoutPage() {
           set_number: s.setNumber,
           weight: s.weight,
           reps: s.reps,
+          left_weight: ex.logMode === 'split_lr' ? s.leftWeight : null,
+          left_reps: ex.logMode === 'split_lr' ? s.leftReps : null,
+          right_weight: ex.logMode === 'split_lr' ? s.rightWeight : null,
+          right_reps: ex.logMode === 'split_lr' ? s.rightReps : null,
+          is_split_lr: ex.logMode === 'split_lr',
           time: s.time,
           distance: s.distance,
           is_warmup: s.isWarmup,
@@ -274,7 +288,7 @@ export default function ActiveWorkoutPage() {
 
     const { data } = await supabase
       .from('sets')
-      .select('weight, reps, set_number, is_warmup, workouts!inner(id, date, user_id)')
+      .select('weight, reps, left_weight, left_reps, right_weight, right_reps, is_split_lr, set_number, is_warmup, workouts!inner(id, date, user_id)')
       .eq('exercise_id', exerciseId)
       .eq('workouts.user_id', user.id)
       .eq('is_completed', true)
@@ -300,7 +314,16 @@ export default function ActiveWorkoutPage() {
           sets: w.sets
             .filter((s) => !s.is_warmup)
             .sort((a, b) => a.set_number - b.set_number)
-            .map((s) => ({ weight: s.weight, reps: s.reps, set_number: s.set_number })),
+            .map((s) => ({
+              weight: s.weight,
+              reps: s.reps,
+              left_weight: s.left_weight,
+              left_reps: s.left_reps,
+              right_weight: s.right_weight,
+              right_reps: s.right_reps,
+              is_split_lr: s.is_split_lr || false,
+              set_number: s.set_number,
+            })),
         }));
 
       setHistoryData(history);
@@ -545,14 +568,30 @@ function WorkoutContent({
                     </svg>
                   </div>
                   <div>
-                      <h3 className="font-semibold text-text">{ex.exerciseName}</h3>
+                    <h3 className="font-semibold text-text">{ex.exerciseName}</h3>
+                    <div className="flex items-center gap-2 mt-0.5">
                       <button
                         onClick={() => setTrainingGuideMenu({ exerciseId: ex.exerciseId, exerciseName: ex.exerciseName })}
                         className="text-xs text-primary hover:text-primary-light font-medium"
                       >
                         Training Guide
                       </button>
+                      {ex.exerciseCategory !== 'cardio' && (
+                        <button
+                          onClick={() =>
+                            store.setExerciseLogMode(exIdx, ex.logMode === 'split_lr' ? 'combined' : 'split_lr')
+                          }
+                          className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors ${
+                            ex.logMode === 'split_lr'
+                              ? 'border-primary/30 bg-primary/10 text-primary'
+                              : 'border-border text-text-muted hover:text-text'
+                          }`}
+                        >
+                          {ex.logMode === 'split_lr' ? 'Combined' : 'Split L/R'}
+                        </button>
+                      )}
                     </div>
+                  </div>
                 </div>
                 <button
                   onClick={() => store.removeExercise(ex.exerciseId)}
@@ -571,13 +610,22 @@ function WorkoutContent({
                   <span></span>
                 </div>
               ) : (
-                <div className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 text-xs text-text-muted mb-2 text-center">
-                  <span>SET</span>
-                  <span>PREV</span>
-                  <span>{unit.toUpperCase()}</span>
-                  <span>REPS</span>
-                  <span></span>
-                </div>
+                ex.logMode === 'split_lr' ? (
+                  <div className="grid grid-cols-[40px_1fr_1fr_40px] gap-2 text-[11px] text-text-muted mb-2 text-center">
+                    <span>SET</span>
+                    <span>L ({unit.toUpperCase()} / REPS)</span>
+                    <span>R ({unit.toUpperCase()} / REPS)</span>
+                    <span></span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 text-xs text-text-muted mb-2 text-center">
+                    <span>SET</span>
+                    <span>PREV</span>
+                    <span>{unit.toUpperCase()}</span>
+                    <span>REPS</span>
+                    <span></span>
+                  </div>
+                )
               )}
 
               {/* Set Rows - Cardio vs Strength */}
@@ -648,75 +696,166 @@ function WorkoutContent({
               ) : (
                 // Strength: custom number pad inputs
                 ex.sets.map((s, setIdx) => (
-                  <div
-                    key={s.id}
-                    className={`grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 items-center mb-2 ${
-                      s.isCompleted ? 'opacity-60' : ''
-                    }`}
-                  >
-                    <WarmupToggle
-                      isWarmup={s.isWarmup}
-                      setNumber={s.setNumber}
-                      onToggle={() => store.updateSet(exIdx, setIdx, { isWarmup: !s.isWarmup })}
-                    />
-                    <span className="text-center text-sm text-text-muted">
-                      {prev[setIdx] ? `${toDisplayWeight(prev[setIdx].weight, unitSystem)}×${prev[setIdx].reps}` : '-'}
-                    </span>
-                    <SetInputCell
-                      exerciseIndex={exIdx}
-                      setIndex={setIdx}
-                      field="weight"
-                      displayValue={s.weight !== null ? String(toDisplayWeight(s.weight, unitSystem)) : ''}
-                      rawValue={s.weight}
-                      placeholder="0"
-                      isCompleted={s.isCompleted}
-                    />
-                    <SetInputCell
-                      exerciseIndex={exIdx}
-                      setIndex={setIdx}
-                      field="reps"
-                      displayValue={s.reps !== null ? String(s.reps) : ''}
-                      rawValue={s.reps}
-                      placeholder="0"
-                      isCompleted={s.isCompleted}
-                    />
-                    <button
-                      onClick={() => {
-                        if (s.isCompleted) {
-                          store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
-                        } else {
-                          store.completeSet(exIdx, setIdx);
-                          if (!s.isWarmup) startRestTimer(ex.restTimerSeconds);
-                          // PR detection for manual checkmark
-                          const prevPerf = store.previousPerformance[ex.exerciseId] || [];
-                          const prs = detectPRs(s, ex, prevPerf);
-                          const prStoreState = usePRStore.getState();
-                          for (const pr of prs) {
-                            if (store.workoutId && !prStoreState.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
-                              prStoreState.markFired(store.workoutId, ex.exerciseId, pr.metric);
-                              prStoreState.addPR({
-                                exerciseId: ex.exerciseId,
-                                exerciseName: ex.exerciseName,
-                                metric: pr.metric,
-                                previousValue: pr.previousValue,
-                                newValue: pr.newValue,
-                                date: new Date().toISOString(),
-                                workoutId: store.workoutId,
-                              });
-                              onPRDetected(ex.exerciseName, pr);
-                            }
-                          }
-                        }
-                      }}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        s.isCompleted ? 'bg-success text-white' : 'bg-surface-light text-text-muted'
+                  ex.logMode === 'split_lr' ? (
+                    <div
+                      key={s.id}
+                      className={`grid grid-cols-[40px_1fr_1fr_40px] gap-2 items-center mb-2 ${
+                        s.isCompleted ? 'opacity-60' : ''
                       }`}
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    </button>
-                  </div>
+                      <WarmupToggle
+                        isWarmup={s.isWarmup}
+                        setNumber={s.setNumber}
+                        onToggle={() => store.updateSet(exIdx, setIdx, { isWarmup: !s.isWarmup })}
+                      />
+                      <div className="grid grid-cols-2 gap-1">
+                        <SetInputCell
+                          exerciseIndex={exIdx}
+                          setIndex={setIdx}
+                          field="leftWeight"
+                          displayValue={s.leftWeight !== null ? String(toDisplayWeight(s.leftWeight, unitSystem)) : ''}
+                          rawValue={s.leftWeight}
+                          placeholder="0"
+                          isCompleted={s.isCompleted}
+                        />
+                        <SetInputCell
+                          exerciseIndex={exIdx}
+                          setIndex={setIdx}
+                          field="leftReps"
+                          displayValue={s.leftReps !== null ? String(s.leftReps) : ''}
+                          rawValue={s.leftReps}
+                          placeholder="0"
+                          isCompleted={s.isCompleted}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-1">
+                        <SetInputCell
+                          exerciseIndex={exIdx}
+                          setIndex={setIdx}
+                          field="rightWeight"
+                          displayValue={s.rightWeight !== null ? String(toDisplayWeight(s.rightWeight, unitSystem)) : ''}
+                          rawValue={s.rightWeight}
+                          placeholder="0"
+                          isCompleted={s.isCompleted}
+                        />
+                        <SetInputCell
+                          exerciseIndex={exIdx}
+                          setIndex={setIdx}
+                          field="rightReps"
+                          displayValue={s.rightReps !== null ? String(s.rightReps) : ''}
+                          rawValue={s.rightReps}
+                          placeholder="0"
+                          isCompleted={s.isCompleted}
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (s.isCompleted) {
+                            store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
+                          } else {
+                            store.completeSet(exIdx, setIdx);
+                            if (!s.isWarmup) startRestTimer(ex.restTimerSeconds);
+                            // PR detection for manual checkmark
+                            const prevPerf = store.previousPerformance[ex.exerciseId] || [];
+                            const prs = detectPRs(s, ex, prevPerf);
+                            const prStoreState = usePRStore.getState();
+                            for (const pr of prs) {
+                              if (store.workoutId && !prStoreState.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
+                                prStoreState.markFired(store.workoutId, ex.exerciseId, pr.metric);
+                                prStoreState.addPR({
+                                  exerciseId: ex.exerciseId,
+                                  exerciseName: ex.exerciseName,
+                                  metric: pr.metric,
+                                  previousValue: pr.previousValue,
+                                  newValue: pr.newValue,
+                                  date: new Date().toISOString(),
+                                  workoutId: store.workoutId,
+                                });
+                                onPRDetected(ex.exerciseName, pr);
+                              }
+                            }
+                          }
+                        }}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          s.isCompleted ? 'bg-success text-white' : 'bg-surface-light text-text-muted'
+                        }`}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      key={s.id}
+                      className={`grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 items-center mb-2 ${
+                        s.isCompleted ? 'opacity-60' : ''
+                      }`}
+                    >
+                      <WarmupToggle
+                        isWarmup={s.isWarmup}
+                        setNumber={s.setNumber}
+                        onToggle={() => store.updateSet(exIdx, setIdx, { isWarmup: !s.isWarmup })}
+                      />
+                      <span className="text-center text-sm text-text-muted">
+                        {prev[setIdx] ? `${toDisplayWeight(prev[setIdx].weight, unitSystem)}×${prev[setIdx].reps}` : '-'}
+                      </span>
+                      <SetInputCell
+                        exerciseIndex={exIdx}
+                        setIndex={setIdx}
+                        field="weight"
+                        displayValue={s.weight !== null ? String(toDisplayWeight(s.weight, unitSystem)) : ''}
+                        rawValue={s.weight}
+                        placeholder="0"
+                        isCompleted={s.isCompleted}
+                      />
+                      <SetInputCell
+                        exerciseIndex={exIdx}
+                        setIndex={setIdx}
+                        field="reps"
+                        displayValue={s.reps !== null ? String(s.reps) : ''}
+                        rawValue={s.reps}
+                        placeholder="0"
+                        isCompleted={s.isCompleted}
+                      />
+                      <button
+                        onClick={() => {
+                          if (s.isCompleted) {
+                            store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
+                          } else {
+                            store.completeSet(exIdx, setIdx);
+                            if (!s.isWarmup) startRestTimer(ex.restTimerSeconds);
+                            // PR detection for manual checkmark
+                            const prevPerf = store.previousPerformance[ex.exerciseId] || [];
+                            const prs = detectPRs(s, ex, prevPerf);
+                            const prStoreState = usePRStore.getState();
+                            for (const pr of prs) {
+                              if (store.workoutId && !prStoreState.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
+                                prStoreState.markFired(store.workoutId, ex.exerciseId, pr.metric);
+                                prStoreState.addPR({
+                                  exerciseId: ex.exerciseId,
+                                  exerciseName: ex.exerciseName,
+                                  metric: pr.metric,
+                                  previousValue: pr.previousValue,
+                                  newValue: pr.newValue,
+                                  date: new Date().toISOString(),
+                                  workoutId: store.workoutId,
+                                });
+                                onPRDetected(ex.exerciseName, pr);
+                              }
+                            }
+                          }
+                        }}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          s.isCompleted ? 'bg-success text-white' : 'bg-surface-light text-text-muted'
+                        }`}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )
                 ))
               )}
 
@@ -808,7 +947,18 @@ function WorkoutContent({
                 <div className="space-y-1">
                   {entry.sets.map((s, sIdx) => (
                     <p key={sIdx} className="text-sm text-text-secondary">
-                      Set {s.set_number}: {s.weight ? `${toDisplayWeight(s.weight, unitSystem)} ${unit}` : '-'} × {s.reps || '-'} reps
+                      Set {s.set_number}:{' '}
+                      {s.is_split_lr ? (
+                        <>
+                          L {s.left_weight ? `${toDisplayWeight(s.left_weight, unitSystem)} ${unit}` : '-'} x {s.left_reps || '-'}
+                          {' '}|{' '}
+                          R {s.right_weight ? `${toDisplayWeight(s.right_weight, unitSystem)} ${unit}` : '-'} x {s.right_reps || '-'}
+                        </>
+                      ) : (
+                        <>
+                          {s.weight ? `${toDisplayWeight(s.weight, unitSystem)} ${unit}` : '-'} x {s.reps || '-'} reps
+                        </>
+                      )}
                     </p>
                   ))}
                 </div>
