@@ -1,14 +1,31 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePRStore, type PRRecord } from '@/stores/prStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { toDisplayWeight, weightUnit } from '@/lib/utils/units';
+import { createClient } from '@/lib/supabase/client';
 import Button from '@/components/ui/Button';
 
 interface PRFeedOverlayProps {
   onClose: () => void;
   onStartWorkout?: () => void;
+}
+
+interface PRFeedSetRow {
+  exercise_id: string;
+  set_number: number | null;
+  weight: number | null;
+  reps: number | null;
+  is_warmup: boolean | null;
+  is_completed: boolean | null;
+  exercises: { name: string } | { name: string }[] | null;
+}
+
+interface PRFeedWorkoutRow {
+  id: string;
+  date: string;
+  sets: PRFeedSetRow[] | null;
 }
 
 function formatPRImprovement(pr: PRRecord, unitSystem: 'imperial' | 'metric'): string {
@@ -17,10 +34,10 @@ function formatPRImprovement(pr: PRRecord, unitSystem: 'imperial' | 'metric'): s
     const diff = toDisplayWeight(pr.newValue - pr.previousValue, unitSystem);
     const prev = toDisplayWeight(pr.previousValue, unitSystem);
     const curr = toDisplayWeight(pr.newValue, unitSystem);
-    return `+${diff} ${unit} (${prev} → ${curr} ${unit})`;
+    return `+${diff} ${unit} (${prev} -> ${curr} ${unit})`;
   }
   const diff = pr.newValue - pr.previousValue;
-  return `+${diff} reps (${pr.previousValue} → ${pr.newValue})`;
+  return `+${diff} reps (${pr.previousValue} -> ${pr.newValue})`;
 }
 
 function groupByDate(records: PRRecord[]): { dateLabel: string; items: PRRecord[] }[] {
@@ -40,16 +57,132 @@ function groupByDate(records: PRRecord[]): { dateLabel: string; items: PRRecord[
   return Array.from(groups.entries()).map(([dateLabel, items]) => ({ dateLabel, items }));
 }
 
+function resolveExerciseName(value: PRFeedSetRow['exercises']): string {
+  if (!value) return 'Exercise';
+  if (Array.isArray(value)) return value[0]?.name ?? 'Exercise';
+  return value.name;
+}
+
+function buildHistoricalPRs(workouts: PRFeedWorkoutRow[]): PRRecord[] {
+  const perExercise = new Map<string, { bestWeight: number; bestRepsByWeight: Map<number, number> }>();
+  const result: PRRecord[] = [];
+
+  for (const workout of workouts) {
+    const sets = [...(workout.sets || [])].sort((a, b) => (a.set_number || 0) - (b.set_number || 0));
+
+    for (let i = 0; i < sets.length; i += 1) {
+      const set = sets[i];
+      if (set.is_completed === false || set.is_warmup) continue;
+
+      const weight = set.weight ?? 0;
+      const reps = set.reps ?? 0;
+      if (weight <= 0 || reps <= 0) continue;
+
+      const exerciseId = set.exercise_id;
+      const exerciseName = resolveExerciseName(set.exercises);
+
+      const state = perExercise.get(exerciseId);
+      if (!state) {
+        const baseline = new Map<number, number>();
+        baseline.set(weight, reps);
+        perExercise.set(exerciseId, { bestWeight: weight, bestRepsByWeight: baseline });
+        continue;
+      }
+
+      if (weight > state.bestWeight && state.bestWeight > 0) {
+        result.push({
+          id: `hist:${workout.id}:${exerciseId}:${i}:weight`,
+          exerciseId,
+          exerciseName,
+          metric: 'weight',
+          previousValue: state.bestWeight,
+          newValue: weight,
+          date: workout.date,
+          workoutId: workout.id,
+        });
+      } else if (weight >= state.bestWeight && state.bestWeight > 0) {
+        const prevBestRepsAtWeight = state.bestRepsByWeight.get(weight) || 0;
+        if (prevBestRepsAtWeight > 0 && reps > prevBestRepsAtWeight) {
+          result.push({
+            id: `hist:${workout.id}:${exerciseId}:${i}:reps`,
+            exerciseId,
+            exerciseName,
+            metric: 'reps',
+            previousValue: prevBestRepsAtWeight,
+            newValue: reps,
+            date: workout.date,
+            workoutId: workout.id,
+          });
+        }
+      }
+
+      state.bestWeight = Math.max(state.bestWeight, weight);
+      state.bestRepsByWeight.set(weight, Math.max(state.bestRepsByWeight.get(weight) || 0, reps));
+    }
+  }
+
+  return result;
+}
+
 export default function PRFeedOverlay({ onClose, onStartWorkout }: PRFeedOverlayProps) {
+  const supabase = useMemo(() => createClient(), []);
   const records = usePRStore((s) => s.records);
   const markAllRead = usePRStore((s) => s.markAllRead);
   const unitSystem = useSettingsStore((s) => s.unitSystem);
+  const [historyRecords, setHistoryRecords] = useState<PRRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
   useEffect(() => {
     markAllRead();
   }, [markAllRead]);
 
-  const grouped = groupByDate(records);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadHistoricalPRs() {
+      setHistoryLoading(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        if (!cancelled) {
+          setHistoryRecords([]);
+          setHistoryLoading(false);
+        }
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('workouts')
+        .select('id, date, sets(exercise_id, set_number, weight, reps, is_warmup, is_completed, exercises(name))')
+        .eq('user_id', user.id)
+        .order('date', { ascending: true })
+        .limit(500);
+
+      if (cancelled) return;
+
+      if (error || !data) {
+        setHistoryRecords([]);
+        setHistoryLoading(false);
+        return;
+      }
+
+      const computed = buildHistoricalPRs(data as unknown as PRFeedWorkoutRow[])
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 120);
+
+      setHistoryRecords(computed);
+      setHistoryLoading(false);
+    }
+
+    loadHistoricalPRs();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase]);
+
+  const displayRecords = records.length > 0 ? records : historyRecords;
+  const grouped = groupByDate(displayRecords);
 
   return (
     <div className="fixed inset-0 z-[70] bg-background flex flex-col">
@@ -72,14 +205,14 @@ export default function PRFeedOverlay({ onClose, onStartWorkout }: PRFeedOverlay
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-5 pt-4 pb-8">
-        {records.length === 0 ? (
+        {displayRecords.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-12 h-12 rounded-full border border-border/80 bg-surface-light flex items-center justify-center mx-auto mb-3">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-muted">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
             </div>
-            <p className="text-text-muted">No records yet</p>
+            <p className="text-text-muted">{historyLoading ? 'Loading records...' : 'No records yet'}</p>
             <p className="text-text-muted text-sm mt-1">Log a few workouts, then beat your baseline to unlock PRs.</p>
             {onStartWorkout && (
               <Button onClick={onStartWorkout} size="sm" className="mt-4">
