@@ -28,13 +28,26 @@ interface PRFeedWorkoutRow {
   sets: PRFeedSetRow[] | null;
 }
 
+interface PersonalRecordRow {
+  exercise_id: string;
+  exercise_name: string;
+  max_weight: number;
+  max_reps: number;
+}
+
 function formatPRImprovement(pr: PRRecord, unitSystem: 'imperial' | 'metric'): string {
   const unit = weightUnit(unitSystem);
   if (pr.metric === 'weight') {
+    const curr = toDisplayWeight(pr.newValue, unitSystem);
+    if (pr.previousValue <= 0) {
+      return `Best: ${curr} ${unit}`;
+    }
     const diff = toDisplayWeight(pr.newValue - pr.previousValue, unitSystem);
     const prev = toDisplayWeight(pr.previousValue, unitSystem);
-    const curr = toDisplayWeight(pr.newValue, unitSystem);
     return `+${diff} ${unit} (${prev} -> ${curr} ${unit})`;
+  }
+  if (pr.previousValue <= 0) {
+    return `Best: ${pr.newValue} reps`;
   }
   const diff = pr.newValue - pr.previousValue;
   return `+${diff} reps (${pr.previousValue} -> ${pr.newValue})`;
@@ -124,6 +137,38 @@ function buildHistoricalPRs(workouts: PRFeedWorkoutRow[]): PRRecord[] {
   return result;
 }
 
+function mapPersonalRecordsToFeed(records: PersonalRecordRow[]): PRRecord[] {
+  const now = new Date().toISOString();
+  return records
+    .slice(0, 120)
+    .map((row) => {
+      if ((row.max_weight || 0) > 0) {
+        return {
+          id: `snapshot:${row.exercise_id}:weight`,
+          exerciseId: row.exercise_id,
+          exerciseName: row.exercise_name,
+          metric: 'weight' as const,
+          previousValue: 0,
+          newValue: row.max_weight,
+          date: now,
+          workoutId: 'snapshot',
+        };
+      }
+
+      return {
+        id: `snapshot:${row.exercise_id}:reps`,
+        exerciseId: row.exercise_id,
+        exerciseName: row.exercise_name,
+        metric: 'reps' as const,
+        previousValue: 0,
+        newValue: row.max_reps || 0,
+        date: now,
+        workoutId: 'snapshot',
+      };
+    })
+    .filter((row) => row.newValue > 0);
+}
+
 export default function PRFeedOverlay({ onClose, onStartWorkout }: PRFeedOverlayProps) {
   const supabase = useMemo(() => createClient(), []);
   const records = usePRStore((s) => s.records);
@@ -139,45 +184,78 @@ export default function PRFeedOverlay({ onClose, onStartWorkout }: PRFeedOverlay
   useEffect(() => {
     let cancelled = false;
 
-    async function loadHistoricalPRs() {
-      setHistoryLoading(true);
+    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+    async function loadHistoricalPRs() {
+      try {
+        setHistoryLoading(true);
+
+        // Auth hydration can lag behind overlay mount right after login.
+        // Retry for a few seconds so we don't lock into an empty feed.
+        let userId: string | null = null;
+        for (let attempt = 0; attempt < 20; attempt += 1) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user?.id) {
+            userId = session.user.id;
+            break;
+          }
+          await wait(250);
+        }
+
+        if (!userId) {
+          if (!cancelled) {
+            setHistoryRecords([]);
+            setHistoryLoading(false);
+          }
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('workouts')
+          .select('id, date, sets(exercise_id, set_number, weight, reps, is_warmup, is_completed, exercises(name))')
+          .order('date', { ascending: true })
+          .limit(1000);
+
+        if (cancelled) return;
+
+        if (!error && data) {
+          const computed = buildHistoricalPRs(data as unknown as PRFeedWorkoutRow[])
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .slice(0, 120);
+
+          if (computed.length > 0) {
+            setHistoryRecords(computed);
+            setHistoryLoading(false);
+            return;
+          }
+        }
+
+        // Fallback: show personal-record snapshot if per-set PR derivation yields no events.
+        const { data: prData } = await supabase.rpc('get_personal_records', { user_uuid: userId });
+        const fallback = mapPersonalRecordsToFeed((prData || []) as PersonalRecordRow[]);
+        setHistoryRecords(fallback);
+        setHistoryLoading(false);
+      } catch {
         if (!cancelled) {
           setHistoryRecords([]);
           setHistoryLoading(false);
         }
-        return;
       }
-
-      const { data, error } = await supabase
-        .from('workouts')
-        .select('id, date, sets(exercise_id, set_number, weight, reps, is_warmup, is_completed, exercises(name))')
-        .eq('user_id', user.id)
-        .order('date', { ascending: true })
-        .limit(500);
-
-      if (cancelled) return;
-
-      if (error || !data) {
-        setHistoryRecords([]);
-        setHistoryLoading(false);
-        return;
-      }
-
-      const computed = buildHistoricalPRs(data as unknown as PRFeedWorkoutRow[])
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 120);
-
-      setHistoryRecords(computed);
-      setHistoryLoading(false);
     }
 
     loadHistoricalPRs();
 
+    const { data: authSub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+        if (session?.user?.id) {
+          loadHistoricalPRs();
+        }
+      }
+    });
+
     return () => {
       cancelled = true;
+      authSub.subscription.unsubscribe();
     };
   }, [supabase]);
 
