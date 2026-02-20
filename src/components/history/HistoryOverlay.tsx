@@ -961,16 +961,6 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                 })}
               </div>
 
-              <div className="mt-3 flex items-center justify-center gap-4 text-[11px] text-text-secondary">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-primary" />
-                  <span>Workout logged</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-text" />
-                  <span>Today</span>
-                </div>
-              </div>
             </div>
 
             {/* Selected date details */}
