@@ -23,15 +23,6 @@ interface ProgressPoint {
   best_reps: number;
 }
 
-interface PersonalRecord {
-  exercise_id: string;
-  exercise_name: string;
-  max_weight: number;
-  max_reps: number;
-  max_volume: number;
-  estimated_1rm: number;
-}
-
 export default function ProgressPage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -40,7 +31,6 @@ export default function ProgressPage() {
   const [exercises, setExercises] = useState<ExerciseOption[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<string>('');
   const [progressData, setProgressData] = useState<ProgressPoint[]>([]);
-  const [records, setRecords] = useState<PersonalRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   const unit = weightUnit(unitSystem);
@@ -70,10 +60,6 @@ export default function ProgressPage() {
         setExercises(opts);
         if (opts.length > 0) setSelectedExercise(opts[0].id);
       }
-
-      // Load personal records
-      const { data: prData } = await supabase.rpc('get_personal_records', { user_uuid: user.id });
-      if (prData) setRecords((prData as PersonalRecord[]).slice(0, 10));
 
       setLoading(false);
     }
@@ -107,6 +93,14 @@ export default function ProgressPage() {
     date: new Date(p.workout_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
     maxWeight: Math.round(toDisplayWeight(p.best_weight, unitSystem)),
   }));
+  const selectedExerciseStats = progressData.reduce(
+    (stats, point) => ({
+      maxWeight: Math.max(stats.maxWeight, point.best_weight),
+      maxReps: Math.max(stats.maxReps, point.best_reps),
+      estimated1RM: Math.max(stats.estimated1RM, point.estimated_1rm),
+    }),
+    { maxWeight: 0, maxReps: 0, estimated1RM: 0 },
+  );
   const sessionsNeeded = Math.max(chartUnlockThreshold - chartData.length, 0);
 
   function handleStartWorkout() {
@@ -122,7 +116,6 @@ export default function ProgressPage() {
       <div className="px-5 pt-4">
       <div className="mb-5">
         <p className="ui-kicker">Progress</p>
-        <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-text">Track your momentum</h1>
       </div>
       {exercises.length === 0 ? (
         <div className="text-center py-12">
@@ -200,39 +193,34 @@ export default function ProgressPage() {
               </Button>
             </Card>
           )}
-        </>
-      )}
 
-      {/* Personal Records */}
-      {records.length > 0 && (
-        <div className="mt-6">
-          <h2 className="ui-kicker mb-3">Personal Records</h2>
-          <div className="space-y-3">
-            {records.map((pr) => (
-              <Card key={pr.exercise_id}>
-                <p className="font-semibold text-sm mb-3">{pr.exercise_name}</p>
+          {progressData.length > 0 && (
+            <div className="mt-6">
+              <h2 className="ui-kicker mb-3">Exercise Stats</h2>
+              <Card>
+                <p className="font-semibold text-sm mb-3">{selectedExerciseName}</p>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="text-center bg-background-elevated rounded-xl py-2">
                     <p className="text-lg font-bold text-primary">
-                      {toDisplayWeight(pr.max_weight, unitSystem)}
+                      {toDisplayWeight(selectedExerciseStats.maxWeight, unitSystem)}
                     </p>
                     <p className="text-xs text-text-muted">Max {unit}</p>
                   </div>
                   <div className="text-center bg-background-elevated rounded-xl py-2">
-                    <p className="text-lg font-bold text-primary">{pr.max_reps}</p>
+                    <p className="text-lg font-bold text-primary">{selectedExerciseStats.maxReps}</p>
                     <p className="text-xs text-text-muted">Max Reps</p>
                   </div>
                   <div className="text-center bg-background-elevated rounded-xl py-2">
                     <p className="text-lg font-bold text-primary">
-                      {Math.round(toDisplayWeight(pr.estimated_1rm, unitSystem))}
+                      {Math.round(toDisplayWeight(selectedExerciseStats.estimated1RM, unitSystem))}
                     </p>
                     <p className="text-xs text-text-muted">Est 1RM</p>
                   </div>
                 </div>
               </Card>
-            ))}
-          </div>
-        </div>
+            </div>
+          )}
+        </>
       )}
       </div>
     </div>
