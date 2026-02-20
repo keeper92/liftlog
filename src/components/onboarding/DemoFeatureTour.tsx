@@ -24,7 +24,7 @@ interface TooltipPosition {
   placement: StepPlacement;
 }
 
-const TOOLTIP_MAX_WIDTH = 340;
+const TOOLTIP_MAX_WIDTH = 280;
 const VIEWPORT_PADDING = 12;
 const TARGET_PADDING = 8;
 const TARGET_OFFSET = 14;
@@ -34,35 +34,35 @@ const STEPS: TourStep[] = [
     id: 'dashboard',
     target: '[data-tour-anchor="start-workout"]',
     title: 'Dashboard',
-    description: 'Start a new workout here, or jump back into one already in progress.',
+    description: 'Start a workout, or resume one in progress.',
     preferredPlacement: 'top',
   },
   {
     id: 'pr',
     target: '[data-tour-anchor="pr-feed"]',
     title: 'PR Feed',
-    description: 'Catch your latest PRs at a glance and celebrate your wins.',
+    description: 'See your latest PRs at a glance.',
     preferredPlacement: 'bottom',
   },
   {
     id: 'calendar',
     target: '[data-tour-anchor="history"]',
     title: 'Calendar',
-    description: 'Track consistency, streaks, and your recent training history.',
+    description: 'Check consistency, streaks, and recent sessions.',
     preferredPlacement: 'bottom',
   },
   {
     id: 'progress',
     target: '[data-tour-anchor="nav-progress"]',
     title: 'Progress',
-    description: 'See trends, charts, and exercise-by-exercise stats over time.',
+    description: 'Track trends and exercise stats over time.',
     preferredPlacement: 'top',
   },
   {
     id: 'trainer',
     target: '[data-tour-anchor="nav-trainer"]',
     title: 'Trainer',
-    description: 'Build custom workout templates and get personalized coaching and analysis.',
+    description: 'Build templates and get personalized coaching.',
     preferredPlacement: 'top',
   },
 ];
@@ -73,13 +73,6 @@ function clamp(value: number, min: number, max: number) {
 
 function findNextMountedStepIndex(startIndex: number) {
   for (let i = startIndex; i < STEPS.length; i += 1) {
-    if (document.querySelector(STEPS[i].target)) return i;
-  }
-  return -1;
-}
-
-function findPreviousMountedStepIndex(startIndex: number) {
-  for (let i = startIndex; i >= 0; i -= 1) {
     if (document.querySelector(STEPS[i].target)) return i;
   }
   return -1;
@@ -181,11 +174,6 @@ export default function DemoFeatureTour({ onFinish }: DemoFeatureTourProps) {
     };
   }, [targetRect]);
 
-  const goBack = () => {
-    const previousIndex = findPreviousMountedStepIndex(stepIndex - 1);
-    if (previousIndex !== -1) setStepIndex(previousIndex);
-  };
-
   const goNext = () => {
     const nextIndex = findNextMountedStepIndex(stepIndex + 1);
     if (nextIndex === -1) {
@@ -198,7 +186,6 @@ export default function DemoFeatureTour({ onFinish }: DemoFeatureTourProps) {
   if (!highlightStyle || !tooltipPosition) return null;
 
   const currentStep = STEPS[stepIndex];
-  const canGoBack = findPreviousMountedStepIndex(stepIndex - 1) !== -1;
   const canGoNext = findNextMountedStepIndex(stepIndex + 1) !== -1;
   const progressPercent = ((stepIndex + 1) / STEPS.length) * 100;
 
@@ -215,52 +202,35 @@ export default function DemoFeatureTour({ onFinish }: DemoFeatureTourProps) {
 
       <div
         ref={tooltipRef}
-        className="ui-overlay-shell absolute z-10 rounded-3xl p-5 animate-fade-in"
+        className="ui-overlay-shell absolute z-10 rounded-2xl p-3 animate-fade-in"
         style={{
           top: tooltipPosition.top,
           left: tooltipPosition.left,
           width: tooltipPosition.width,
         }}
       >
-        <div className="flex items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface-light/70 px-3 py-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">Demo Tour</p>
-          </div>
-          <p className="text-xs font-semibold text-text-muted">
-            {stepIndex + 1} / {STEPS.length}
-          </p>
-        </div>
+        <h3 className="text-base font-semibold tracking-tight text-text">{currentStep.title}</h3>
+        <p className="mt-1 text-[13px] leading-snug text-text-secondary">{currentStep.description}</p>
 
-        <h3 className="mt-3 text-[18px] font-semibold tracking-tight text-text">{currentStep.title}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-text-secondary">{currentStep.description}</p>
-
-        <div className="mt-4 h-1.5 rounded-full bg-surface-light">
+        <div className="mt-2.5 h-1 rounded-full bg-surface-light">
           <div
             className="h-full rounded-full bg-primary transition-all duration-200"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
 
-        <div className="mt-5 flex items-center justify-between">
+        <div className="mt-2.5 flex items-center justify-between">
           <button
             type="button"
             onClick={onFinish}
-            className="text-sm font-medium text-text-muted transition-colors hover:text-text"
+            className="text-xs font-medium text-text-muted transition-colors hover:text-text"
           >
             Skip tour
           </button>
 
-          <div className="flex items-center gap-2">
-            {canGoBack && (
-              <Button type="button" size="sm" variant="ghost" onClick={goBack}>
-                Back
-              </Button>
-            )}
-            <Button type="button" size="sm" onClick={goNext}>
-              {canGoNext ? 'Next' : 'Done'}
-            </Button>
-          </div>
+          <Button type="button" size="sm" onClick={goNext} className="min-h-[34px] px-3 text-xs">
+            {canGoNext ? 'Next' : 'Done'}
+          </Button>
         </div>
       </div>
     </div>
