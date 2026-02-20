@@ -12,12 +12,23 @@ import type { TrainerProfile } from '@/lib/types/user';
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_SUGGESTIONS = [
+const MAIN_SUGGESTIONS = [
+  'Set up your training profile',
+  'Modify your training profile',
   'Create a workout template',
-  'Suggest a workout for today',
   'Analyze my progress',
-  'Import workout data',
 ];
+
+const TEMPLATE_REVIEW_SUGGESTIONS = 'suggestions:Swap exercise|Try new move|Adjust focus|Looks good';
+
+function ensureSuggestionsLine(content: string, suggestionsLine: string): string {
+  const trimmed = content.trim();
+  if (!trimmed) return `Here is a draft template. Want any changes?\n${suggestionsLine}`;
+  const lines = trimmed.split('\n');
+  const lastLine = lines[lines.length - 1]?.trim() || '';
+  if (lastLine.startsWith('suggestions:')) return trimmed;
+  return `${trimmed}\n${suggestionsLine}`;
+}
 
 interface ExerciseHistory {
   date: string;
@@ -331,7 +342,7 @@ function TrainerContent() {
     if (!messageText || isLoading || !context) return;
 
     // Auto-detect profile update requests
-    if (!profileMode && /update.*profile|edit.*profile|change.*profile|redo.*profile|set up.*profile|setup.*profile/i.test(messageText)) {
+    if (!profileMode && /update.*profile|edit.*profile|change.*profile|modify.*profile|redo.*profile|set up.*profile|setup.*profile/i.test(messageText)) {
       startProfileSetup();
       return;
     }
@@ -428,7 +439,12 @@ function TrainerContent() {
             exercises: templateResponse.templateData.exercises,
             status: 'pending',
           };
-          updateMessage(assistantId, templateResponse.text, undefined, templateData);
+          updateMessage(
+            assistantId,
+            ensureSuggestionsLine(templateResponse.text, TEMPLATE_REVIEW_SUGGESTIONS),
+            undefined,
+            templateData,
+          );
         } else {
           // Import response
           const importData: ImportData = {
@@ -547,7 +563,7 @@ function TrainerContent() {
   const hasUserMessage = messages.some((m) => m.role === 'user');
   const showExerciseSuggestions = exerciseName && !hasUserMessage && messages.length > 0;
   const showDefaultSuggestions = messages.length === 0 && !profileMode;
-  const suggestions = exerciseSuggestions || DEFAULT_SUGGESTIONS;
+  const suggestions = exerciseSuggestions || MAIN_SUGGESTIONS;
 
   // Parse suggestions from the last assistant message (format: "suggestions:Option A|Option B|Option C")
   function parseSuggestions(content: string): { text: string; suggestions: string[] } {
@@ -850,6 +866,22 @@ function TrainerContent() {
                     {s}
                   </button>
                 ))}
+              </div>
+            )}
+            {!profileMode && !showExerciseSuggestions && (
+              <div className="mt-4">
+                <p className="text-[11px] text-text-muted uppercase tracking-[0.08em] mb-2">Quick actions</p>
+                <div className="flex flex-wrap gap-2">
+                  {MAIN_SUGGESTIONS.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => handleSend(s)}
+                      className="ui-icon-pill px-4 py-2.5 rounded-full text-text-secondary text-xs font-medium"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             <div ref={messagesEndRef} />

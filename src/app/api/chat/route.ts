@@ -38,12 +38,14 @@ Ready to import? Just say 'yes' or let me know if anything needs fixing."
 
 TEMPLATE CAPABILITY:
 When the user asks you to create a workout template, program, split, or routine:
-1. Use the create_template tool with a descriptive name and list of exercises
-2. Choose exercises that match the user's equipment and experience level (from their profile if available)
-3. Use standard, full exercise names (e.g., "Barbell Bench Press" not "bench", "Barbell Squat" not "squats")
-4. Include 4-8 exercises per template with 3-5 sets each
-5. Consider the user's goals and preferences when selecting exercises
-6. If the user asks for a multi-day program (e.g., Push/Pull/Legs), create ONE template at a time and ask if they want the next one`;
+1. Keep it fast and practical. Ask the fewest questions possible.
+2. First ask them to pick ONE option: Upper body, Lower body, or Full body.
+3. After they choose, call create_template right away unless there is a critical blocker.
+4. Template rules: exactly 5 exercises, exactly 3 sets per exercise, and no prescribed weights/reps.
+5. Prefer exercises the user has done recently; then fill gaps with standard movements that match their equipment/profile.
+6. Use full, standard exercise names (e.g., "Barbell Bench Press" not "bench").
+7. After proposing a template, invite quick edits (swap/replace/try new exercise) and regenerate with create_template when requested.
+8. If the user asks for a multi-day program, create one template at a time and ask if they want the next one.`;
 
 const PROFILE_SETUP_SYSTEM_PROMPT = `You are a knowledgeable, motivating personal trainer inside the "reps" fitness app. Your name is Trainer.
 
@@ -229,6 +231,331 @@ interface ChatRequestMessage {
   content: string;
 }
 
+type TemplateSplit = 'upper' | 'lower' | 'full';
+
+interface TemplateToolInput {
+  name?: unknown;
+  exercises?: Array<{ name?: unknown; defaultSets?: unknown }>;
+}
+
+interface NormalizedTemplateData {
+  name: string;
+  exercises: { name: string; defaultSets: number }[];
+}
+
+const UPPER_EXERCISE_KEYWORDS = [
+  'bench', 'press', 'row', 'pull', 'lat', 'chest', 'back', 'shoulder', 'delt', 'curl', 'tricep', 'dip', 'fly', 'chin', 'pulldown',
+];
+
+const LOWER_EXERCISE_KEYWORDS = [
+  'squat', 'deadlift', 'lunge', 'leg', 'hamstring', 'quad', 'glute', 'calf', 'hip thrust', 'rdl', 'split squat', 'step up',
+];
+
+function normalizeText(value: unknown): string {
+  return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
+}
+
+function countKeywordHits(text: string, keywords: string[]): number {
+  const normalized = text.toLowerCase();
+  return keywords.reduce((score, keyword) => score + (normalized.includes(keyword) ? 1 : 0), 0);
+}
+
+interface TemplateSlot {
+  id: string;
+  keywords: string[];
+  fallback: string;
+}
+
+const TEMPLATE_SLOT_PLANS: Record<TemplateSplit, TemplateSlot[]> = {
+  upper: [
+    { id: 'horizontal-push', keywords: ['bench', 'chest press', 'incline press', 'push-up', 'dip'], fallback: 'Barbell Bench Press' },
+    { id: 'horizontal-pull', keywords: ['row', 'seated row', 'cable row', 'dumbbell row', 't-bar row'], fallback: 'Seated Cable Row' },
+    { id: 'vertical-push', keywords: ['overhead press', 'shoulder press', 'military press', 'arnold press', 'landmine press'], fallback: 'Dumbbell Shoulder Press' },
+    { id: 'vertical-pull', keywords: ['lat pulldown', 'pull-up', 'chin-up', 'assisted pull-up', 'pulldown'], fallback: 'Lat Pulldown' },
+    { id: 'upper-accessory', keywords: ['curl', 'tricep', 'lateral raise', 'face pull', 'rear delt', 'pec deck'], fallback: 'Dumbbell Biceps Curl' },
+  ],
+  lower: [
+    { id: 'squat-pattern', keywords: ['squat', 'leg press', 'hack squat', 'goblet squat', 'front squat', 'back squat'], fallback: 'Barbell Back Squat' },
+    { id: 'hinge-pattern', keywords: ['deadlift', 'romanian deadlift', 'rdl', 'hip thrust', 'good morning'], fallback: 'Romanian Deadlift' },
+    { id: 'unilateral', keywords: ['lunge', 'split squat', 'step-up', 'step up', 'rear-foot elevated'], fallback: 'Walking Lunges' },
+    { id: 'hamstring-focus', keywords: ['leg curl', 'hamstring curl', 'glute ham', 'nordic'], fallback: 'Seated Leg Curl' },
+    { id: 'quad-calf-accessory', keywords: ['leg extension', 'calf raise', 'hack squat', 'bulgarian split squat'], fallback: 'Leg Extension' },
+  ],
+  full: [
+    { id: 'lower-compound', keywords: ['squat', 'lunge', 'leg press', 'front squat', 'back squat'], fallback: 'Barbell Back Squat' },
+    { id: 'upper-push', keywords: ['bench', 'press', 'push-up', 'dip', 'chest press'], fallback: 'Barbell Bench Press' },
+    { id: 'upper-pull', keywords: ['row', 'pull-up', 'lat pulldown', 'cable row', 'chin-up'], fallback: 'Seated Cable Row' },
+    { id: 'hinge-pattern', keywords: ['deadlift', 'romanian deadlift', 'rdl', 'hip thrust', 'good morning'], fallback: 'Romanian Deadlift' },
+    { id: 'upper-accessory', keywords: ['shoulder press', 'overhead press', 'lateral raise', 'face pull', 'curl'], fallback: 'Dumbbell Shoulder Press' },
+  ],
+};
+
+type TemplateCandidateSource = 'provided' | 'recent' | 'fallback' | 'global';
+
+interface TemplateCandidate {
+  name: string;
+  key: string;
+  source: TemplateCandidateSource;
+  sourceRank: number;
+  order: number;
+}
+
+function scoreExerciseNameForSplit(exerciseName: string, split: TemplateSplit): number {
+  if (split === 'full') {
+    const upperScore = countKeywordHits(exerciseName, UPPER_EXERCISE_KEYWORDS);
+    const lowerScore = countKeywordHits(exerciseName, LOWER_EXERCISE_KEYWORDS);
+    return Math.max(1, upperScore + lowerScore);
+  }
+
+  const name = exerciseName.toLowerCase();
+  const keywords = split === 'upper' ? UPPER_EXERCISE_KEYWORDS : LOWER_EXERCISE_KEYWORDS;
+  return keywords.reduce((score, keyword) => score + (name.includes(keyword) ? 1 : 0), 0);
+}
+
+function inferTemplateSplitFromExercises(exercises: string[]): TemplateSplit | null {
+  if (exercises.length === 0) return null;
+  let upper = 0;
+  let lower = 0;
+  for (const exercise of exercises) {
+    upper += countKeywordHits(exercise, UPPER_EXERCISE_KEYWORDS);
+    lower += countKeywordHits(exercise, LOWER_EXERCISE_KEYWORDS);
+  }
+
+  if (upper === 0 && lower === 0) return null;
+  if (upper >= lower + 2) return 'upper';
+  if (lower >= upper + 2) return 'lower';
+  return null;
+}
+
+function inferTemplateSplit(name: string, messages: ChatRequestMessage[], providedExercises: string[]): TemplateSplit {
+  const recentText = messages.slice(-4).map((m) => m.content.toLowerCase()).join(' ');
+  const combined = `${name.toLowerCase()} ${recentText}`;
+  if (/\b(lower body|lower|leg day|legs)\b/.test(combined)) return 'lower';
+  if (/\b(upper body|upper|push day|pull day|push\/pull)\b/.test(combined)) return 'upper';
+  if (/\b(full body|full)\b/.test(combined)) return 'full';
+
+  const inferredFromExercises = inferTemplateSplitFromExercises(providedExercises);
+  if (inferredFromExercises) return inferredFromExercises;
+
+  return 'full';
+}
+
+function getTopRecentExercises(recentWorkouts: WorkoutContext['recentWorkouts']): string[] {
+  const counts = new Map<string, number>();
+  for (const workout of recentWorkouts) {
+    for (const exerciseName of workout.exercises) {
+      const normalized = normalizeText(exerciseName);
+      if (!normalized) continue;
+      counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+    }
+  }
+
+  return Array.from(counts.entries())
+    .sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1];
+      return a[0].localeCompare(b[0]);
+    })
+    .map(([name]) => name);
+}
+
+function getRecentExercisesBySplit(recentWorkouts: WorkoutContext['recentWorkouts'], split: TemplateSplit): string[] {
+  const ranked = getTopRecentExercises(recentWorkouts);
+  if (split === 'full') return ranked;
+
+  return ranked.filter((name) => scoreExerciseNameForSplit(name, split) > 0);
+}
+
+function wantsNovelExercise(messages: ChatRequestMessage[]): boolean {
+  const lastMessage = messages[messages.length - 1]?.content.toLowerCase() || '';
+  return /\b(new exercise|new move|something new|different exercise|try new|different one|new one)\b/.test(lastMessage);
+}
+
+function isAvoidedExercise(exerciseName: string, avoidedTerms: string[]): boolean {
+  const normalized = exerciseName.toLowerCase();
+  return avoidedTerms.some((term) => term.length >= 3 && normalized.includes(term));
+}
+
+function pickBestCandidateForSlot(
+  slot: TemplateSlot,
+  candidates: TemplateCandidate[],
+  usedKeys: Set<string>,
+  split: TemplateSplit,
+): TemplateCandidate | null {
+  let best: TemplateCandidate | null = null;
+  let bestScore = -Infinity;
+
+  for (const candidate of candidates) {
+    if (usedKeys.has(candidate.key)) continue;
+    const slotHits = countKeywordHits(candidate.name, slot.keywords);
+    if (slotHits <= 0) continue;
+    const splitScore = scoreExerciseNameForSplit(candidate.name, split);
+    const score = slotHits * 100 + splitScore * 10 - candidate.sourceRank * 8 - candidate.order * 0.001;
+    if (score > bestScore) {
+      best = candidate;
+      bestScore = score;
+    }
+  }
+
+  return best;
+}
+
+function pickBestGeneralCandidate(
+  candidates: TemplateCandidate[],
+  usedKeys: Set<string>,
+  split: TemplateSplit,
+  requireSplitMatch: boolean,
+): TemplateCandidate | null {
+  let best: TemplateCandidate | null = null;
+  let bestScore = -Infinity;
+
+  for (const candidate of candidates) {
+    if (usedKeys.has(candidate.key)) continue;
+    const splitScore = scoreExerciseNameForSplit(candidate.name, split);
+    if (requireSplitMatch && split !== 'full' && splitScore <= 0) continue;
+
+    const score = splitScore * 20 - candidate.sourceRank * 8 - candidate.order * 0.001;
+    if (score > bestScore) {
+      best = candidate;
+      bestScore = score;
+    }
+  }
+
+  return best;
+}
+
+function normalizeTemplateToolInput(input: unknown, context: WorkoutContext, messages: ChatRequestMessage[]): NormalizedTemplateData {
+  const parsed = (input ?? {}) as TemplateToolInput;
+  const providedName = normalizeText(parsed.name);
+  const providedExercises = Array.isArray(parsed.exercises)
+    ? parsed.exercises.map((exercise) => normalizeText(exercise?.name)).filter(Boolean)
+    : [];
+  const split = inferTemplateSplit(providedName, messages, providedExercises);
+  const recentBySplit = getRecentExercisesBySplit(context.recentWorkouts, split);
+  const novelRequest = wantsNovelExercise(messages);
+
+  const fallback = TEMPLATE_SLOT_PLANS[split].map((slot) => slot.fallback);
+  const globalFallback = [
+    ...TEMPLATE_SLOT_PLANS.full.map((slot) => slot.fallback),
+    ...TEMPLATE_SLOT_PLANS.upper.map((slot) => slot.fallback),
+    ...TEMPLATE_SLOT_PLANS.lower.map((slot) => slot.fallback),
+  ];
+
+  const avoidedTerms = (context.trainerProfile?.dislikedOrAvoidedExercises || [])
+    .map((entry) => normalizeText(entry).toLowerCase())
+    .filter(Boolean);
+
+  const sourceRanks: Record<TemplateCandidateSource, number> = novelRequest
+    ? { provided: 0, fallback: 1, recent: 2, global: 3 }
+    : { provided: 0, recent: 1, fallback: 2, global: 3 };
+
+  const candidatesMap = new Map<string, TemplateCandidate>();
+  let order = 0;
+
+  function addCandidates(names: string[], source: TemplateCandidateSource) {
+    for (const rawName of names) {
+      const name = normalizeText(rawName);
+      if (!name) continue;
+      if (isAvoidedExercise(name, avoidedTerms)) continue;
+
+      const key = name.toLowerCase();
+      const existing = candidatesMap.get(key);
+      const candidate: TemplateCandidate = {
+        name,
+        key,
+        source,
+        sourceRank: sourceRanks[source],
+        order,
+      };
+      order += 1;
+
+      if (!existing || candidate.sourceRank < existing.sourceRank) {
+        candidatesMap.set(key, candidate);
+      }
+    }
+  }
+
+  addCandidates(providedExercises, 'provided');
+  addCandidates(recentBySplit, 'recent');
+  addCandidates(fallback, 'fallback');
+  addCandidates(globalFallback, 'global');
+
+  const candidates = Array.from(candidatesMap.values());
+  const selectedNames: string[] = [];
+  const usedKeys = new Set<string>();
+
+  for (const slot of TEMPLATE_SLOT_PLANS[split]) {
+    const slotCandidate = pickBestCandidateForSlot(slot, candidates, usedKeys, split);
+    const fallbackName = normalizeText(slot.fallback);
+    const fallbackKey = fallbackName.toLowerCase();
+
+    if (slotCandidate) {
+      selectedNames.push(slotCandidate.name);
+      usedKeys.add(slotCandidate.key);
+      continue;
+    }
+
+    if (
+      fallbackName &&
+      !usedKeys.has(fallbackKey) &&
+      !isAvoidedExercise(fallbackName, avoidedTerms)
+    ) {
+      selectedNames.push(fallbackName);
+      usedKeys.add(fallbackKey);
+      continue;
+    }
+
+    const backupCandidate = pickBestGeneralCandidate(candidates, usedKeys, split, true);
+    if (backupCandidate) {
+      selectedNames.push(backupCandidate.name);
+      usedKeys.add(backupCandidate.key);
+    }
+  }
+
+  while (selectedNames.length < 5) {
+    const fillCandidate = pickBestGeneralCandidate(candidates, usedKeys, split, false);
+    if (!fillCandidate) break;
+    selectedNames.push(fillCandidate.name);
+    usedKeys.add(fillCandidate.key);
+  }
+
+  if (novelRequest) {
+    const recentSet = new Set(getTopRecentExercises(context.recentWorkouts).map((name) => name.toLowerCase()));
+    const hasNovelSelection = selectedNames.some((name) => !recentSet.has(name.toLowerCase()));
+
+    if (!hasNovelSelection) {
+      const novelCandidate = candidates.find((candidate) => !recentSet.has(candidate.key) && !usedKeys.has(candidate.key));
+      if (novelCandidate && selectedNames.length > 0) {
+        const replaced = selectedNames[selectedNames.length - 1];
+        usedKeys.delete(replaced.toLowerCase());
+        selectedNames[selectedNames.length - 1] = novelCandidate.name;
+        usedKeys.add(novelCandidate.key);
+      }
+    }
+  }
+
+  let genericIndex = 1;
+  while (selectedNames.length < 5) {
+    const genericName = `Exercise ${genericIndex}`;
+    const key = genericName.toLowerCase();
+    if (!usedKeys.has(key)) {
+      usedKeys.add(key);
+      selectedNames.push(genericName);
+    }
+    genericIndex += 1;
+  }
+
+  const fallbackName = split === 'upper'
+    ? 'Upper Body'
+    : split === 'lower'
+      ? 'Lower Body'
+      : 'Full Body';
+
+  return {
+    name: providedName || `${fallbackName} Template`,
+    exercises: selectedNames.map((name) => ({ name, defaultSets: 3 })),
+  };
+}
+
 function buildProfileContextString(profile: TrainerProfileData): string {
   const lines: string[] = [];
   lines.push(`- Experience: ${profile.experienceLevel}`);
@@ -325,6 +652,11 @@ export async function POST(request: Request) {
       )
       .join('\n');
     contextParts.push(`Recent workouts:\n${workoutLines}`);
+
+    const topRecentExercises = getTopRecentExercises(context.recentWorkouts).slice(0, 10);
+    if (topRecentExercises.length > 0) {
+      contextParts.push(`Most used recent exercises: ${topRecentExercises.join(', ')}`);
+    }
   }
 
   // Add current exercise context if available
@@ -358,20 +690,37 @@ export async function POST(request: Request) {
 
   // Check if the latest message might be import-related or template-related
   const lastMessage = messages[messages.length - 1]?.content || '';
-  const allMessagesText = messages.map(m => m.content.toLowerCase()).join(' ');
+  const lastMessageLower = lastMessage.toLowerCase();
+  const previousMessagesText = messages.slice(0, -1).map((m) => m.content.toLowerCase()).join(' ');
+
+  const explicitlyAskedForTemplate =
+    /template|program|split|routine|workout plan|workout template/.test(lastMessageLower) ||
+    /create.*workout|build.*workout|make.*workout|design.*workout/.test(lastMessageLower) ||
+    /create.*routine|build.*routine|make.*routine/.test(lastMessageLower) ||
+    /push.*pull.*leg|upper.*lower|ppl/.test(lastMessageLower);
+
+  const pickedTemplateType = /\b(upper body|upper|lower body|lower|full body|full)\b/.test(lastMessageLower);
+  const templateModificationRequest = /\b(swap|replace|substitute|change|modify|adjust|tweak|different|another|try new|new exercise|instead|remove|add)\b/.test(lastMessageLower);
+  const templateConfirmation = /\b(looks good|save it|approve|go ahead|that works|keep this|done)\b/.test(lastMessageLower);
+  const templateConversationInProgress = /template|save template|swap exercise|try new move|adjust focus|upper body|lower body|full body/.test(previousMessagesText);
+
+  if (explicitlyAskedForTemplate && !pickedTemplateType && !templateConversationInProgress) {
+    return new Response(
+      'Perfect, let\'s build it fast. Which template do you want?\nsuggestions:Upper body|Lower body|Full body',
+      { headers: { 'Content-Type': 'text/plain; charset=utf-8' } },
+    );
+  }
+
   const mightBeImport =
     lastMessage.length > 100 || // Long messages might be pasted data
-    /import|paste|upload|csv|json|log|data/i.test(lastMessage) ||
-    /\d+\s*x\s*\d+|\d+\s*lbs?|\d+\s*kg/i.test(lastMessage) || // Patterns like "135x10" or "135 lbs"
-    messages.some(m => m.content.toLowerCase().includes('[file:'));
+    /import|paste|upload|csv|json|log|data/.test(lastMessageLower) ||
+    /\d+\s*x\s*\d+|\d+\s*lbs?|\d+\s*kg/.test(lastMessageLower) || // Patterns like "135x10" or "135 lbs"
+    messages.some((m) => m.content.toLowerCase().includes('[file:'));
 
   const mightBeTemplate =
-    /template|program|split|routine|workout plan/i.test(lastMessage) ||
-    /create.*workout|build.*workout|make.*workout|design.*workout/i.test(lastMessage) ||
-    /create.*routine|build.*routine|make.*routine/i.test(lastMessage) ||
-    /push.*pull.*leg|upper.*lower|ppl|full body/i.test(lastMessage) ||
-    // Check conversation context — user might be confirming a template suggestion
-    (allMessagesText.includes('template') && /yes|sure|go ahead|do it|sounds good|let.s do/i.test(lastMessage));
+    explicitlyAskedForTemplate ||
+    pickedTemplateType ||
+    (templateConversationInProgress && (templateModificationRequest || templateConfirmation));
 
   // Use tool mode for potential imports or templates, streaming for regular chat
   if (mightBeImport || mightBeTemplate) {
@@ -379,16 +728,13 @@ export async function POST(request: Request) {
     const tools: Tool[] = [];
     if (mightBeImport) tools.push(IMPORT_TOOL);
     if (mightBeTemplate) tools.push(TEMPLATE_TOOL);
-    // If both could apply, include both and let the model decide
-    if (mightBeImport && !mightBeTemplate) tools.push(TEMPLATE_TOOL);
-    if (mightBeTemplate && !mightBeImport) tools.push(IMPORT_TOOL);
 
     // Non-streaming with tool use
     const response = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
       system: systemWithContext,
-      tools: [IMPORT_TOOL, TEMPLATE_TOOL],
+      tools,
       messages: messages.map((m): MessageParam => ({ role: m.role, content: m.content })),
     });
 
@@ -409,12 +755,13 @@ export async function POST(request: Request) {
     }
 
     if (toolUse && toolUse.name === 'create_template') {
+      const normalizedTemplate = normalizeTemplateToolInput(toolUse.input, context, messages);
       // Return structured response with template tool data
       return new Response(
         JSON.stringify({
           type: 'template',
           text: textBlock?.text || 'Here\'s the template I\'ve put together for you!',
-          templateData: toolUse.input,
+          templateData: normalizedTemplate,
         }),
         { headers: { 'Content-Type': 'application/json' } }
       );
