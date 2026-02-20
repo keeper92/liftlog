@@ -79,6 +79,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
   const [editExerciseNames, setEditExerciseNames] = useState<Record<string, string>>({});
   const [editSetDraftsByExercise, setEditSetDraftsByExercise] = useState<Record<string, EditSetDraft[]>>({});
   const [savingEdits, setSavingEdits] = useState(false);
+  const [creatingWorkoutDate, setCreatingWorkoutDate] = useState<string | null>(null);
   const monthInitializedRef = useRef(false);
 
   const editingWorkout = editingWorkoutId ? workouts.find((w) => w.id === editingWorkoutId) || null : null;
@@ -241,6 +242,35 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
 
   function makeLocalSetId(exerciseId: string): string {
     return `new-${exerciseId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function makeTemporaryExerciseId(): string {
+    return `new-exercise-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function addExerciseGroup(initialName?: string) {
+    const promptedName = initialName ?? window.prompt('Exercise name');
+    const exerciseName = (promptedName || '').trim();
+    if (!exerciseName) return;
+
+    const exerciseId = makeTemporaryExerciseId();
+    const newDraft: EditSetDraft = {
+      localId: makeLocalSetId(exerciseId),
+      setId: null,
+      exerciseId,
+      exerciseName,
+      weight: '',
+      reps: '',
+      isSplit: false,
+      time: null,
+    };
+
+    setEditExerciseOrder((prev) => [...prev, exerciseId]);
+    setEditExerciseNames((prev) => ({ ...prev, [exerciseId]: exerciseName }));
+    setEditSetDraftsByExercise((prev) => ({
+      ...prev,
+      [exerciseId]: [newDraft],
+    }));
   }
 
   function openEditOverlay(workout: HistoryWorkout) {
@@ -440,6 +470,74 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
         is_completed: boolean;
       }> = [];
 
+      const pendingInsertDrafts = normalizedDrafts.filter((draft) => !draft.setId);
+      const unresolvedExerciseIds = Array.from(
+        new Set(
+          pendingInsertDrafts
+            .map((draft) => draft.exerciseId)
+            .filter((exerciseId) => exerciseId.startsWith('new-exercise-')),
+        ),
+      );
+
+      const resolvedExerciseIds = new Map<string, string>();
+      if (unresolvedExerciseIds.length > 0) {
+        const exerciseNameByTempId = new Map<string, string>();
+        for (const exerciseId of unresolvedExerciseIds) {
+          const fallbackName = pendingInsertDrafts.find((draft) => draft.exerciseId === exerciseId)?.exerciseName || '';
+          const name = (editExerciseNames[exerciseId] || fallbackName).trim();
+          if (name) {
+            exerciseNameByTempId.set(exerciseId, name);
+          }
+        }
+
+        const namesToResolve = Array.from(new Set(Array.from(exerciseNameByTempId.values())));
+
+        if (namesToResolve.length > 0) {
+          const { data: existingExercises } = await supabase
+            .from('exercises')
+            .select('id, name')
+            .in('name', namesToResolve);
+
+          const existingByName = new Map(
+            ((existingExercises || []) as { id: string; name: string }[]).map((exercise) => [exercise.name.toLowerCase(), exercise.id]),
+          );
+
+          const missingNames = namesToResolve.filter((name) => !existingByName.has(name.toLowerCase()));
+          if (missingNames.length > 0) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+              setSavingEdits(false);
+              return;
+            }
+
+            const { data: insertedExercises } = await supabase
+              .from('exercises')
+              .insert(
+                missingNames.map((name) => ({
+                  name,
+                  category: 'other',
+                  primary_muscles: ['other'],
+                  secondary_muscles: [],
+                  is_custom: true,
+                  user_id: user.id,
+                })),
+              )
+              .select('id, name');
+
+            for (const exercise of (insertedExercises || []) as { id: string; name: string }[]) {
+              existingByName.set(exercise.name.toLowerCase(), exercise.id);
+            }
+          }
+
+          for (const [tempId, exerciseName] of exerciseNameByTempId.entries()) {
+            const resolvedId = existingByName.get(exerciseName.toLowerCase());
+            if (resolvedId) {
+              resolvedExerciseIds.set(tempId, resolvedId);
+            }
+          }
+        }
+      }
+
       for (const draft of normalizedDrafts) {
         if (draft.setId) {
           const original = existingSetById.get(draft.setId);
@@ -477,9 +575,12 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
           continue;
         }
 
+        const resolvedExerciseId = resolvedExerciseIds.get(draft.exerciseId) || draft.exerciseId;
+        if (resolvedExerciseId.startsWith('new-exercise-')) continue;
+
         setsToInsert.push({
           workout_id: editingWorkout.id,
-          exercise_id: draft.exerciseId,
+          exercise_id: resolvedExerciseId,
           set_number: draft.setNumber,
           weight: parseNullableNumber(draft.weight),
           reps: parseNullableInt(draft.reps),
@@ -557,6 +658,52 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
     return formatDateKey(now.getFullYear(), now.getMonth(), now.getDate());
   }
 
+  function toDateAtNoonUtc(dateKey: string): string {
+    return `${dateKey}T12:00:00.000Z`;
+  }
+
+  async function handleAddWorkoutForDate(dateKey: string) {
+    if (creatingWorkoutDate) return;
+
+    setCreatingWorkoutDate(dateKey);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const startIso = toDateAtNoonUtc(dateKey);
+      const endIso = new Date(new Date(startIso).getTime() + 45 * 60 * 1000).toISOString();
+
+      const { data: workoutData, error } = await supabase
+        .from('workouts')
+        .insert({
+          user_id: user.id,
+          name: 'Workout',
+          date: startIso,
+          start_time: startIso,
+          end_time: endIso,
+        })
+        .select('id, name, date, start_time, end_time')
+        .single();
+
+      if (error || !workoutData) return;
+
+      const createdWorkout: HistoryWorkout = {
+        ...(workoutData as Omit<HistoryWorkout, 'sets'>),
+        sets: [],
+      };
+
+      setWorkouts((prev) =>
+        [...prev, createdWorkout].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        ),
+      );
+      setSelectedDate(dateKey);
+      openEditOverlay(createdWorkout);
+    } finally {
+      setCreatingWorkoutDate(null);
+    }
+  }
+
   function prevMonth() {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
     setSelectedDate(null);
@@ -571,6 +718,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
   const firstDay = getFirstDayOfMonth(currentMonth);
   const monthName = currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   const selectedWorkouts = selectedDate ? getWorkoutsForDate(selectedDate) : [];
+  const editableGroups = getEditableExerciseGroups();
 
   return (
     <div className="fixed inset-0 z-[70] bg-background flex flex-col">
@@ -598,9 +746,23 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
             </div>
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Sets</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Sets</p>
+                <button
+                  type="button"
+                  onClick={() => addExerciseGroup()}
+                  className="text-[11px] font-semibold text-primary hover:text-primary-dark"
+                >
+                  + Add Exercise
+                </button>
+              </div>
               <div className="max-h-[42vh] overflow-y-auto rounded-2xl border border-border bg-background px-3 py-2 space-y-3">
-                {getEditableExerciseGroups().map((group) => (
+                {editableGroups.length === 0 && (
+                  <p className="text-xs text-text-muted py-3">
+                    No exercises yet. Add an exercise to log this workout.
+                  </p>
+                )}
+                {editableGroups.map((group) => (
                   <div key={group.exerciseId}>
                     <div className="flex items-center justify-between mb-1.5 gap-2">
                       <p className="text-xs font-semibold text-text">{group.name}</p>
@@ -692,8 +854,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
       {/* Close button */}
       <div className="px-5 pt-4 flex items-center justify-between">
         <div>
-          <p className="ui-kicker">Training Log</p>
-          <h2 className="mt-1 text-lg font-semibold tracking-tight text-text">Consistency</h2>
+          <p className="ui-kicker">Calendar</p>
         </div>
         <button
           onClick={onClose}
@@ -733,16 +894,6 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
       <div className="flex-1 overflow-y-auto px-5 pt-4 pb-8">
         {loading ? (
           <p className="text-text-muted text-sm text-center py-8">Loading...</p>
-        ) : workouts.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-text-muted">No workouts yet.</p>
-            <p className="text-text-muted text-sm mt-1">Start your first workout!</p>
-            {onStartWorkout && (
-              <Button onClick={onStartWorkout} size="sm" className="mt-4">
-                Start Workout
-              </Button>
-            )}
-          </div>
         ) : (
           <div>
             {/* Calendar Card */}
@@ -787,8 +938,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                   return (
                     <button
                       key={day}
-                      onClick={() => hasWorkout && setSelectedDate(isSelected ? null : dateKey)}
-                      disabled={!hasWorkout}
+                      onClick={() => setSelectedDate(isSelected ? null : dateKey)}
                       className={`aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-semibold transition-all relative ${
                         isSelected
                           ? 'bg-primary text-white shadow-sm'
@@ -796,8 +946,8 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                             ? 'bg-text text-white'
                             : hasWorkout
                               ? 'text-text hover:bg-surface-light'
-                              : 'text-text-muted'
-                      } ${hasWorkout ? 'cursor-pointer' : 'cursor-default'}`}
+                              : 'text-text-secondary hover:bg-surface-light/60'
+                      } cursor-pointer`}
                     >
                       {day}
                       {hasWorkout && !isSelected && !isToday && (
@@ -872,12 +1022,44 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                     );
                   })}
                 </div>
+                <div className="mt-3">
+                  <Button
+                    size="sm"
+                    onClick={() => handleAddWorkoutForDate(selectedDate)}
+                    loading={creatingWorkoutDate === selectedDate}
+                  >
+                    Add Workout
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {selectedDate && selectedWorkouts.length === 0 && (
+              <div className="mt-4 text-center bg-surface rounded-2xl border border-border/70 p-5 card-shadow">
+                <p className="text-sm text-text mb-2">
+                  No workouts logged for this date.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => handleAddWorkoutForDate(selectedDate)}
+                  loading={creatingWorkoutDate === selectedDate}
+                >
+                  Add Workout
+                </Button>
               </div>
             )}
 
             {/* No date selected hint */}
             {!selectedDate && (
-              <p className="text-xs text-text-muted text-center mt-4">Tap a highlighted day to open and edit that session</p>
+              <p className="text-xs text-text-muted text-center mt-4">Tap any day to view or add workouts</p>
+            )}
+            {!selectedDate && workouts.length === 0 && onStartWorkout && (
+              <div className="mt-4 text-center">
+                <p className="text-xs text-text-muted mb-2">No workouts yet. Add one from the calendar or start a live workout.</p>
+                <Button onClick={onStartWorkout} size="sm">
+                  Start Workout
+                </Button>
+              </div>
             )}
           </div>
         )}
