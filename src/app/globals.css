@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 :root {
+  --font-inter: "Avenir Next", "Avenir", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-outfit: "Avenir Next Condensed", "Avenir Next", "Futura", "Trebuchet MS", sans-serif;
+
   --color-primary: #7B96A9;
   --color-primary-light: #94ADBF;
   --color-primary-dark: #627D91;

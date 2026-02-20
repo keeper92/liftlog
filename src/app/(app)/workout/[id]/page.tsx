@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { useActiveWorkoutStore, type ActiveWorkoutState, type PerformanceSet } from '@/stores/activeWorkoutStore';
+import { useActiveWorkoutStore, type ActiveSet, type ActiveWorkoutState, type PerformanceSet } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import {
   formatDuration,
@@ -86,6 +86,39 @@ function normalizePreviousPerformanceRow(row: PreviousPerformanceRow): Performan
 
 function getPreviousSetForNumber(sets: PerformanceSet[], setNumber: number) {
   return sets.find((s) => s.setNumber === setNumber) ?? sets[setNumber - 1];
+}
+
+function prefillEmptySetsWithPreviousPerformance(
+  exerciseId: string,
+  previousSets: PerformanceSet[],
+) {
+  const state = useActiveWorkoutStore.getState();
+  const exerciseIndex = state.exercises.findIndex((exercise) => exercise.exerciseId === exerciseId);
+  if (exerciseIndex === -1) return;
+
+  const exercise = state.exercises[exerciseIndex];
+  for (let setIndex = 0; setIndex < exercise.sets.length; setIndex += 1) {
+    const currentSet = exercise.sets[setIndex];
+    if (currentSet.isCompleted || currentSet.timestamp) continue;
+
+    const previousSet = getPreviousSetForNumber(previousSets, currentSet.setNumber);
+    if (!previousSet) continue;
+
+    const nextSetData: Partial<ActiveSet> = {};
+    if (currentSet.weight === null) nextSetData.weight = previousSet.weight;
+    if (currentSet.reps === null) nextSetData.reps = previousSet.reps;
+
+    if (exercise.logMode === 'split_lr') {
+      if (currentSet.leftWeight === null) nextSetData.leftWeight = previousSet.weight;
+      if (currentSet.rightWeight === null) nextSetData.rightWeight = previousSet.weight;
+      if (currentSet.leftReps === null) nextSetData.leftReps = previousSet.reps;
+      if (currentSet.rightReps === null) nextSetData.rightReps = previousSet.reps;
+    }
+
+    if (Object.keys(nextSetData).length > 0) {
+      state.updateSet(exerciseIndex, setIndex, nextSetData);
+    }
+  }
 }
 
 function WarmupToggle({ isWarmup, setNumber, onToggle }: { isWarmup: boolean; setNumber: number; onToggle: () => void }) {
@@ -246,6 +279,7 @@ export default function ActiveWorkoutPage() {
         const history = await fetchPerformanceHistory(user.id, ex.exerciseId);
         if (cancelled) return;
         setPreviousPerformance(ex.exerciseId, history);
+        prefillEmptySetsWithPreviousPerformance(ex.exerciseId, history);
       }
     }
 
