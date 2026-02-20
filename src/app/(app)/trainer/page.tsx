@@ -13,8 +13,6 @@ import type { TrainerProfile } from '@/lib/types/user';
 export const dynamic = 'force-dynamic';
 
 const MAIN_SUGGESTIONS = [
-  'Set up your training profile',
-  'Modify your training profile',
   'Create a workout template',
   'Analyze my progress',
 ];
@@ -563,7 +561,9 @@ function TrainerContent() {
   const hasUserMessage = messages.some((m) => m.role === 'user');
   const showExerciseSuggestions = exerciseName && !hasUserMessage && messages.length > 0;
   const showDefaultSuggestions = messages.length === 0 && !profileMode;
-  const suggestions = exerciseSuggestions || MAIN_SUGGESTIONS;
+  const profileSuggestion = trainerProfile ? ['Modify your training profile'] : [];
+  const contextualMainSuggestions = [...profileSuggestion, ...MAIN_SUGGESTIONS];
+  const suggestions = exerciseSuggestions || contextualMainSuggestions;
 
   // Parse suggestions from the last assistant message (format: "suggestions:Option A|Option B|Option C")
   function parseSuggestions(content: string): { text: string; suggestions: string[] } {
@@ -872,7 +872,7 @@ function TrainerContent() {
               <div className="mt-4">
                 <p className="text-[11px] text-text-muted uppercase tracking-[0.08em] mb-2">Quick actions</p>
                 <div className="flex flex-wrap gap-2">
-                  {MAIN_SUGGESTIONS.map((s) => (
+                  {contextualMainSuggestions.map((s) => (
                     <button
                       key={s}
                       onClick={() => handleSend(s)}
