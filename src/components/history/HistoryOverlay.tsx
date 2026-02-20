@@ -33,6 +33,10 @@ interface HistoryWorkout {
   sets: WorkoutSet[];
 }
 
+type HistoryWorkoutRow = Omit<HistoryWorkout, 'sets'> & {
+  sets?: WorkoutSet[] | null;
+};
+
 interface GroupedExercise {
   name: string;
   setLabels: string[];
@@ -79,11 +83,37 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
 
   const editingWorkout = editingWorkoutId ? workouts.find((w) => w.id === editingWorkoutId) || null : null;
 
+  function normalizeWorkoutRows(rows: HistoryWorkoutRow[]): HistoryWorkout[] {
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      date: row.date,
+      start_time: row.start_time,
+      end_time: row.end_time,
+      sets: row.sets ?? [],
+    }));
+  }
+
+  function setInitialMonthFromWorkouts(rows: HistoryWorkout[]) {
+    if (monthInitializedRef.current || rows.length === 0) return;
+    const latestDate = new Date(rows[0].date);
+    if (!Number.isNaN(latestDate.getTime())) {
+      setCurrentMonth(new Date(latestDate.getFullYear(), latestDate.getMonth(), 1));
+    }
+    monthInitializedRef.current = true;
+  }
+
   const loadWorkouts = useCallback(async () => {
     const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
     let userId: string | null = null;
     for (let attempt = 0; attempt < 20; attempt += 1) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.id) {
+        userId = user.id;
+        break;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id) {
         userId = session.user.id;
@@ -97,7 +127,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
       return;
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('workouts')
       .select(
         'id, name, date, start_time, end_time, sets(id, exercise_id, set_number, weight, reps, time, is_split_lr, left_weight, left_reps, right_weight, right_reps, exercises(name))',
@@ -106,16 +136,33 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
       .order('date', { ascending: false })
       .limit(250);
 
-    if (data) {
-      setWorkouts(data as unknown as HistoryWorkout[]);
-      if (!monthInitializedRef.current && data.length > 0) {
-        const latestDate = new Date((data[0] as { date: string }).date);
-        if (!Number.isNaN(latestDate.getTime())) {
-          setCurrentMonth(new Date(latestDate.getFullYear(), latestDate.getMonth(), 1));
-        }
-        monthInitializedRef.current = true;
-      }
+    if (data && !error) {
+      const normalized = normalizeWorkoutRows(data as unknown as HistoryWorkoutRow[]);
+      setWorkouts(normalized);
+      setInitialMonthFromWorkouts(normalized);
+      return;
     }
+
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('workouts')
+      .select('id, name, date, start_time, end_time')
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .limit(250);
+
+    if (fallbackError || !fallbackData) {
+      setWorkouts([]);
+      return;
+    }
+
+    const normalized = normalizeWorkoutRows(
+      (fallbackData as unknown as Array<Omit<HistoryWorkout, 'sets'>>).map((row) => ({
+        ...row,
+        sets: [],
+      })),
+    );
+    setWorkouts(normalized);
+    setInitialMonthFromWorkouts(normalized);
   }, [supabase]);
 
   useEffect(() => {
