@@ -267,8 +267,7 @@ export default function PRFeedOverlay({ onClose, onStartWorkout }: PRFeedOverlay
       {/* Close button */}
       <div className="px-5 pt-4 flex items-center justify-between">
         <div>
-          <p className="ui-kicker">Training Log</p>
-          <h2 className="mt-1 text-lg font-semibold tracking-tight text-text">Personal records</h2>
+          <p className="ui-kicker">PR Feed</p>
         </div>
         <button
           onClick={onClose}

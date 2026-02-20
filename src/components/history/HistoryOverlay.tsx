@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { formatRelativeDate, formatDuration, toDisplayWeight, weightUnit } from '@/lib/utils/units';
@@ -75,19 +75,47 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
   const [editExerciseNames, setEditExerciseNames] = useState<Record<string, string>>({});
   const [editSetDraftsByExercise, setEditSetDraftsByExercise] = useState<Record<string, EditSetDraft[]>>({});
   const [savingEdits, setSavingEdits] = useState(false);
+  const monthInitializedRef = useRef(false);
 
   const editingWorkout = editingWorkoutId ? workouts.find((w) => w.id === editingWorkoutId) || null : null;
 
   const loadWorkouts = useCallback(async () => {
+    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    let userId: string | null = null;
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        userId = session.user.id;
+        break;
+      }
+      await wait(250);
+    }
+
+    if (!userId) {
+      setWorkouts([]);
+      return;
+    }
+
     const { data } = await supabase
       .from('workouts')
       .select(
         'id, name, date, start_time, end_time, sets(id, exercise_id, set_number, weight, reps, time, is_split_lr, left_weight, left_reps, right_weight, right_reps, exercises(name))',
       )
+      .eq('user_id', userId)
       .order('date', { ascending: false })
       .limit(250);
 
-    if (data) setWorkouts(data as unknown as HistoryWorkout[]);
+    if (data) {
+      setWorkouts(data as unknown as HistoryWorkout[]);
+      if (!monthInitializedRef.current && data.length > 0) {
+        const latestDate = new Date((data[0] as { date: string }).date);
+        if (!Number.isNaN(latestDate.getTime())) {
+          setCurrentMonth(new Date(latestDate.getFullYear(), latestDate.getMonth(), 1));
+        }
+        monthInitializedRef.current = true;
+      }
+    }
   }, [supabase]);
 
   useEffect(() => {
@@ -97,6 +125,18 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
     }
     load();
   }, [loadWorkouts]);
+
+  useEffect(() => {
+    const { data: authSub } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session?.user?.id) {
+        void loadWorkouts();
+      }
+    });
+
+    return () => {
+      authSub.subscription.unsubscribe();
+    };
+  }, [loadWorkouts, supabase.auth]);
 
   function formatSetLabel(set: WorkoutSet): string {
     if (set.is_split_lr) {
@@ -436,10 +476,10 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
   }
 
   function getWorkoutsForDate(dateStr: string): HistoryWorkout[] {
-    return workouts.filter((w) => w.date.split('T')[0] === dateStr);
+    return workouts.filter((w) => toDateKey(w.date) === dateStr);
   }
 
-  const workoutDates = new Set(workouts.map((w) => w.date.split('T')[0]));
+  const workoutDates = new Set(workouts.map((w) => toDateKey(w.date)));
 
   function getDaysInMonth(date: Date): number {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -451,6 +491,23 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
 
   function formatDateKey(year: number, month: number, day: number): string {
     return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+
+  function toDateKey(value: string): string {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return formatDateKey(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+    }
+
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+
+    return value.split('T')[0];
+  }
+
+  function getTodayDateKey(): string {
+    const now = new Date();
+    return formatDateKey(now.getFullYear(), now.getMonth(), now.getDate());
   }
 
   function prevMonth() {
@@ -678,7 +735,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                   const dateKey = formatDateKey(currentMonth.getFullYear(), currentMonth.getMonth(), day);
                   const hasWorkout = workoutDates.has(dateKey);
                   const isSelected = selectedDate === dateKey;
-                  const isToday = dateKey === new Date().toISOString().split('T')[0];
+                  const isToday = dateKey === getTodayDateKey();
 
                   return (
                     <button
