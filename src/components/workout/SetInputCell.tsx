@@ -39,6 +39,7 @@ export default function SetInputCell({
 
   const handleTap = (e: React.PointerEvent) => {
     e.stopPropagation();
+    if (isCompleted && !isActive) return;
     activate({ exerciseIndex, setIndex, field }, rawValue);
   };
 
@@ -52,7 +53,7 @@ export default function SetInputCell({
         isActive
           ? 'border-primary ring-2 ring-primary/20'
           : 'border-border'
-      } ${isCompleted && !isActive ? 'opacity-60' : ''}`}
+      } ${isCompleted && !isActive ? 'opacity-60 cursor-not-allowed' : ''}`}
     >
       {shownValue ? (
         <span>

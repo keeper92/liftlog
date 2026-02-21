@@ -4,7 +4,14 @@ import { createContext, useContext, useState, useCallback, useRef, type ReactNod
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { usePRStore } from '@/stores/prStore';
-import { toStorageWeight, toDisplayWeight } from '@/lib/utils/units';
+import {
+  toStorageWeight,
+  toDisplayWeight,
+  toStorageDistance,
+  toDisplayDistance,
+  formatTimeInput,
+  parseTimeInput,
+} from '@/lib/utils/units';
 import { detectPRs, type PRDetectionResult } from '@/lib/utils/prDetection';
 
 export type NumberPadField =
@@ -13,7 +20,9 @@ export type NumberPadField =
   | 'leftWeight'
   | 'leftReps'
   | 'rightWeight'
-  | 'rightReps';
+  | 'rightReps'
+  | 'time'
+  | 'distance';
 
 interface NumberPadFocus {
   exerciseIndex: number;
@@ -42,6 +51,22 @@ function isWeightField(field: NumberPadField): boolean {
   return field === 'weight' || field === 'leftWeight' || field === 'rightWeight';
 }
 
+function isDistanceField(field: NumberPadField): boolean {
+  return field === 'distance';
+}
+
+function isTimeField(field: NumberPadField): boolean {
+  return field === 'time';
+}
+
+function getFieldMaxLen(field: NumberPadField): number {
+  if (isWeightField(field)) return 6;
+  if (isRepsField(field)) return 3;
+  if (isDistanceField(field)) return 5;
+  if (isTimeField(field)) return 5;
+  return 5;
+}
+
 function getNextFieldForSplit(field: NumberPadField): NumberPadField {
   if (field === 'leftWeight') return 'leftReps';
   if (field === 'leftReps') return 'rightWeight';
@@ -68,6 +93,7 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
   const [buffer, setBuffer] = useState('');
   const bufferRef = useRef('');
   const focusRef = useRef<NumberPadFocus | null>(null);
+  const replaceOnNextInputRef = useRef(false);
 
   const flushBuffer = useCallback((buf: string, focus: NumberPadFocus) => {
     if (isWeightField(focus.field)) {
@@ -75,8 +101,17 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
       const val = isNaN(parsed) || buf === '' ? null : toStorageWeight(parsed, unitSystem);
       const updateField: Partial<Record<NumberPadField, number | null>> = { [focus.field]: val };
       store.updateSet(focus.exerciseIndex, focus.setIndex, updateField);
+    } else if (isDistanceField(focus.field)) {
+      const parsed = parseFloat(buf);
+      const val = isNaN(parsed) || buf === '' ? null : toStorageDistance(parsed, unitSystem);
+      const updateField: Partial<Record<NumberPadField, number | null>> = { [focus.field]: val };
+      store.updateSet(focus.exerciseIndex, focus.setIndex, updateField);
+    } else if (isTimeField(focus.field)) {
+      const val = parseTimeInput(buf);
+      const updateField: Partial<Record<NumberPadField, number | null>> = { [focus.field]: val };
+      store.updateSet(focus.exerciseIndex, focus.setIndex, updateField);
     } else {
-      const parsed = parseInt(buf);
+      const parsed = parseInt(buf, 10);
       const val = isNaN(parsed) || buf === '' ? null : parsed;
       const updateField: Partial<Record<NumberPadField, number | null>> = { [focus.field]: val };
       store.updateSet(focus.exerciseIndex, focus.setIndex, updateField);
@@ -94,6 +129,11 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
       if (isWeightField(focus.field)) {
         const display = toDisplayWeight(initialValue, unitSystem);
         initBuf = String(display);
+      } else if (isDistanceField(focus.field)) {
+        const display = toDisplayDistance(initialValue, unitSystem);
+        initBuf = display !== null ? String(display) : '';
+      } else if (isTimeField(focus.field)) {
+        initBuf = formatTimeInput(initialValue);
       } else {
         initBuf = String(initialValue);
       }
@@ -101,6 +141,7 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
 
     bufferRef.current = initBuf;
     focusRef.current = focus;
+    replaceOnNextInputRef.current = initBuf.length > 0;
     setBuffer(initBuf);
     setActiveFocus(focus);
   }, [flushBuffer, unitSystem]);
@@ -111,6 +152,7 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
     }
     bufferRef.current = '';
     focusRef.current = null;
+    replaceOnNextInputRef.current = false;
     setBuffer('');
     setActiveFocus(null);
   }, [flushBuffer]);
@@ -119,10 +161,24 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
     const focus = focusRef.current;
     if (!focus) return;
 
-    const maxLen = focus.field === 'weight' ? 6 : 3;
-    if (bufferRef.current.length >= maxLen) return;
+    let base = bufferRef.current;
+    if (replaceOnNextInputRef.current) {
+      base = '';
+      replaceOnNextInputRef.current = false;
+    }
 
-    const next = bufferRef.current + digit;
+    const maxLen = getFieldMaxLen(focus.field);
+    if (base.length >= maxLen) return;
+
+    if (isTimeField(focus.field)) {
+      const colonIdx = base.indexOf(':');
+      if (colonIdx !== -1) {
+        const secondPart = base.slice(colonIdx + 1).replace(/\D/g, '');
+        if (secondPart.length >= 2) return;
+      }
+    }
+
+    const next = base + digit;
     bufferRef.current = next;
     setBuffer(next);
     flushBuffer(next, focus);
@@ -131,16 +187,40 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
   const pressDecimal = useCallback(() => {
     const focus = focusRef.current;
     if (!focus || isRepsField(focus.field)) return;
-    if (bufferRef.current.includes('.')) return;
 
-    const next = bufferRef.current + '.';
+    let base = bufferRef.current;
+    if (replaceOnNextInputRef.current) {
+      base = '';
+      replaceOnNextInputRef.current = false;
+    }
+
+    if (isTimeField(focus.field)) {
+      if (base.includes(':')) return;
+      const next = base === '' ? '0:' : `${base}:`;
+      bufferRef.current = next;
+      setBuffer(next);
+      return;
+    }
+
+    if (base.includes('.')) return;
+
+    const next = base + '.';
     bufferRef.current = next;
     setBuffer(next);
   }, []);
 
   const pressBackspace = useCallback(() => {
     const focus = focusRef.current;
-    if (!focus || bufferRef.current.length === 0) return;
+    if (!focus) return;
+
+    if (replaceOnNextInputRef.current) {
+      replaceOnNextInputRef.current = false;
+      bufferRef.current = '';
+      setBuffer('');
+      flushBuffer('', focus);
+      return;
+    }
+    if (bufferRef.current.length === 0) return;
 
     const next = bufferRef.current.slice(0, -1);
     bufferRef.current = next;
@@ -172,6 +252,23 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
       const newFocus: NumberPadFocus = { ...focus, field: nextField };
       bufferRef.current = initBuf;
       focusRef.current = newFocus;
+      replaceOnNextInputRef.current = initBuf.length > 0;
+      setBuffer(initBuf);
+      setActiveFocus(newFocus);
+    } else if (focus.field === 'time') {
+      // Cardio mode: move from time to distance.
+      const set = store.exercises[focus.exerciseIndex]?.sets[focus.setIndex];
+      const distanceVal = set?.distance ?? null;
+      let initBuf = '';
+      if (distanceVal !== null && distanceVal !== 0) {
+        const display = toDisplayDistance(distanceVal, unitSystem);
+        initBuf = display !== null ? String(display) : '';
+      }
+
+      const newFocus: NumberPadFocus = { ...focus, field: 'distance' };
+      bufferRef.current = initBuf;
+      focusRef.current = newFocus;
+      replaceOnNextInputRef.current = initBuf.length > 0;
       setBuffer(initBuf);
       setActiveFocus(newFocus);
     } else if (focus.field === 'leftReps') {
@@ -186,6 +283,7 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
       const newFocus: NumberPadFocus = { ...focus, field: getNextFieldForSplit(focus.field) };
       bufferRef.current = initBuf;
       focusRef.current = newFocus;
+      replaceOnNextInputRef.current = initBuf.length > 0;
       setBuffer(initBuf);
       setActiveFocus(newFocus);
     } else {
@@ -227,12 +325,24 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
 
         if (nextSetIdx !== -1) {
           const nextSet = ex.sets[nextSetIdx];
-          const nextField: NumberPadField = ex.logMode === 'split_lr' ? 'leftWeight' : 'weight';
-          const weightVal = nextField === 'leftWeight' ? nextSet.leftWeight : nextSet.weight;
           let initBuf = '';
-          if (weightVal !== null && weightVal !== 0) {
-            const display = toDisplayWeight(weightVal, unitSystem);
-            initBuf = String(display);
+          const nextField: NumberPadField =
+            ex.exerciseCategory === 'cardio'
+              ? 'time'
+              : ex.logMode === 'split_lr'
+                ? 'leftWeight'
+                : 'weight';
+
+          if (nextField === 'time') {
+            if (nextSet.time !== null && nextSet.time !== 0) {
+              initBuf = formatTimeInput(nextSet.time);
+            }
+          } else {
+            const weightVal = nextField === 'leftWeight' ? nextSet.leftWeight : nextSet.weight;
+            if (weightVal !== null && weightVal !== 0) {
+              const display = toDisplayWeight(weightVal, unitSystem);
+              initBuf = String(display);
+            }
           }
 
           const newFocus: NumberPadFocus = {
@@ -242,6 +352,7 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
           };
           bufferRef.current = initBuf;
           focusRef.current = newFocus;
+          replaceOnNextInputRef.current = initBuf.length > 0;
           setBuffer(initBuf);
           setActiveFocus(newFocus);
           return;
@@ -251,6 +362,7 @@ export function NumberPadProvider({ children, startRestTimer, onPRDetected }: Nu
       // No more sets, deactivate
       bufferRef.current = '';
       focusRef.current = null;
+      replaceOnNextInputRef.current = false;
       setBuffer('');
       setActiveFocus(null);
     }

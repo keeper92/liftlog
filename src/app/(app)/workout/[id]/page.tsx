@@ -10,10 +10,8 @@ import {
   toDisplayWeight,
   weightUnit,
   formatTimeInput,
-  parseTimeInput,
   distanceUnit,
   toDisplayDistance,
-  toStorageDistance,
   calculatePace,
 } from '@/lib/utils/units';
 import Button from '@/components/ui/Button';
@@ -26,6 +24,7 @@ import ExercisePickerOverlay from '@/components/workout/ExercisePickerOverlay';
 import PRToast from '@/components/workout/PRToast';
 import { usePRStore } from '@/stores/prStore';
 import { detectPRs, type PRDetectionResult } from '@/lib/utils/prDetection';
+import { isAssistanceExerciseName } from '@/lib/utils/exerciseSemantics';
 
 interface HistoryEntry {
   date: string;
@@ -55,7 +54,10 @@ interface RestTimerState {
   isActive: boolean;
   secondsRemaining: number;
   totalSeconds: number;
+  endsAt: number | null;
 }
+
+const REST_TIMER_STORAGE_KEY = 'active-rest-timer-v1';
 
 interface PreviousPerformanceRow {
   id: string;
@@ -67,6 +69,14 @@ interface PreviousPerformanceRow {
   right_reps: number | null;
   is_split_lr: boolean | null;
   set_number: number | null;
+}
+
+interface PRToastEntry {
+  exerciseName: string;
+  metric: 'weight' | 'reps';
+  previousValue: number;
+  newValue: number;
+  direction: 'higher' | 'lower';
 }
 
 function normalizePreviousPerformanceRow(row: PreviousPerformanceRow): PerformanceSet | null {
@@ -167,19 +177,27 @@ export default function ActiveWorkoutPage() {
   const [historyModal, setHistoryModal] = useState<{ exerciseId: string; exerciseName: string } | null>(null);
   const [historyData, setHistoryData] = useState<HistoryEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [restTimer, setRestTimer] = useState<RestTimerState>({ isActive: false, secondsRemaining: 0, totalSeconds: 0 });
-  const restTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [restTimer, setRestTimer] = useState<RestTimerState>({ isActive: false, secondsRemaining: 0, totalSeconds: 0, endsAt: null });
   const [tipsModal, setTipsModal] = useState<{ exerciseId: string; exerciseName: string } | null>(null);
   const [exerciseDetails, setExerciseDetails] = useState<ExerciseDetails | null>(null);
   const [loadingTips, setLoadingTips] = useState(false);
   const [trainingGuideMenu, setTrainingGuideMenu] = useState<{ exerciseId: string; exerciseName: string } | null>(null);
-  const [toastQueue, setToastQueue] = useState<{ exerciseName: string; metric: 'weight' | 'reps'; previousValue: number; newValue: number }[]>([]);
+  const [toastQueue, setToastQueue] = useState<PRToastEntry[]>([]);
   const exercises = store.exercises;
   const previousPerformance = store.previousPerformance;
   const setPreviousPerformance = store.setPreviousPerformance;
 
   const handlePRDetected = useCallback((exerciseName: string, pr: PRDetectionResult) => {
-    setToastQueue((prev) => [...prev, { exerciseName, metric: pr.metric, previousValue: pr.previousValue, newValue: pr.newValue }]);
+    setToastQueue((prev) => [
+      ...prev,
+      {
+        exerciseName,
+        metric: pr.metric,
+        previousValue: pr.previousValue,
+        newValue: pr.newValue,
+        direction: pr.direction,
+      },
+    ]);
   }, []);
 
   const dismissToast = useCallback(() => {
@@ -201,35 +219,93 @@ export default function ActiveWorkoutPage() {
 
   // Rest timer countdown
   useEffect(() => {
-    if (!restTimer.isActive || restTimer.secondsRemaining <= 0) return;
+    if (!restTimer.isActive || !restTimer.endsAt) return;
 
-    restTimerRef.current = setTimeout(() => {
-      setRestTimer((prev) => {
-        if (!prev.isActive) return prev;
-
-        const nextSeconds = prev.secondsRemaining - 1;
-        if (nextSeconds <= 0) {
-          return { isActive: false, secondsRemaining: 0, totalSeconds: 0 };
+    const tick = () => {
+      const nextSeconds = Math.max(0, Math.ceil((restTimer.endsAt as number - Date.now()) / 1000));
+      if (nextSeconds <= 0) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(REST_TIMER_STORAGE_KEY);
         }
+        setRestTimer({ isActive: false, secondsRemaining: 0, totalSeconds: 0, endsAt: null });
+        return;
+      }
 
-        return {
-          ...prev,
-          secondsRemaining: nextSeconds,
-        };
+      setRestTimer((prev) => {
+        if (!prev.isActive || prev.endsAt !== restTimer.endsAt) return prev;
+        if (prev.secondsRemaining === nextSeconds) return prev;
+        return { ...prev, secondsRemaining: nextSeconds };
       });
-    }, 1000);
+    };
+
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [restTimer.isActive, restTimer.endsAt]);
+
+  // Restore active rest timer after app close/reopen.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !store.workoutId) return;
+    let restoreFrame: number | null = null;
+
+    const raw = localStorage.getItem(REST_TIMER_STORAGE_KEY);
+    if (!raw) return;
+
+    type StoredRestTimer = { workoutId: string; endsAt: number; totalSeconds: number };
+
+    try {
+      const parsed = JSON.parse(raw) as StoredRestTimer;
+      if (parsed.workoutId !== store.workoutId) {
+        localStorage.removeItem(REST_TIMER_STORAGE_KEY);
+        return;
+      }
+
+      const nextSeconds = Math.max(0, Math.ceil((parsed.endsAt - Date.now()) / 1000));
+      if (nextSeconds <= 0) {
+        localStorage.removeItem(REST_TIMER_STORAGE_KEY);
+        return;
+      }
+
+      restoreFrame = window.requestAnimationFrame(() => {
+        setRestTimer({
+          isActive: true,
+          secondsRemaining: nextSeconds,
+          totalSeconds: parsed.totalSeconds,
+          endsAt: parsed.endsAt,
+        });
+      });
+    } catch {
+      localStorage.removeItem(REST_TIMER_STORAGE_KEY);
+    }
 
     return () => {
-      if (restTimerRef.current) clearTimeout(restTimerRef.current);
+      if (restoreFrame !== null) {
+        window.cancelAnimationFrame(restoreFrame);
+      }
     };
-  }, [restTimer.isActive, restTimer.secondsRemaining]);
+  }, [store.workoutId]);
 
   const startRestTimer = useCallback((seconds: number) => {
-    setRestTimer({ isActive: true, secondsRemaining: seconds, totalSeconds: seconds });
-  }, []);
+    const endsAt = Date.now() + seconds * 1000;
+    setRestTimer({ isActive: true, secondsRemaining: seconds, totalSeconds: seconds, endsAt });
+
+    if (typeof window !== 'undefined' && store.workoutId) {
+      localStorage.setItem(
+        REST_TIMER_STORAGE_KEY,
+        JSON.stringify({
+          workoutId: store.workoutId,
+          endsAt,
+          totalSeconds: seconds,
+        }),
+      );
+    }
+  }, [store.workoutId]);
 
   const stopRestTimer = useCallback(() => {
-    setRestTimer({ isActive: false, secondsRemaining: 0, totalSeconds: 0 });
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(REST_TIMER_STORAGE_KEY);
+    }
+    setRestTimer({ isActive: false, secondsRemaining: 0, totalSeconds: 0, endsAt: null });
   }, []);
 
   // Load previous performance for exercises
@@ -290,6 +366,7 @@ export default function ActiveWorkoutPage() {
   }, [exercises, previousPerformance, setPreviousPerformance, supabase]);
 
   const handleFinish = useCallback(async () => {
+    stopRestTimer();
     setSaving(true);
     usePRStore.getState().clearFiredNotifications();
     const result = store.finishWorkout();
@@ -342,15 +419,16 @@ export default function ActiveWorkoutPage() {
       ? `/workout/summary/${workout.id}?templateId=${result.templateId}`
       : `/workout/summary/${workout.id}`;
     router.push(summaryUrl);
-  }, [store, supabase, router]);
+  }, [store, supabase, router, stopRestTimer]);
 
   const handleDiscard = useCallback(() => {
     if (window.confirm('Discard this workout? All progress will be lost.')) {
+      stopRestTimer();
       usePRStore.getState().clearFiredNotifications();
       store.discardWorkout();
       router.push('/dashboard');
     }
-  }, [store, router]);
+  }, [store, router, stopRestTimer]);
 
   async function openTrainerTips(exerciseId: string, exerciseName: string) {
     setTipsModal({ exerciseId, exerciseName });
@@ -509,11 +587,11 @@ function WorkoutContent({
   exerciseDetails: ExerciseDetails | null;
   loadingTips: boolean;
   router: ReturnType<typeof useRouter>;
-  toastQueue: { exerciseName: string; metric: 'weight' | 'reps'; previousValue: number; newValue: number }[];
+  toastQueue: PRToastEntry[];
   dismissToast: () => void;
   onPRDetected: (exerciseName: string, pr: PRDetectionResult) => void;
 }) {
-  const { activeFocus, deactivate } = useNumberPad();
+  const { activeFocus } = useNumberPad();
   const numberPadVisible = activeFocus !== null;
   const [showExercisePicker, setShowExercisePicker] = useState(false);
 
@@ -573,7 +651,6 @@ function WorkoutContent({
   return (
     <div
       className="flex flex-col min-h-dvh bg-background"
-      onPointerDown={() => { if (numberPadVisible) deactivate(); }}
       onTouchEnd={() => { if (dragIndex !== null) handleDragEnd(); }}
       onTouchCancel={cancelDrag}
     >
@@ -585,6 +662,7 @@ function WorkoutContent({
           metric={toastQueue[0].metric}
           previousValue={toastQueue[0].previousValue}
           newValue={toastQueue[0].newValue}
+          direction={toastQueue[0].direction}
           unitSystem={unitSystem}
           onDismiss={dismissToast}
         />
@@ -605,9 +683,10 @@ function WorkoutContent({
       </div>
 
       {/* Exercise List */}
-      <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto px-4 py-4 space-y-6 ${numberPadVisible ? 'pb-80' : 'pb-20'}`}>
+      <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto px-4 py-4 space-y-6 ${numberPadVisible ? 'pb-64' : 'pb-20'}`}>
         {store.exercises.map((ex, exIdx) => {
           const prev = store.previousPerformance[ex.exerciseId] || [];
+          const isAssistanceExercise = isAssistanceExerciseName(ex.exerciseName);
           const isDragging = dragIndex === exIdx;
           const isDragOver = dragOverIndex === exIdx && dragIndex !== null && dragIndex !== exIdx;
           return (
@@ -664,11 +743,22 @@ function WorkoutContent({
                   <div>
                     <h3 className="font-semibold text-text">{ex.exerciseName}</h3>
                     <div className="flex items-center gap-2 mt-0.5">
+                      {isAssistanceExercise && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full border border-warning/30 bg-warning/10 text-warning">
+                          Assistance (lower = harder)
+                        </span>
+                      )}
                       <button
                         onClick={() => setTrainingGuideMenu({ exerciseId: ex.exerciseId, exerciseName: ex.exerciseName })}
                         className="text-xs text-primary hover:text-primary-light font-medium"
                       >
                         Training Guide
+                      </button>
+                      <button
+                        onClick={() => openHistory(ex.exerciseId, ex.exerciseName)}
+                        className="text-xs text-text-muted hover:text-text font-medium"
+                      >
+                        Training Log
                       </button>
                       {ex.exerciseCategory !== 'cardio' && (
                         <button
@@ -724,7 +814,7 @@ function WorkoutContent({
 
               {/* Set Rows - Cardio vs Strength */}
               {ex.exerciseCategory === 'cardio' ? (
-                // Cardio: single row with time, distance, and pace (native inputs)
+                // Cardio: single row with time, distance, and pace (number pad flow)
                 <div className="space-y-2">
                   {ex.sets.slice(0, 1).map((s, setIdx) => {
                     const pace = calculatePace(s.time, s.distance, unitSystem);
@@ -736,30 +826,25 @@ function WorkoutContent({
                           }`}
                         >
                           <span className="text-center text-sm font-medium text-text-secondary">
-                            1
+                            {s.setNumber}
                           </span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatTimeInput(s.time)}
-                            onChange={(e) => {
-                              const val = parseTimeInput(e.target.value);
-                              store.updateSet(exIdx, setIdx, { time: val });
-                            }}
-                            className="bg-background rounded-lg px-2 py-2 text-center text-sm min-h-[44px] w-full border border-border focus:border-primary outline-none"
+                          <SetInputCell
+                            exerciseIndex={exIdx}
+                            setIndex={setIdx}
+                            field="time"
+                            displayValue={formatTimeInput(s.time)}
+                            rawValue={s.time}
                             placeholder="0:00"
+                            isCompleted={s.isCompleted}
                           />
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            step="0.1"
-                            value={s.distance !== null ? (toDisplayDistance(s.distance, unitSystem) ?? '') : ''}
-                            onChange={(e) => {
-                              const val = e.target.value ? toStorageDistance(parseFloat(e.target.value), unitSystem) : null;
-                              store.updateSet(exIdx, setIdx, { distance: val });
-                            }}
-                            className="bg-background rounded-lg px-2 py-2 text-center text-sm min-h-[44px] w-full border border-border focus:border-primary outline-none"
+                          <SetInputCell
+                            exerciseIndex={exIdx}
+                            setIndex={setIdx}
+                            field="distance"
+                            displayValue={s.distance !== null ? String(toDisplayDistance(s.distance, unitSystem) ?? '') : ''}
+                            rawValue={s.distance}
                             placeholder="0"
+                            isCompleted={s.isCompleted}
                           />
                           <button
                             onClick={() => {
@@ -958,21 +1043,15 @@ function WorkoutContent({
                 ))
               )}
 
-              <div className="flex gap-4 mt-2">
+              <div className="mt-2">
                 {ex.exerciseCategory !== 'cardio' && (
                   <button
                     onClick={() => store.addSet(exIdx)}
-                    className="flex-1 py-2 text-sm text-primary hover:text-primary-light"
+                    className="w-full py-2 text-sm text-primary hover:text-primary-light"
                   >
                     + Add Set
                   </button>
                 )}
-                <button
-                  onClick={() => openHistory(ex.exerciseId, ex.exerciseName)}
-                  className="flex-1 py-2 text-sm text-text-muted hover:text-text"
-                >
-                  Training Log
-                </button>
               </div>
             </div>
           );
