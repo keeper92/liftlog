@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { formatDuration, toDisplayWeight, weightUnit } from '@/lib/utils/units';
+import { isAssistanceExerciseName } from '@/lib/utils/exerciseSemantics';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 
@@ -45,6 +46,29 @@ function getComparableSet(set: WorkoutData['sets'][number]): { weight: number; r
     weight: left.weight || right.weight,
     reps: Math.max(left.reps, right.reps),
   };
+}
+
+function pickBestSet(
+  sets: Array<{ weight: number; reps: number }>,
+  isAssistanceExercise: boolean,
+): { weight: number; reps: number } {
+  let best: { weight: number; reps: number } | null = null;
+
+  for (const set of sets) {
+    if (set.weight <= 0 && set.reps <= 0) continue;
+    if (!best) {
+      best = set;
+      continue;
+    }
+
+    const isBetter = isAssistanceExercise
+      ? set.weight < best.weight || (set.weight === best.weight && set.reps > best.reps)
+      : set.weight > best.weight || (set.weight === best.weight && set.reps > best.reps);
+
+    if (isBetter) best = set;
+  }
+
+  return best ?? { weight: 0, reps: 0 };
 }
 
 export default function WorkoutSummaryPage() {
@@ -101,6 +125,7 @@ function WorkoutSummaryContent() {
       // Fetch previous performance for each exercise (excluding this workout)
       const comparisons: {
         exerciseName: string;
+        isAssistanceExercise: boolean;
         currentBest: { weight: number; reps: number };
         previousBest: { weight: number; reps: number } | null;
       }[] = [];
@@ -110,59 +135,57 @@ function WorkoutSummaryContent() {
         if (exerciseSets.length === 0) continue;
 
         const exerciseName = exerciseSets[0].exercises.name;
+        const isAssistanceExercise = isAssistanceExerciseName(exerciseName);
 
-        // Find best set in current workout (highest weight, then highest reps)
-        const currentBest = exerciseSets.reduce(
-          (best, s) => {
-            const comparable = getComparableSet(s);
-            const weight = comparable.weight;
-            const reps = comparable.reps;
-            if (weight > best.weight || (weight === best.weight && reps > best.reps)) {
-              return { weight, reps };
-            }
-            return best;
-          },
-          { weight: 0, reps: 0 }
+        // Find best set in current workout.
+        const currentBest = pickBestSet(
+          exerciseSets.map((s) => getComparableSet(s)),
+          isAssistanceExercise,
         );
 
         // Fetch previous best for this exercise
-        const { data: prevData } = await supabase
+        let prevQuery = supabase
           .from('sets')
           .select('weight, reps, workouts!inner(id, user_id)')
           .eq('exercise_id', exId)
           .eq('workouts.user_id', user.id)
           .neq('workouts.id', workoutData.id)
           .eq('is_warmup', false)
-          .eq('is_completed', true)
-          .order('weight', { ascending: false })
-          .limit(10);
+          .eq('is_completed', true);
+
+        prevQuery = prevQuery.order('weight', { ascending: isAssistanceExercise }).limit(30);
+        const { data: prevData } = await prevQuery;
 
         let previousBest: { weight: number; reps: number } | null = null;
         if (prevData && prevData.length > 0) {
-          previousBest = prevData.reduce(
-            (best, s) => {
-              const weight = s.weight || 0;
-              const reps = s.reps || 0;
-              if (weight > best.weight || (weight === best.weight && reps > best.reps)) {
-                return { weight, reps };
-              }
-              return best;
-            },
-            { weight: 0, reps: 0 }
+          previousBest = pickBestSet(
+            prevData.map((s) => ({
+              weight: s.weight || 0,
+              reps: s.reps || 0,
+            })),
+            isAssistanceExercise,
           );
         }
 
-        comparisons.push({ exerciseName, currentBest, previousBest });
+        comparisons.push({ exerciseName, isAssistanceExercise, currentBest, previousBest });
       }
 
       // Build context for AI
       const unit = unitSystem === 'imperial' ? 'lbs' : 'kg';
       const comparisonText = comparisons.map((c) => {
-        const current = `${toDisplayWeight(c.currentBest.weight, unitSystem)}${unit} x ${c.currentBest.reps}`;
+        const current = c.isAssistanceExercise
+          ? `${toDisplayWeight(c.currentBest.weight, unitSystem)}${unit} assist x ${c.currentBest.reps}`
+          : `${toDisplayWeight(c.currentBest.weight, unitSystem)}${unit} x ${c.currentBest.reps}`;
         if (c.previousBest) {
-          const prev = `${toDisplayWeight(c.previousBest.weight, unitSystem)}${unit} x ${c.previousBest.reps}`;
+          const prev = c.isAssistanceExercise
+            ? `${toDisplayWeight(c.previousBest.weight, unitSystem)}${unit} assist x ${c.previousBest.reps}`
+            : `${toDisplayWeight(c.previousBest.weight, unitSystem)}${unit} x ${c.previousBest.reps}`;
           const weightDiff = c.currentBest.weight - c.previousBest.weight;
           const repsDiff = c.currentBest.reps - c.previousBest.reps;
+          if (c.isAssistanceExercise) {
+            const assistDelta = c.previousBest.weight - c.currentBest.weight;
+            return `${c.exerciseName}: Today ${current}, Previous best ${prev} (${assistDelta >= 0 ? '-' : '+'}${toDisplayWeight(Math.abs(assistDelta), unitSystem)}${unit} assistance, ${repsDiff >= 0 ? '+' : ''}${repsDiff} reps)`;
+          }
           return `${c.exerciseName}: Today ${current}, Previous best ${prev} (${weightDiff >= 0 ? '+' : ''}${toDisplayWeight(weightDiff, unitSystem)}${unit}, ${repsDiff >= 0 ? '+' : ''}${repsDiff} reps)`;
         }
         return `${c.exerciseName}: Today ${current} (first time!)`;

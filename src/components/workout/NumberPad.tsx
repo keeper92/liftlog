@@ -14,7 +14,7 @@ interface NumberPadProps {
 }
 
 export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps) {
-  const { activeFocus, pressDigit, pressDecimal, pressBackspace, pressNext } = useNumberPad();
+  const { activeFocus, pressDigit, pressDecimal, pressBackspace, pressNext, deactivate } = useNumberPad();
 
   if (!activeFocus) return null;
 
@@ -26,7 +26,10 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
     leftReps: 'Left Reps',
     rightWeight: 'Right Weight',
     rightReps: 'Right Reps',
+    time: 'Time',
+    distance: 'Distance',
   };
+  const decimalLabel = activeFocus.field === 'time' ? ':' : '.';
 
   const handlePointerDown = (e: React.PointerEvent, action: () => void) => {
     e.stopPropagation();
@@ -38,7 +41,7 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
     <button
       key={digit}
       onPointerDown={(e) => handlePointerDown(e, () => pressDigit(digit))}
-      className="bg-[#2C2C2E] text-white text-xl font-medium rounded-lg min-h-[48px] flex items-center justify-center active:bg-[#3A3A3C] select-none"
+      className="bg-[#2C2C2E] text-white text-lg font-medium rounded-lg min-h-[42px] flex items-center justify-center active:bg-[#3A3A3C] select-none"
     >
       {digit}
     </button>
@@ -46,7 +49,7 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
 
   return (
     <div
-      className="fixed bottom-16 left-0 right-0 z-50 bg-[#1C1C1E] border-t border-[#3A3A3C] px-3 pb-2 pt-2"
+      className="fixed bottom-[4.5rem] right-2 z-50 w-[min(22rem,calc(100vw-1rem))] rounded-2xl border border-[#3A3A3C] bg-[#1C1C1E] px-2.5 pb-2 pt-2 shadow-2xl"
       onPointerDown={(e) => e.stopPropagation()}
     >
       {/* Mini rest timer bar */}
@@ -73,14 +76,24 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
       )}
 
       {/* Field indicator */}
-      <div className="flex items-center justify-center mb-2">
+      <div className="flex items-center justify-between mb-2 px-1">
         <span className="text-xs text-white/50 uppercase tracking-wide">
           {fieldLabelMap[activeFocus.field]}
         </span>
+        <button
+          onPointerDown={(e) => handlePointerDown(e, deactivate)}
+          className="w-6 h-6 rounded-full text-white/70 hover:text-white hover:bg-white/10 flex items-center justify-center"
+          aria-label="Close numpad"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
 
       {/* Number grid: 4 rows x 4 cols, NEXT spans right column */}
-      <div className="grid grid-cols-[1fr_1fr_1fr_minmax(72px,1fr)] gap-1.5">
+      <div className="grid grid-cols-[1fr_1fr_1fr_minmax(64px,1fr)] gap-1.5">
         {/* Row 1 */}
         {digitBtn('1')}
         {digitBtn('2')}
@@ -89,7 +102,7 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
         {/* NEXT button spanning 4 rows */}
         <button
           onPointerDown={(e) => handlePointerDown(e, pressNext)}
-          className="row-span-4 bg-primary text-white font-bold text-base rounded-xl flex items-center justify-center active:bg-primary-dark select-none"
+          className="row-span-4 bg-primary text-white font-bold text-sm rounded-xl flex items-center justify-center active:bg-primary-dark select-none"
         >
           NEXT
         </button>
@@ -108,16 +121,16 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
         <button
           onPointerDown={(e) => handlePointerDown(e, pressDecimal)}
           disabled={isReps}
-          className={`bg-[#2C2C2E] text-white text-xl font-medium rounded-lg min-h-[48px] flex items-center justify-center select-none ${
+          className={`bg-[#2C2C2E] text-white text-lg font-medium rounded-lg min-h-[42px] flex items-center justify-center select-none ${
             isReps ? 'opacity-30 pointer-events-none' : 'active:bg-[#3A3A3C]'
           }`}
         >
-          .
+          {decimalLabel}
         </button>
         {digitBtn('0')}
         <button
           onPointerDown={(e) => handlePointerDown(e, pressBackspace)}
-          className="bg-[#2C2C2E] text-white rounded-lg min-h-[48px] flex items-center justify-center active:bg-[#3A3A3C] select-none"
+          className="bg-[#2C2C2E] text-white rounded-lg min-h-[42px] flex items-center justify-center active:bg-[#3A3A3C] select-none"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />

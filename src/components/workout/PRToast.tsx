@@ -9,20 +9,23 @@ interface PRToastProps {
   metric: 'weight' | 'reps';
   previousValue: number;
   newValue: number;
+  direction: 'higher' | 'lower';
   unitSystem: UnitSystem;
   onDismiss: () => void;
 }
 
-export default function PRToast({ exerciseName, metric, previousValue, newValue, unitSystem, onDismiss }: PRToastProps) {
+export default function PRToast({ exerciseName, metric, previousValue, newValue, direction, unitSystem, onDismiss }: PRToastProps) {
   useEffect(() => {
     const timer = setTimeout(onDismiss, 2200);
     return () => clearTimeout(timer);
   }, [onDismiss]);
 
-  const improvement = newValue - previousValue;
+  const improvement = direction === 'lower' ? previousValue - newValue : newValue - previousValue;
   const displayText =
     metric === 'weight'
-      ? `+${toDisplayWeight(improvement, unitSystem)} ${weightUnit(unitSystem)} on ${exerciseName}!`
+      ? direction === 'lower'
+        ? `-${toDisplayWeight(improvement, unitSystem)} ${weightUnit(unitSystem)} assistance on ${exerciseName}!`
+        : `+${toDisplayWeight(improvement, unitSystem)} ${weightUnit(unitSystem)} on ${exerciseName}!`
       : `+${improvement} reps on ${exerciseName}!`;
 
   return (

@@ -8,6 +8,11 @@ import { useExerciseSearch } from '@/hooks/useExerciseSearch';
 import { CARDIO_DISPLAY_NAMES } from '@/lib/types/exercise';
 import type { ExerciseRow } from '@/lib/types/exercise';
 import { MUSCLE_GROUPS, EXERCISE_CATEGORIES } from '@/lib/constants';
+import {
+  inferEquipmentFromCategory,
+  inferExerciseCategoryFromName,
+  inferPrimaryMuscleFromName,
+} from '@/lib/utils/exerciseInference';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 
@@ -49,6 +54,8 @@ function ExercisesContent() {
     category: 'barbell' as string,
     primaryMuscle: 'chest' as string,
   });
+  const [categoryManuallyChanged, setCategoryManuallyChanged] = useState(false);
+  const [primaryMuscleManuallyChanged, setPrimaryMuscleManuallyChanged] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -72,7 +79,14 @@ function ExercisesContent() {
 
   function openCreateModal() {
     setEditingExercise(null);
-    setExerciseForm({ name: search || '', category: 'barbell', primaryMuscle: 'chest' });
+    const initialName = search || '';
+    setExerciseForm({
+      name: initialName,
+      category: inferExerciseCategoryFromName(initialName),
+      primaryMuscle: inferPrimaryMuscleFromName(initialName),
+    });
+    setCategoryManuallyChanged(false);
+    setPrimaryMuscleManuallyChanged(false);
     setActionError(null);
     setShowCreateModal(true);
   }
@@ -84,6 +98,8 @@ function ExercisesContent() {
       category: exercise.category,
       primaryMuscle: exercise.primary_muscles[0] || 'chest',
     });
+    setCategoryManuallyChanged(true);
+    setPrimaryMuscleManuallyChanged(true);
     setActionError(null);
     setShowCreateModal(true);
   }
@@ -91,6 +107,8 @@ function ExercisesContent() {
   function closeCreateModal() {
     if (saving || deleting) return;
     setShowCreateModal(false);
+    setCategoryManuallyChanged(false);
+    setPrimaryMuscleManuallyChanged(false);
     setActionError(null);
   }
 
@@ -161,6 +179,7 @@ function ExercisesContent() {
 
     setSaving(true);
     setActionError(null);
+    const inferredEquipment = inferEquipmentFromCategory(exerciseForm.category);
 
     const isOwnCustom = editingExercise?.is_custom && editingExercise?.user_id === currentUserId;
 
@@ -172,6 +191,7 @@ function ExercisesContent() {
           name: trimmedName,
           category: exerciseForm.category,
           primary_muscles: [exerciseForm.primaryMuscle],
+          equipment: inferredEquipment,
         })
         .eq('id', editingExercise.id);
 
@@ -185,7 +205,7 @@ function ExercisesContent() {
         setExercises((prev) =>
           prev.map((ex) =>
             ex.id === editingExercise.id
-              ? { ...ex, name: trimmedName, category: exerciseForm.category, primary_muscles: [exerciseForm.primaryMuscle] }
+              ? { ...ex, name: trimmedName, category: exerciseForm.category, primary_muscles: [exerciseForm.primaryMuscle], equipment: inferredEquipment }
               : ex
           )
         );
@@ -199,6 +219,7 @@ function ExercisesContent() {
           category: exerciseForm.category,
           primary_muscles: [exerciseForm.primaryMuscle],
           secondary_muscles: [],
+          equipment: inferredEquipment,
           is_custom: true,
           user_id: currentUserId,
         })
@@ -232,6 +253,7 @@ function ExercisesContent() {
           category: exerciseForm.category,
           primary_muscles: [exerciseForm.primaryMuscle],
           secondary_muscles: [],
+          equipment: inferredEquipment,
           is_custom: true,
           user_id: currentUserId,
         })
@@ -641,7 +663,19 @@ function ExercisesContent() {
             <input
               type="text"
               value={exerciseForm.name}
-              onChange={(e) => setExerciseForm((f) => ({ ...f, name: e.target.value }))}
+              onChange={(e) => {
+                const nextName = e.target.value;
+                setExerciseForm((f) => {
+                  const next = { ...f, name: nextName };
+                  if (!categoryManuallyChanged) {
+                    next.category = inferExerciseCategoryFromName(nextName);
+                  }
+                  if (!primaryMuscleManuallyChanged) {
+                    next.primaryMuscle = inferPrimaryMuscleFromName(nextName);
+                  }
+                  return next;
+                });
+              }}
               placeholder="e.g., Bulgarian Split Squat"
               className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm focus:border-primary outline-none"
               autoFocus
@@ -652,7 +686,10 @@ function ExercisesContent() {
             <label className="block text-sm font-medium mb-1.5">Category</label>
             <select
               value={exerciseForm.category}
-              onChange={(e) => setExerciseForm((f) => ({ ...f, category: e.target.value }))}
+              onChange={(e) => {
+                setCategoryManuallyChanged(true);
+                setExerciseForm((f) => ({ ...f, category: e.target.value }));
+              }}
               className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm focus:border-primary outline-none capitalize"
             >
               {EXERCISE_CATEGORIES.map((cat) => (
@@ -667,7 +704,10 @@ function ExercisesContent() {
             <label className="block text-sm font-medium mb-1.5">Primary Muscle</label>
             <select
               value={exerciseForm.primaryMuscle}
-              onChange={(e) => setExerciseForm((f) => ({ ...f, primaryMuscle: e.target.value }))}
+              onChange={(e) => {
+                setPrimaryMuscleManuallyChanged(true);
+                setExerciseForm((f) => ({ ...f, primaryMuscle: e.target.value }));
+              }}
               className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm focus:border-primary outline-none capitalize"
             >
               {MUSCLE_GROUPS.map((muscle) => (
