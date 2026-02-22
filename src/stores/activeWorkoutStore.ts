@@ -55,6 +55,7 @@ export interface ActiveWorkoutState {
   moveExercise: (fromIndex: number, toIndex: number) => void;
   setExerciseLogMode: (exerciseIndex: number, mode: ExerciseLogMode) => void;
   addSet: (exerciseIndex: number) => void;
+  insertSet: (exerciseIndex: number, setIndex: number, set: ActiveSet) => void;
   updateSet: (exerciseIndex: number, setIndex: number, data: Partial<ActiveSet>) => void;
   completeSet: (exerciseIndex: number, setIndex: number) => void;
   removeSet: (exerciseIndex: number, setIndex: number) => void;
@@ -273,6 +274,26 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
           ...exercise.sets,
           exercise.logMode === 'split_lr' ? withSplitDefaults(nextSet) : nextSet,
         ];
+        exercises[exerciseIndex] = exercise;
+        set({ exercises });
+      },
+
+      insertSet: (exerciseIndex, setIndex, restoredSet) => {
+        const state = get();
+        const exercises = [...state.exercises];
+        const exercise = { ...exercises[exerciseIndex] };
+        if (!exercise) return;
+
+        const sets = [...exercise.sets];
+        const insertAt = Math.max(0, Math.min(setIndex, sets.length));
+        const nextSet: ActiveSet = {
+          ...restoredSet,
+          exerciseId: exercise.exerciseId,
+        };
+        const normalizedSet = exercise.logMode === 'split_lr' ? toCombinedFromSplit(nextSet) : nextSet;
+        sets.splice(insertAt, 0, normalizedSet);
+
+        exercise.sets = sets.map((s, i) => ({ ...s, setNumber: i + 1 }));
         exercises[exerciseIndex] = exercise;
         set({ exercises });
       },

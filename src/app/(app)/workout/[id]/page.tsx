@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useActiveWorkoutStore, type ActiveSet, type ActiveWorkoutState, type PerformanceSet } from '@/stores/activeWorkoutStore';
@@ -109,6 +109,14 @@ interface PRToastEntry {
   direction: 'higher' | 'lower';
 }
 
+interface PendingSetDelete {
+  exerciseIndex: number;
+  exerciseId: string;
+  exerciseName: string;
+  setIndex: number;
+  set: ActiveSet;
+}
+
 function normalizePreviousPerformanceRow(row: PreviousPerformanceRow): PerformanceSet | null {
   const splitWeight = Math.max(row.left_weight ?? 0, row.right_weight ?? 0);
   const splitReps = Math.max(row.left_reps ?? 0, row.right_reps ?? 0);
@@ -194,6 +202,117 @@ function WarmupToggle({ isWarmup, setNumber, onToggle }: { isWarmup: boolean; se
     >
       {isWarmup ? 'W' : setNumber}
     </button>
+  );
+}
+
+function SwipeToDeleteRow({
+  enabled,
+  onDelete,
+  children,
+}: {
+  enabled: boolean;
+  onDelete: () => void;
+  children: ReactNode;
+}) {
+  const [offsetX, setOffsetX] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const axisRef = useRef<'x' | 'y' | null>(null);
+  const swipingRef = useRef(false);
+  const offsetRef = useRef(0);
+
+  const updateOffset = useCallback((next: number) => {
+    offsetRef.current = next;
+    setOffsetX(next);
+  }, []);
+
+  const resetSwipe = useCallback(() => {
+    touchStartRef.current = null;
+    axisRef.current = null;
+    swipingRef.current = false;
+    updateOffset(0);
+  }, [updateOffset]);
+
+  const handleTouchStart = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
+    if (!enabled) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    axisRef.current = null;
+    swipingRef.current = false;
+  }, [enabled]);
+
+  const handleTouchMove = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
+    if (!enabled || !touchStartRef.current) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+
+    if (axisRef.current === null) {
+      if (Math.abs(deltaX) < 6 && Math.abs(deltaY) < 6) return;
+      axisRef.current = Math.abs(deltaX) > Math.abs(deltaY) ? 'x' : 'y';
+    }
+
+    if (axisRef.current !== 'x') return;
+
+    event.preventDefault();
+    swipingRef.current = true;
+
+    if (deltaX >= 0) {
+      updateOffset(Math.min(0, deltaX * 0.15));
+      return;
+    }
+
+    updateOffset(Math.max(-96, deltaX));
+  }, [enabled, updateOffset]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!enabled) {
+      resetSwipe();
+      return;
+    }
+
+    const shouldDelete = swipingRef.current && offsetRef.current <= -72;
+    if (shouldDelete) {
+      updateOffset(-96);
+      if (navigator.vibrate) navigator.vibrate(10);
+      touchStartRef.current = null;
+      axisRef.current = null;
+      swipingRef.current = false;
+      window.setTimeout(() => {
+        onDelete();
+      }, 120);
+      return;
+    }
+
+    resetSwipe();
+  }, [enabled, onDelete, resetSwipe, updateOffset]);
+
+  return (
+    <div className="relative mb-2 overflow-hidden rounded-lg">
+      {enabled && (
+        <div className="absolute inset-y-0 right-0 flex items-center justify-end gap-1 px-3 rounded-lg bg-error/10 border border-error/20 text-error">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14H6L5 6" />
+            <path d="M10 11v6M14 11v6" />
+            <path d="M9 6V4h6v2" />
+          </svg>
+          <span className="text-[11px] font-semibold tracking-wide">DELETE</span>
+        </div>
+      )}
+      <div
+        className="relative transition-transform duration-150 ease-out"
+        style={{ transform: `translateX(${offsetX}px)`, touchAction: 'pan-y' }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={resetSwipe}
+      >
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -619,9 +738,11 @@ function WorkoutContent({
   finishError: string | null;
   onPRDetected: (exerciseName: string, pr: PRDetectionResult) => void;
 }) {
-  const { activeFocus } = useNumberPad();
+  const { activeFocus, deactivate } = useNumberPad();
   const numberPadVisible = activeFocus !== null;
   const [showExercisePicker, setShowExercisePicker] = useState(false);
+  const [pendingSetDelete, setPendingSetDelete] = useState<PendingSetDelete | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Drag-to-reorder state
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -673,6 +794,72 @@ function WorkoutContent({
       longPressTimer.current = null;
     }
   }
+
+  const clearPendingDelete = useCallback(() => {
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = null;
+    }
+    setPendingSetDelete(null);
+  }, []);
+
+  const handleDeleteSet = useCallback((exerciseIndex: number, setIndex: number) => {
+    const state = useActiveWorkoutStore.getState();
+    const exercise = state.exercises[exerciseIndex];
+    if (!exercise || exercise.exerciseCategory === 'cardio') return;
+    if (exercise.sets.length <= 1) return;
+
+    const setToDelete = exercise.sets[setIndex];
+    if (!setToDelete) return;
+
+    if (activeFocus && activeFocus.exerciseIndex === exerciseIndex) {
+      deactivate();
+    }
+
+    clearPendingDelete();
+    state.removeSet(exerciseIndex, setIndex);
+    setPendingSetDelete({
+      exerciseIndex,
+      exerciseId: exercise.exerciseId,
+      exerciseName: exercise.exerciseName,
+      setIndex,
+      set: { ...setToDelete },
+    });
+
+    undoTimerRef.current = setTimeout(() => {
+      undoTimerRef.current = null;
+      setPendingSetDelete(null);
+    }, 5000);
+  }, [activeFocus, clearPendingDelete, deactivate]);
+
+  const handleUndoDeleteSet = useCallback(() => {
+    if (!pendingSetDelete) return;
+    const state = useActiveWorkoutStore.getState();
+    const preferredExercise = state.exercises[pendingSetDelete.exerciseIndex];
+    const exerciseIndex = preferredExercise?.exerciseId === pendingSetDelete.exerciseId
+      ? pendingSetDelete.exerciseIndex
+      : state.exercises.findIndex((exercise) => exercise.exerciseId === pendingSetDelete.exerciseId);
+    if (exerciseIndex === -1) {
+      clearPendingDelete();
+      return;
+    }
+
+    if (activeFocus && activeFocus.exerciseIndex === exerciseIndex) {
+      deactivate();
+    }
+
+    const exercise = state.exercises[exerciseIndex];
+    const insertAt = Math.max(0, Math.min(pendingSetDelete.setIndex, exercise.sets.length));
+    state.insertSet(exerciseIndex, insertAt, pendingSetDelete.set);
+    clearPendingDelete();
+  }, [activeFocus, clearPendingDelete, deactivate, pendingSetDelete]);
+
+  useEffect(() => () => {
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = null;
+    }
+  }, []);
 
   const unit = weightUnit(unitSystem);
 
@@ -907,173 +1094,180 @@ function WorkoutContent({
                 </div>
               ) : (
                 // Strength: custom number pad inputs
-                ex.sets.map((s, setIdx) => (
-                  ex.logMode === 'split_lr' ? (
-                    <div
+                ex.sets.map((s, setIdx) => {
+                  const canDeleteSet = ex.sets.length > 1;
+                  return (
+                    <SwipeToDeleteRow
                       key={s.id}
-                      className={`grid grid-cols-[40px_1fr_1fr_40px] gap-2 items-center mb-2 ${
-                        s.isCompleted ? 'opacity-60' : ''
-                      }`}
+                      enabled={canDeleteSet}
+                      onDelete={() => handleDeleteSet(exIdx, setIdx)}
                     >
-                      <WarmupToggle
-                        isWarmup={s.isWarmup}
-                        setNumber={s.setNumber}
-                        onToggle={() => store.updateSet(exIdx, setIdx, { isWarmup: !s.isWarmup })}
-                      />
-                      <div className="grid grid-cols-2 gap-1">
-                        <SetInputCell
-                          exerciseIndex={exIdx}
-                          setIndex={setIdx}
-                          field="leftWeight"
-                          displayValue={s.leftWeight !== null ? String(toDisplayWeight(s.leftWeight, unitSystem)) : ''}
-                          rawValue={s.leftWeight}
-                          placeholder="0"
-                          isCompleted={s.isCompleted}
-                        />
-                        <SetInputCell
-                          exerciseIndex={exIdx}
-                          setIndex={setIdx}
-                          field="leftReps"
-                          displayValue={s.leftReps !== null ? String(s.leftReps) : ''}
-                          rawValue={s.leftReps}
-                          placeholder="0"
-                          isCompleted={s.isCompleted}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-1">
-                        <SetInputCell
-                          exerciseIndex={exIdx}
-                          setIndex={setIdx}
-                          field="rightWeight"
-                          displayValue={s.rightWeight !== null ? String(toDisplayWeight(s.rightWeight, unitSystem)) : ''}
-                          rawValue={s.rightWeight}
-                          placeholder="0"
-                          isCompleted={s.isCompleted}
-                        />
-                        <SetInputCell
-                          exerciseIndex={exIdx}
-                          setIndex={setIdx}
-                          field="rightReps"
-                          displayValue={s.rightReps !== null ? String(s.rightReps) : ''}
-                          rawValue={s.rightReps}
-                          placeholder="0"
-                          isCompleted={s.isCompleted}
-                        />
-                      </div>
-                      <button
-                        onClick={() => {
-                          if (s.isCompleted) {
-                            store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
-                          } else {
-                            store.completeSet(exIdx, setIdx);
-                            if (!s.isWarmup) startRestTimer(ex.restTimerSeconds);
-                            // PR detection for manual checkmark
-                            const prevPerf = store.previousPerformance[ex.exerciseId] || [];
-                            const prs = detectPRs(s, ex, prevPerf);
-                            const prStoreState = usePRStore.getState();
-                            for (const pr of prs) {
-                              if (store.workoutId && !prStoreState.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
-                                prStoreState.markFired(store.workoutId, ex.exerciseId, pr.metric);
-                                prStoreState.addPR({
-                                  exerciseId: ex.exerciseId,
-                                  exerciseName: ex.exerciseName,
-                                  metric: pr.metric,
-                                  previousValue: pr.previousValue,
-                                  newValue: pr.newValue,
-                                  date: new Date().toISOString(),
-                                  workoutId: store.workoutId,
-                                });
-                                onPRDetected(ex.exerciseName, pr);
+                      {ex.logMode === 'split_lr' ? (
+                        <div
+                          className={`grid grid-cols-[40px_1fr_1fr_40px] gap-2 items-center ${
+                            s.isCompleted ? 'opacity-60' : ''
+                          }`}
+                        >
+                          <WarmupToggle
+                            isWarmup={s.isWarmup}
+                            setNumber={s.setNumber}
+                            onToggle={() => store.updateSet(exIdx, setIdx, { isWarmup: !s.isWarmup })}
+                          />
+                          <div className="grid grid-cols-2 gap-1">
+                            <SetInputCell
+                              exerciseIndex={exIdx}
+                              setIndex={setIdx}
+                              field="leftWeight"
+                              displayValue={s.leftWeight !== null ? String(toDisplayWeight(s.leftWeight, unitSystem)) : ''}
+                              rawValue={s.leftWeight}
+                              placeholder="0"
+                              isCompleted={s.isCompleted}
+                            />
+                            <SetInputCell
+                              exerciseIndex={exIdx}
+                              setIndex={setIdx}
+                              field="leftReps"
+                              displayValue={s.leftReps !== null ? String(s.leftReps) : ''}
+                              rawValue={s.leftReps}
+                              placeholder="0"
+                              isCompleted={s.isCompleted}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-1">
+                            <SetInputCell
+                              exerciseIndex={exIdx}
+                              setIndex={setIdx}
+                              field="rightWeight"
+                              displayValue={s.rightWeight !== null ? String(toDisplayWeight(s.rightWeight, unitSystem)) : ''}
+                              rawValue={s.rightWeight}
+                              placeholder="0"
+                              isCompleted={s.isCompleted}
+                            />
+                            <SetInputCell
+                              exerciseIndex={exIdx}
+                              setIndex={setIdx}
+                              field="rightReps"
+                              displayValue={s.rightReps !== null ? String(s.rightReps) : ''}
+                              rawValue={s.rightReps}
+                              placeholder="0"
+                              isCompleted={s.isCompleted}
+                            />
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (s.isCompleted) {
+                                store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
+                              } else {
+                                store.completeSet(exIdx, setIdx);
+                                if (!s.isWarmup) startRestTimer(ex.restTimerSeconds);
+                                // PR detection for manual checkmark
+                                const prevPerf = store.previousPerformance[ex.exerciseId] || [];
+                                const prs = detectPRs(s, ex, prevPerf);
+                                const prStoreState = usePRStore.getState();
+                                for (const pr of prs) {
+                                  if (store.workoutId && !prStoreState.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
+                                    prStoreState.markFired(store.workoutId, ex.exerciseId, pr.metric);
+                                    prStoreState.addPR({
+                                      exerciseId: ex.exerciseId,
+                                      exerciseName: ex.exerciseName,
+                                      metric: pr.metric,
+                                      previousValue: pr.previousValue,
+                                      newValue: pr.newValue,
+                                      date: new Date().toISOString(),
+                                      workoutId: store.workoutId,
+                                    });
+                                    onPRDetected(ex.exerciseName, pr);
+                                  }
+                                }
                               }
-                            }
-                          }
-                        }}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          s.isCompleted ? 'bg-success text-white' : 'bg-surface-light text-text-muted'
-                        }`}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ) : (
-                    <div
-                      key={s.id}
-                      className={`grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 items-center mb-2 ${
-                        s.isCompleted ? 'opacity-60' : ''
-                      }`}
-                    >
-                      <WarmupToggle
-                        isWarmup={s.isWarmup}
-                        setNumber={s.setNumber}
-                        onToggle={() => store.updateSet(exIdx, setIdx, { isWarmup: !s.isWarmup })}
-                      />
-                      <span className="text-center text-sm text-text-muted">
-                        {(() => {
-                          const previousSet = getPreviousSetForNumber(prev, setIdx + 1);
-                          return previousSet
-                            ? `${toDisplayWeight(previousSet.weight, unitSystem)}×${previousSet.reps}`
-                            : '-';
-                        })()}
-                      </span>
-                      <SetInputCell
-                        exerciseIndex={exIdx}
-                        setIndex={setIdx}
-                        field="weight"
-                        displayValue={s.weight !== null ? String(toDisplayWeight(s.weight, unitSystem)) : ''}
-                        rawValue={s.weight}
-                        placeholder="0"
-                        isCompleted={s.isCompleted}
-                      />
-                      <SetInputCell
-                        exerciseIndex={exIdx}
-                        setIndex={setIdx}
-                        field="reps"
-                        displayValue={s.reps !== null ? String(s.reps) : ''}
-                        rawValue={s.reps}
-                        placeholder="0"
-                        isCompleted={s.isCompleted}
-                      />
-                      <button
-                        onClick={() => {
-                          if (s.isCompleted) {
-                            store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
-                          } else {
-                            store.completeSet(exIdx, setIdx);
-                            if (!s.isWarmup) startRestTimer(ex.restTimerSeconds);
-                            // PR detection for manual checkmark
-                            const prevPerf = store.previousPerformance[ex.exerciseId] || [];
-                            const prs = detectPRs(s, ex, prevPerf);
-                            const prStoreState = usePRStore.getState();
-                            for (const pr of prs) {
-                              if (store.workoutId && !prStoreState.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
-                                prStoreState.markFired(store.workoutId, ex.exerciseId, pr.metric);
-                                prStoreState.addPR({
-                                  exerciseId: ex.exerciseId,
-                                  exerciseName: ex.exerciseName,
-                                  metric: pr.metric,
-                                  previousValue: pr.previousValue,
-                                  newValue: pr.newValue,
-                                  date: new Date().toISOString(),
-                                  workoutId: store.workoutId,
-                                });
-                                onPRDetected(ex.exerciseName, pr);
+                            }}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              s.isCompleted ? 'bg-success text-white' : 'bg-surface-light text-text-muted'
+                            }`}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          className={`grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 items-center ${
+                            s.isCompleted ? 'opacity-60' : ''
+                          }`}
+                        >
+                          <WarmupToggle
+                            isWarmup={s.isWarmup}
+                            setNumber={s.setNumber}
+                            onToggle={() => store.updateSet(exIdx, setIdx, { isWarmup: !s.isWarmup })}
+                          />
+                          <span className="text-center text-sm text-text-muted">
+                            {(() => {
+                              const previousSet = getPreviousSetForNumber(prev, setIdx + 1);
+                              return previousSet
+                                ? `${toDisplayWeight(previousSet.weight, unitSystem)}×${previousSet.reps}`
+                                : '-';
+                            })()}
+                          </span>
+                          <SetInputCell
+                            exerciseIndex={exIdx}
+                            setIndex={setIdx}
+                            field="weight"
+                            displayValue={s.weight !== null ? String(toDisplayWeight(s.weight, unitSystem)) : ''}
+                            rawValue={s.weight}
+                            placeholder="0"
+                            isCompleted={s.isCompleted}
+                          />
+                          <SetInputCell
+                            exerciseIndex={exIdx}
+                            setIndex={setIdx}
+                            field="reps"
+                            displayValue={s.reps !== null ? String(s.reps) : ''}
+                            rawValue={s.reps}
+                            placeholder="0"
+                            isCompleted={s.isCompleted}
+                          />
+                          <button
+                            onClick={() => {
+                              if (s.isCompleted) {
+                                store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
+                              } else {
+                                store.completeSet(exIdx, setIdx);
+                                if (!s.isWarmup) startRestTimer(ex.restTimerSeconds);
+                                // PR detection for manual checkmark
+                                const prevPerf = store.previousPerformance[ex.exerciseId] || [];
+                                const prs = detectPRs(s, ex, prevPerf);
+                                const prStoreState = usePRStore.getState();
+                                for (const pr of prs) {
+                                  if (store.workoutId && !prStoreState.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
+                                    prStoreState.markFired(store.workoutId, ex.exerciseId, pr.metric);
+                                    prStoreState.addPR({
+                                      exerciseId: ex.exerciseId,
+                                      exerciseName: ex.exerciseName,
+                                      metric: pr.metric,
+                                      previousValue: pr.previousValue,
+                                      newValue: pr.newValue,
+                                      date: new Date().toISOString(),
+                                      workoutId: store.workoutId,
+                                    });
+                                    onPRDetected(ex.exerciseName, pr);
+                                  }
+                                }
                               }
-                            }
-                          }
-                        }}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          s.isCompleted ? 'bg-success text-white' : 'bg-surface-light text-text-muted'
-                        }`}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  )
-                ))
+                            }}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              s.isCompleted ? 'bg-success text-white' : 'bg-surface-light text-text-muted'
+                            }`}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </SwipeToDeleteRow>
+                  );
+                })
               )}
 
               <div className="mt-2">
@@ -1098,6 +1292,22 @@ function WorkoutContent({
           + Add Exercise
         </Button>
       </div>
+
+      {pendingSetDelete && (
+        <div className={`fixed left-4 right-4 z-[70] ${numberPadVisible ? 'bottom-64' : 'bottom-24'}`}>
+          <div className="flex items-center justify-between rounded-xl border border-border bg-surface shadow-lg px-3 py-2">
+            <p className="text-sm text-text-secondary truncate pr-3">
+              Set deleted from {pendingSetDelete.exerciseName}
+            </p>
+            <button
+              onClick={handleUndoDeleteSet}
+              className="text-sm font-semibold text-primary hover:text-primary-light"
+            >
+              Undo
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Number Pad */}
       <NumberPad restTimer={restTimer} onStopRestTimer={stopRestTimer} />
