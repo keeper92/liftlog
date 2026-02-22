@@ -131,18 +131,8 @@ export default function Home() {
 
         <aside className={styles.storyAside}>
           <a href="https://repsfit.app" target="_blank" rel="noreferrer" className={styles.productLink}>
-            View repsfit.app
+            Demo the app
           </a>
-          <div className={styles.expertise}>
-            <h2>Areas of expertise</h2>
-            <div className={styles.tags}>
-              <span>Product Design</span>
-              <span>Mobile UX</span>
-              <span>Interaction Design</span>
-              <span>Information Architecture</span>
-              <span>Research Synthesis</span>
-            </div>
-          </div>
         </aside>
       </section>
 
