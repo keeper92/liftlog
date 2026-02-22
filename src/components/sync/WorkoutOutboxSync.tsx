@@ -26,16 +26,62 @@ export default function WorkoutOutboxSync() {
     setSyncing(true);
 
     try {
-      const {
-        data: { user },
-        error: userError,
-      } = await withTimeout(supabase.auth.getUser(), SYNC_TIMEOUT_MS, 'Auth');
-      if (userError || !user) return;
+      let userId: string | null = null;
+      let authErrorMessage: string | null = null;
+
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await withTimeout(supabase.auth.getUser(), SYNC_TIMEOUT_MS, 'Auth');
+        if (userError) {
+          authErrorMessage = userError.message || 'Unable to verify session';
+        } else if (user) {
+          userId = user.id;
+        }
+      } catch (error) {
+        authErrorMessage = error instanceof Error ? error.message : 'Unable to verify session';
+      }
+
+      if (!userId) {
+        try {
+          const {
+            data: { session },
+            error: sessionError,
+          } = await withTimeout(supabase.auth.getSession(), SYNC_TIMEOUT_MS, 'Session');
+          if (sessionError) {
+            authErrorMessage = authErrorMessage ?? sessionError.message ?? 'Unable to load session';
+          } else if (session?.user?.id) {
+            userId = session.user.id;
+          }
+        } catch (error) {
+          if (!authErrorMessage) {
+            authErrorMessage = error instanceof Error ? error.message : 'Unable to load session';
+          }
+        }
+      }
+
+      if (!userId) {
+        const message = authErrorMessage
+          ? `Sync paused: ${authErrorMessage}`
+          : 'Sync paused. Sign in again to upload saved workouts.';
+        for (const item of queue) {
+          useWorkoutOutboxStore.getState().markFailed(item.workoutId, message);
+        }
+        return;
+      }
 
       for (const item of queue) {
+        if (item.ownerUserId && item.ownerUserId !== userId) {
+          useWorkoutOutboxStore
+            .getState()
+            .markFailed(item.workoutId, 'Saved under a different account. Sign in to that account to sync this workout.');
+          continue;
+        }
+
         useWorkoutOutboxStore.getState().markSyncing(item.workoutId);
         try {
-          await uploadWorkoutSnapshot(supabase, user.id, item.payload, SYNC_TIMEOUT_MS);
+          await uploadWorkoutSnapshot(supabase, userId, item.payload, SYNC_TIMEOUT_MS);
           useWorkoutOutboxStore.getState().markSynced(item.workoutId);
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Sync failed';
@@ -76,7 +122,9 @@ export default function WorkoutOutboxSync() {
   if (pendingCount === 0) return null;
 
   const offline = typeof navigator !== 'undefined' && !navigator.onLine;
-  const failedCount = items.filter((item) => item.lastError && !item.syncing).length;
+  const failedItems = items.filter((item) => item.lastError && !item.syncing);
+  const failedCount = failedItems.length;
+  const latestFailure = failedItems.at(-1)?.lastError;
   const statusText = syncing
     ? `Syncing ${pendingCount} saved workout${pendingCount === 1 ? '' : 's'}...`
     : offline
@@ -86,9 +134,19 @@ export default function WorkoutOutboxSync() {
         : `${pendingCount} workout${pendingCount === 1 ? '' : 's'} queued for sync.`;
 
   return (
-    <div className="px-4 py-2 text-xs text-primary bg-primary/10 border-b border-primary/20">
-      {statusText}
+    <div className="px-4 py-2 text-xs text-primary bg-primary/10 border-b border-primary/20 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p>{statusText}</p>
+        {latestFailure && (
+          <p className="text-[11px] text-text-secondary truncate">{latestFailure}</p>
+        )}
+      </div>
+      <button
+        onClick={() => { runSync(); }}
+        className="shrink-0 text-[11px] font-semibold text-primary hover:text-primary-light"
+      >
+        Retry
+      </button>
     </div>
   );
 }
-
