@@ -1,0 +1,504 @@
+.page {
+  --portfolio-bg-top: #efebe4;
+  --portfolio-bg-mid: #ebe6de;
+  --portfolio-bg-bottom: #f0ece6;
+  --portfolio-surface: #f9f6f1;
+  --portfolio-ink: #202226;
+  --portfolio-muted: #5a616a;
+  --portfolio-line: #cfc5b8;
+  --portfolio-accent: #ee4c24;
+  --portfolio-accent-strong: #d93d18;
+  --portfolio-accent-soft: #fdf0ec;
+  --portfolio-navy: #1e3e59;
+
+  position: relative;
+  min-height: 100dvh;
+  overflow-x: clip;
+  background:
+    linear-gradient(180deg, var(--portfolio-bg-top) 0%, var(--portfolio-bg-mid) 45%, var(--portfolio-bg-bottom) 100%);
+  color: var(--portfolio-ink);
+  font-family: var(--font-body), "Avenir Next", "Avenir", "Segoe UI", sans-serif;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 14% 12%, rgb(238 76 36 / 18%), transparent 30%),
+    radial-gradient(circle at 88% 0%, rgb(30 62 89 / 17%), transparent 28%),
+    radial-gradient(circle at 70% 92%, rgb(238 76 36 / 12%), transparent 24%);
+}
+
+.header,
+.hero,
+.summarySection,
+.featureSection,
+.storySection,
+.gallerySection {
+  position: relative;
+  z-index: 1;
+  width: min(1200px, calc(100% - 3rem));
+  margin-inline: auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1.8rem;
+}
+
+.brand {
+  margin: 0;
+  font-family: var(--font-heading), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+}
+
+.nav a {
+  color: var(--portfolio-ink);
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.nav a:hover {
+  color: var(--portfolio-accent-strong);
+}
+
+.hero {
+  margin-top: 4rem;
+}
+
+.kicker {
+  margin: 0;
+  color: var(--portfolio-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 1.25rem 0 0;
+  max-width: 18ch;
+  font-family: var(--font-heading), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: clamp(2.5rem, 7vw, 5.35rem);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.heroBody {
+  margin: 1.75rem 0 0;
+  max-width: 58ch;
+  color: var(--portfolio-muted);
+  font-size: clamp(1.05rem, 2vw, 1.32rem);
+  line-height: 1.6;
+}
+
+.summarySection {
+  margin-top: 4rem;
+}
+
+.projectLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.72rem;
+  padding: 0.78rem 1rem;
+  border: 1px solid rgb(207 197 184 / 75%);
+  border-radius: 999px;
+  background: rgb(249 246 241 / 75%);
+  box-shadow: 0 4px 16px rgb(26 23 18 / 7%);
+}
+
+.projectDot {
+  width: 0.66rem;
+  height: 0.66rem;
+  border-radius: 50%;
+  background: var(--portfolio-accent);
+  box-shadow: 0 0 0 6px rgb(238 76 36 / 16%);
+}
+
+.projectName {
+  margin: 0;
+  font-family: var(--font-heading), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 0.96rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.projectMeta {
+  margin: 0.14rem 0 0;
+  color: var(--portfolio-muted);
+  font-size: 0.82rem;
+}
+
+.summaryGrid {
+  margin-top: 1.55rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.4rem;
+}
+
+.summaryCard {
+  padding: 1.15rem 0 0;
+  border-top: 1px solid var(--portfolio-line);
+}
+
+.summaryCard:nth-child(3) {
+  border-top-color: var(--portfolio-accent);
+}
+
+.summaryCard h2 {
+  margin: 0;
+  font-family: var(--font-heading), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 0.86rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.summaryCard p {
+  margin: 0.95rem 0 0;
+  color: var(--portfolio-ink);
+  font-size: 1.11rem;
+  line-height: 1.55;
+}
+
+.summaryCard:nth-child(3) p {
+  font-weight: 600;
+}
+
+.featureSection {
+  margin-top: 4.8rem;
+  padding-top: 2.4rem;
+}
+
+.featureBand {
+  position: absolute;
+  inset: 0;
+  top: 0;
+  height: 70%;
+  border-radius: 34px;
+  background:
+    linear-gradient(180deg, var(--portfolio-accent) 0%, #f4582b 55%, #f37b39 100%);
+}
+
+.browserFrame {
+  position: relative;
+  width: min(980px, calc(100% - 2rem));
+  margin: 0 auto;
+  border-radius: 24px;
+  border: 1px solid rgb(227 217 202 / 90%);
+  background: var(--portfolio-surface);
+  box-shadow:
+    0 26px 52px rgb(32 20 14 / 22%),
+    0 8px 18px rgb(32 20 14 / 14%);
+  overflow: hidden;
+}
+
+.browserTopBar {
+  height: 3.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-inline: 1.2rem;
+  background: #e9ddcf;
+  border-bottom: 1px solid rgb(208 194 178 / 75%);
+}
+
+.browserButtons {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.48rem;
+}
+
+.browserButtons span {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 50%;
+  background: rgb(238 76 36 / 78%);
+}
+
+.browserBody {
+  display: grid;
+  place-items: center;
+  min-height: 29rem;
+  padding: 2.1rem;
+  background:
+    linear-gradient(165deg, #f6f2eb 0%, #ece7de 48%, #f8f5ef 100%);
+}
+
+.featureImage {
+  width: min(360px, 100%);
+  height: auto;
+  border-radius: 18px;
+  border: 1px solid rgb(209 197 181 / 90%);
+  box-shadow:
+    0 18px 30px rgb(33 22 15 / 14%),
+    0 6px 16px rgb(33 22 15 / 8%);
+}
+
+.storySection {
+  margin-top: 5.4rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.85fr) minmax(320px, 1fr);
+  gap: 3.4rem;
+}
+
+.storyCopy p {
+  margin: 0;
+  font-size: clamp(1.36rem, 2.2vw, 2rem);
+  line-height: 1.58;
+  letter-spacing: -0.015em;
+}
+
+.storyCopy strong {
+  color: var(--portfolio-accent);
+  font-weight: 600;
+}
+
+.storyAside {
+  border-top: 1px solid var(--portfolio-line);
+  padding-top: 1.25rem;
+}
+
+.productLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.6rem;
+  width: min(100%, 20rem);
+  padding-inline: 1.4rem;
+  border-radius: 999px;
+  background: var(--portfolio-accent);
+  color: #fff;
+  font-family: var(--font-heading), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 0.94rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.productLink:hover {
+  background: var(--portfolio-accent-strong);
+  transform: translateY(-2px);
+}
+
+.expertise {
+  margin-top: 2rem;
+}
+
+.expertise h2 {
+  margin: 0;
+  color: var(--portfolio-muted);
+  font-family: var(--font-heading), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.tags {
+  margin-top: 0.95rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.64rem;
+}
+
+.tags span {
+  padding: 0.48rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgb(238 76 36 / 55%);
+  background: var(--portfolio-accent-soft);
+  color: var(--portfolio-accent-strong);
+  font-size: 0.93rem;
+}
+
+.gallerySection {
+  margin-top: 5.3rem;
+  margin-bottom: 4.2rem;
+}
+
+.gallerySection h2 {
+  margin: 0;
+  font-family: var(--font-heading), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: clamp(1.55rem, 3vw, 2.18rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.galleryGrid {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.3rem;
+}
+
+.galleryCard {
+  margin: 0;
+  padding: 1.05rem;
+  border: 1px solid rgb(207 197 184 / 70%);
+  border-radius: 18px;
+  background: rgb(249 246 241 / 85%);
+  box-shadow: 0 8px 18px rgb(29 20 15 / 7%);
+}
+
+.galleryImageWrap {
+  min-height: 17.2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid rgb(215 203 188 / 88%);
+  background:
+    radial-gradient(circle at top, rgb(255 255 255 / 95%), #f4eee4 78%);
+}
+
+.galleryImage {
+  width: min(188px, 100%);
+  height: auto;
+  border-radius: 14px;
+  border: 1px solid rgb(206 194 177 / 88%);
+  box-shadow: 0 12px 24px rgb(29 20 15 / 12%);
+}
+
+.galleryCard figcaption {
+  margin-top: 0.8rem;
+  color: var(--portfolio-navy);
+  font-family: var(--font-heading), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: reveal 0.72s cubic-bezier(0.24, 0.88, 0.32, 1) forwards;
+}
+
+@keyframes reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 960px) {
+  .header,
+  .hero,
+  .summarySection,
+  .featureSection,
+  .storySection,
+  .gallerySection {
+    width: min(1200px, calc(100% - 2rem));
+  }
+
+  .hero {
+    margin-top: 2.8rem;
+  }
+
+  .summaryGrid {
+    grid-template-columns: 1fr;
+    gap: 1.1rem;
+  }
+
+  .featureSection {
+    margin-top: 3.8rem;
+    padding-top: 1.6rem;
+  }
+
+  .featureBand {
+    border-radius: 22px;
+    height: 62%;
+  }
+
+  .browserFrame {
+    width: calc(100% - 0.75rem);
+    border-radius: 18px;
+  }
+
+  .browserBody {
+    min-height: 24.5rem;
+  }
+
+  .storySection {
+    margin-top: 4.2rem;
+    grid-template-columns: 1fr;
+    gap: 1.8rem;
+  }
+
+  .gallerySection {
+    margin-top: 4.2rem;
+  }
+
+  .galleryGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.85rem;
+  }
+
+  .nav {
+    gap: 0.9rem;
+    flex-wrap: wrap;
+  }
+
+  .nav a {
+    font-size: 0.75rem;
+  }
+
+  .projectLabel {
+    align-items: flex-start;
+    border-radius: 16px;
+  }
+
+  .projectMeta {
+    line-height: 1.5;
+  }
+
+  .browserTopBar {
+    height: 2.8rem;
+  }
+
+  .browserBody {
+    min-height: 20.5rem;
+    padding: 1.3rem;
+  }
+
+  .featureImage {
+    width: min(235px, 100%);
+  }
+
+  .storyCopy p {
+    font-size: 1.24rem;
+    line-height: 1.6;
+  }
+
+  .productLink {
+    width: 100%;
+  }
+}

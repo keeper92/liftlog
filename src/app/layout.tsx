@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'reps',
-  description: 'Track your workouts',
+  title: 'Perry Sweitzer Portfolio',
+  description: 'UX resume and case studies by Perry Sweitzer.',
 };
 
 export const viewport: Viewport = {
