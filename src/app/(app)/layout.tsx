@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import BottomNav from '@/components/layout/BottomNav';
 import ActiveWorkoutRibbon from '@/components/layout/ActiveWorkoutRibbon';
 import MainContent from '@/components/layout/MainContent';
+import WorkoutOutboxSync from '@/components/sync/WorkoutOutboxSync';
 
 export default function AppLayout({
   children,
@@ -11,6 +12,7 @@ export default function AppLayout({
 }) {
   return (
     <div className="flex min-h-dvh flex-col bg-background">
+      <WorkoutOutboxSync />
       <MainContent>{children}</MainContent>
       <ActiveWorkoutRibbon />
       <BottomNav />

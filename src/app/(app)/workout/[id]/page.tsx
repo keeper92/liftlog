@@ -25,6 +25,8 @@ import PRToast from '@/components/workout/PRToast';
 import { usePRStore } from '@/stores/prStore';
 import { detectPRs, type PRDetectionResult } from '@/lib/utils/prDetection';
 import { isAssistanceExerciseName } from '@/lib/utils/exerciseSemantics';
+import { uploadWorkoutSnapshot, withTimeout, type WorkoutUploadSnapshot } from '@/lib/sync/workoutUpload';
+import { useWorkoutOutboxStore } from '@/stores/workoutOutboxStore';
 
 interface HistoryEntry {
   date: string;
@@ -58,6 +60,34 @@ interface RestTimerState {
 }
 
 const REST_TIMER_STORAGE_KEY = 'active-rest-timer-v1';
+const FINISH_TIMEOUT_MS = 15000;
+
+function buildWorkoutUploadSnapshot(state: ActiveWorkoutState): WorkoutUploadSnapshot | null {
+  if (!state.workoutId || !state.startTime) return null;
+  return {
+    workoutId: state.workoutId,
+    workoutName: state.workoutName,
+    startTime: state.startTime,
+    templateId: state.templateId,
+    exercises: state.exercises.map((exercise) => ({
+      exerciseId: exercise.exerciseId,
+      logMode: exercise.logMode,
+      sets: exercise.sets.map((set) => ({
+        setNumber: set.setNumber,
+        weight: set.weight,
+        reps: set.reps,
+        leftWeight: set.leftWeight,
+        leftReps: set.leftReps,
+        rightWeight: set.rightWeight,
+        rightReps: set.rightReps,
+        time: set.time,
+        distance: set.distance,
+        isWarmup: set.isWarmup,
+        isCompleted: set.isCompleted,
+      })),
+    })),
+  };
+}
 
 interface PreviousPerformanceRow {
   id: string;
@@ -178,6 +208,7 @@ export default function ActiveWorkoutPage() {
   const [historyData, setHistoryData] = useState<HistoryEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [restTimer, setRestTimer] = useState<RestTimerState>({ isActive: false, secondsRemaining: 0, totalSeconds: 0, endsAt: null });
+  const [finishError, setFinishError] = useState<string | null>(null);
   const [tipsModal, setTipsModal] = useState<{ exerciseId: string; exerciseName: string } | null>(null);
   const [exerciseDetails, setExerciseDetails] = useState<ExerciseDetails | null>(null);
   const [loadingTips, setLoadingTips] = useState(false);
@@ -366,64 +397,58 @@ export default function ActiveWorkoutPage() {
   }, [exercises, previousPerformance, setPreviousPerformance, supabase]);
 
   const handleFinish = useCallback(async () => {
+    if (saving) return;
+    setFinishError(null);
     stopRestTimer();
     setSaving(true);
-    usePRStore.getState().clearFiredNotifications();
-    const result = store.finishWorkout();
-    if (!result) { setSaving(false); return; }
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSaving(false); return; }
-
-    const { data: workout, error: wErr } = await supabase
-      .from('workouts')
-      .insert({
-        id: result.workoutId,
-        user_id: user.id,
-        name: result.workoutName,
-        date: result.startTime,
-        start_time: result.startTime,
-        end_time: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (wErr || !workout) { setSaving(false); return; }
-
-    const setsToInsert = result.exercises.flatMap((ex) =>
-      ex.sets
-        .filter((s) => s.isCompleted)
-        .map((s) => ({
-          workout_id: workout.id,
-          exercise_id: ex.exerciseId,
-          set_number: s.setNumber,
-          weight: s.weight,
-          reps: s.reps,
-          left_weight: ex.logMode === 'split_lr' ? s.leftWeight : null,
-          left_reps: ex.logMode === 'split_lr' ? s.leftReps : null,
-          right_weight: ex.logMode === 'split_lr' ? s.rightWeight : null,
-          right_reps: ex.logMode === 'split_lr' ? s.rightReps : null,
-          is_split_lr: ex.logMode === 'split_lr',
-          time: s.time,
-          distance: s.distance,
-          is_warmup: s.isWarmup,
-          is_completed: true,
-        })),
-    );
-
-    if (setsToInsert.length > 0) {
-      await supabase.from('sets').insert(setsToInsert);
+    const snapshot = buildWorkoutUploadSnapshot(store);
+    if (!snapshot) {
+      setSaving(false);
+      return;
     }
 
-    const summaryUrl = result.templateId
-      ? `/workout/summary/${workout.id}?templateId=${result.templateId}`
-      : `/workout/summary/${workout.id}`;
-    router.push(summaryUrl);
-  }, [store, supabase, router, stopRestTimer]);
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await withTimeout(supabase.auth.getUser(), FINISH_TIMEOUT_MS, 'Auth');
+      if (userError || !user) {
+        throw new Error('Unable to verify your account. Please try again.');
+      }
+
+      await uploadWorkoutSnapshot(supabase, user.id, snapshot, FINISH_TIMEOUT_MS);
+
+      usePRStore.getState().clearFiredNotifications();
+      store.discardWorkout();
+
+      const summaryUrl = snapshot.templateId
+        ? `/workout/summary/${snapshot.workoutId}?templateId=${snapshot.templateId}`
+        : `/workout/summary/${snapshot.workoutId}`;
+      router.push(summaryUrl);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unable to save workout right now.';
+      try {
+        useWorkoutOutboxStore.getState().enqueue(snapshot, errorMessage);
+        usePRStore.getState().clearFiredNotifications();
+        store.discardWorkout();
+        setSaving(false);
+        router.push('/dashboard');
+      } catch (queueError) {
+        const queueMessage = queueError instanceof Error ? queueError.message : 'local queue unavailable';
+        const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+        const fallbackMessage = offline
+          ? 'Could not queue workout while offline. Your workout remains open on this screen.'
+          : 'Could not save or queue workout right now. Your workout remains open on this screen.';
+        setFinishError(`${fallbackMessage} (${errorMessage}; ${queueMessage})`);
+        setSaving(false);
+      }
+    }
+  }, [saving, stopRestTimer, store, supabase, router]);
 
   const handleDiscard = useCallback(() => {
     if (window.confirm('Discard this workout? All progress will be lost.')) {
       stopRestTimer();
+      setFinishError(null);
       usePRStore.getState().clearFiredNotifications();
       store.discardWorkout();
       router.push('/dashboard');
@@ -532,6 +557,7 @@ export default function ActiveWorkoutPage() {
         router={router}
         toastQueue={toastQueue}
         dismissToast={dismissToast}
+        finishError={finishError}
         onPRDetected={handlePRDetected}
       />
     </NumberPadProvider>
@@ -563,6 +589,7 @@ function WorkoutContent({
   router,
   toastQueue,
   dismissToast,
+  finishError,
   onPRDetected,
 }: {
   store: ActiveWorkoutState;
@@ -589,6 +616,7 @@ function WorkoutContent({
   router: ReturnType<typeof useRouter>;
   toastQueue: PRToastEntry[];
   dismissToast: () => void;
+  finishError: string | null;
   onPRDetected: (exerciseName: string, pr: PRDetectionResult) => void;
 }) {
   const { activeFocus } = useNumberPad();
@@ -681,6 +709,11 @@ function WorkoutContent({
           Finish
         </Button>
       </div>
+      {finishError && (
+        <div className="px-4 py-2 text-xs text-warning bg-warning/10 border-b border-warning/20">
+          {finishError}
+        </div>
+      )}
 
       {/* Exercise List */}
       <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto px-4 py-4 space-y-6 ${numberPadVisible ? 'pb-64' : 'pb-20'}`}>
