@@ -1,6 +1,5 @@
 import type { CSSProperties } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { Space_Grotesk, Work_Sans } from 'next/font/google';
 import styles from './page.module.css';
 
@@ -131,9 +130,9 @@ export default function Home() {
         </article>
 
         <aside className={styles.storyAside}>
-          <Link href="/login" className={styles.productLink}>
-            View the Product
-          </Link>
+          <a href="https://repsfit.app" target="_blank" rel="noreferrer" className={styles.productLink}>
+            View repsfit.app
+          </a>
           <div className={styles.expertise}>
             <h2>Areas of expertise</h2>
             <div className={styles.tags}>
