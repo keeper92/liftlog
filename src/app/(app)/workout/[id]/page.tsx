@@ -526,6 +526,8 @@ export default function ActiveWorkoutPage() {
       return;
     }
 
+    let currentUserId: string | null = null;
+
     try {
       const {
         data: { user },
@@ -534,6 +536,7 @@ export default function ActiveWorkoutPage() {
       if (userError || !user) {
         throw new Error('Unable to verify your account. Please try again.');
       }
+      currentUserId = user.id;
 
       await uploadWorkoutSnapshot(supabase, user.id, snapshot, FINISH_TIMEOUT_MS);
 
@@ -546,8 +549,18 @@ export default function ActiveWorkoutPage() {
       router.push(summaryUrl);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unable to save workout right now.';
+      if (!currentUserId) {
+        try {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          currentUserId = session?.user?.id ?? null;
+        } catch {
+          currentUserId = null;
+        }
+      }
       try {
-        useWorkoutOutboxStore.getState().enqueue(snapshot, errorMessage);
+        useWorkoutOutboxStore.getState().enqueue(snapshot, errorMessage, currentUserId);
         usePRStore.getState().clearFiredNotifications();
         store.discardWorkout();
         setSaving(false);

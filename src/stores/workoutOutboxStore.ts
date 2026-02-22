@@ -7,6 +7,7 @@ import type { WorkoutUploadSnapshot } from '@/lib/sync/workoutUpload';
 export interface WorkoutOutboxItem {
   workoutId: string;
   payload: WorkoutUploadSnapshot;
+  ownerUserId: string | null;
   createdAt: string;
   attempts: number;
   lastError: string | null;
@@ -15,7 +16,7 @@ export interface WorkoutOutboxItem {
 
 interface WorkoutOutboxState {
   items: WorkoutOutboxItem[];
-  enqueue: (payload: WorkoutUploadSnapshot, lastError?: string) => void;
+  enqueue: (payload: WorkoutUploadSnapshot, lastError?: string, ownerUserId?: string | null) => void;
   markSyncing: (workoutId: string) => void;
   markFailed: (workoutId: string, error: string) => void;
   markSynced: (workoutId: string) => void;
@@ -27,7 +28,7 @@ export const useWorkoutOutboxStore = create<WorkoutOutboxState>()(
     (set, get) => ({
       items: [],
 
-      enqueue: (payload, lastError) => {
+      enqueue: (payload, lastError, ownerUserId) => {
         const existing = get().items.find((item) => item.workoutId === payload.workoutId);
         if (existing) {
           set({
@@ -36,6 +37,7 @@ export const useWorkoutOutboxStore = create<WorkoutOutboxState>()(
                 ? {
                     ...item,
                     payload,
+                    ownerUserId: ownerUserId ?? item.ownerUserId ?? null,
                     lastError: lastError ?? item.lastError,
                     syncing: false,
                   }
@@ -51,6 +53,7 @@ export const useWorkoutOutboxStore = create<WorkoutOutboxState>()(
             {
               workoutId: payload.workoutId,
               payload,
+              ownerUserId: ownerUserId ?? null,
               createdAt: new Date().toISOString(),
               attempts: 0,
               lastError: lastError ?? null,
@@ -99,4 +102,3 @@ export const useWorkoutOutboxStore = create<WorkoutOutboxState>()(
     },
   ),
 );
-
