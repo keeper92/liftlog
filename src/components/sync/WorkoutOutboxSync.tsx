@@ -8,6 +8,44 @@ import { useWorkoutOutboxStore } from '@/stores/workoutOutboxStore';
 const SYNC_TIMEOUT_MS = 15000;
 const SYNC_POLL_MS = 30000;
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'object' && error !== null) {
+    const maybeError = error as {
+      message?: unknown;
+      details?: unknown;
+      hint?: unknown;
+      error_description?: unknown;
+    };
+
+    const parts: string[] = [];
+    if (typeof maybeError.message === 'string' && maybeError.message) {
+      parts.push(maybeError.message);
+    }
+    if (typeof maybeError.details === 'string' && maybeError.details) {
+      parts.push(maybeError.details);
+    }
+    if (typeof maybeError.error_description === 'string' && maybeError.error_description) {
+      parts.push(maybeError.error_description);
+    }
+    if (typeof maybeError.hint === 'string' && maybeError.hint) {
+      parts.push(`Hint: ${maybeError.hint}`);
+    }
+
+    if (parts.length > 0) return parts.join(' ');
+  }
+  return 'Sync failed';
+}
+
+function isOwnershipConflict(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes('row-level security') ||
+    lower.includes('violates row-level security') ||
+    lower.includes('permission denied')
+  );
+}
+
 export default function WorkoutOutboxSync() {
   const supabase = useMemo(() => createClient(), []);
   const items = useWorkoutOutboxStore((s) => s.items);
@@ -84,8 +122,33 @@ export default function WorkoutOutboxSync() {
           await uploadWorkoutSnapshot(supabase, userId, item.payload, SYNC_TIMEOUT_MS);
           useWorkoutOutboxStore.getState().markSynced(item.workoutId);
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Sync failed';
-          useWorkoutOutboxStore.getState().markFailed(item.workoutId, message);
+          const primaryMessage = getErrorMessage(error);
+
+          // Recover legacy queued workouts that originated under another account.
+          const canRekeyLegacyWorkout =
+            !item.ownerUserId &&
+            typeof crypto !== 'undefined' &&
+            typeof crypto.randomUUID === 'function' &&
+            isOwnershipConflict(primaryMessage);
+
+          if (canRekeyLegacyWorkout) {
+            try {
+              await uploadWorkoutSnapshot(
+                supabase,
+                userId,
+                { ...item.payload, workoutId: crypto.randomUUID() },
+                SYNC_TIMEOUT_MS,
+              );
+              useWorkoutOutboxStore.getState().markSynced(item.workoutId);
+              continue;
+            } catch (retryError) {
+              const retryMessage = getErrorMessage(retryError);
+              useWorkoutOutboxStore.getState().markFailed(item.workoutId, retryMessage);
+              continue;
+            }
+          }
+
+          useWorkoutOutboxStore.getState().markFailed(item.workoutId, primaryMessage);
         }
       }
     } finally {

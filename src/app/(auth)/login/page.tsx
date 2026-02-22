@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
 import { DEMO_TOUR_PENDING_KEY } from '@/lib/constants/onboarding';
+import { useWorkoutOutboxStore } from '@/stores/workoutOutboxStore';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
@@ -93,6 +94,8 @@ export default function LoginPage() {
         return;
       }
 
+      // Demo mode should start from a clean queue.
+      useWorkoutOutboxStore.getState().clear();
       sessionStorage.setItem(DEMO_TOUR_PENDING_KEY, '1');
       router.push('/dashboard');
     } catch {
