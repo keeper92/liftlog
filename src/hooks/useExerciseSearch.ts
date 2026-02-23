@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { ExerciseRow } from '@/lib/types/exercise';
 import { canonicalizeExerciseName } from '@/lib/utils/exerciseNaming';
+
+export type ExerciseLibraryView = 'favorites' | 'all';
 
 interface UseExerciseSearchReturn {
   exercises: ExerciseRow[];
@@ -11,12 +13,11 @@ interface UseExerciseSearchReturn {
   loading: boolean;
   search: string;
   setSearch: (v: string) => void;
-  selectedMuscle: string | null;
-  setSelectedMuscle: (v: string | null) => void;
-  showCardio: boolean;
-  setShowCardio: (v: boolean) => void;
-  showRecentlyUsed: boolean;
-  setShowRecentlyUsed: (v: boolean) => void;
+  libraryView: ExerciseLibraryView;
+  setLibraryView: (v: ExerciseLibraryView) => void;
+  favoriteExerciseIds: string[];
+  isFavorite: (exerciseId: string) => boolean;
+  toggleFavorite: (exerciseId: string) => Promise<void>;
   currentUserId: string | null;
 }
 
@@ -25,98 +26,146 @@ export function useExerciseSearch(): UseExerciseSearchReturn {
 
   const [exercises, setExercises] = useState<ExerciseRow[]>([]);
   const [search, setSearch] = useState('');
-  const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
-  const [showCardio, setShowCardio] = useState(false);
-  const [showRecentlyUsed, setShowRecentlyUsed] = useState(true);
-  const [recentlyUsedIds, setRecentlyUsedIds] = useState<string[]>([]);
+  const [libraryView, setLibraryView] = useState<ExerciseLibraryView>('all');
+  const [favoriteExerciseIds, setFavoriteExerciseIds] = useState<string[]>([]);
+  const [profilePreferences, setProfilePreferences] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Fetch user ID and recently used exercise IDs on mount
-  useEffect(() => {
-    async function loadRecentlyUsed() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  const favoriteIdSet = useMemo(() => new Set(favoriteExerciseIds), [favoriteExerciseIds]);
 
+  // Fetch current user + exercise favorites from profile preferences.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUserAndFavorites() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        if (!cancelled) {
+          setCurrentUserId(null);
+          setFavoriteExerciseIds([]);
+          setProfilePreferences({});
+        }
+        return;
+      }
+
+      if (cancelled) return;
       setCurrentUserId(user.id);
 
-      const { data } = await supabase
-        .from('sets')
-        .select('exercise_id, timestamp, workouts!inner(user_id)')
-        .eq('workouts.user_id', user.id)
-        .order('timestamp', { ascending: false });
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('preferences')
+        .eq('id', user.id)
+        .single();
 
-      if (data) {
-        const seen = new Set<string>();
-        const recentIds: string[] = [];
-        for (const row of data) {
-          if (!seen.has(row.exercise_id)) {
-            seen.add(row.exercise_id);
-            recentIds.push(row.exercise_id);
-          }
-          if (recentIds.length >= 50) break;
-        }
-        setRecentlyUsedIds(recentIds);
+      if (cancelled) return;
+
+      const preferences = (profileData?.preferences as Record<string, unknown>) || {};
+      const rawFavoriteIds = preferences.favoriteExerciseIds;
+      const nextFavorites = Array.isArray(rawFavoriteIds)
+        ? rawFavoriteIds.filter((id): id is string => typeof id === 'string')
+        : [];
+
+      setProfilePreferences(preferences);
+      setFavoriteExerciseIds(nextFavorites);
+      if (nextFavorites.length === 0 && libraryView === 'favorites') {
+        setLibraryView('all');
       }
     }
-    loadRecentlyUsed();
-  }, [supabase]);
 
-  // Fetch exercises based on current filters (debounced 300ms)
+    loadUserAndFavorites();
+    return () => {
+      cancelled = true;
+    };
+  }, [libraryView, supabase]);
+
+  // Fetch exercises based on active view + search (debounced 300ms)
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       setLoading(true);
 
-      if (showRecentlyUsed && recentlyUsedIds.length > 0) {
-        const query = supabase
-          .from('exercises')
-          .select('id, name, category, primary_muscles, equipment, is_custom, user_id')
-          .in('id', recentlyUsedIds);
+      if (libraryView === 'favorites' && favoriteExerciseIds.length === 0) {
+        if (!cancelled) {
+          setExercises([]);
+          setLoading(false);
+        }
+        return;
+      }
 
-        const { data } = await query;
-        if (data) {
-          if (search.trim()) {
-            setExercises(rankExercisesBySearch(data, search, recentlyUsedIds));
-          } else {
-            const sorted = [...data].sort(
-              (a, b) => recentlyUsedIds.indexOf(a.id) - recentlyUsedIds.indexOf(b.id)
-            );
-            setExercises(sorted);
-          }
+      let query = supabase
+        .from('exercises')
+        .select('id, name, category, primary_muscles, equipment, is_custom, user_id')
+        .order('name')
+        .limit(1000);
+
+      if (libraryView === 'favorites') {
+        query = query.in('id', favoriteExerciseIds);
+      }
+
+      const { data } = await query;
+      if (cancelled) return;
+
+      if (data) {
+        if (search.trim()) {
+          setExercises(rankExercisesBySearch(data as ExerciseRow[], search));
+        } else {
+          setExercises(data as ExerciseRow[]);
         }
       } else {
-        let query = supabase
-          .from('exercises')
-          .select('id, name, category, primary_muscles, equipment, is_custom, user_id')
-          .order('name')
-          .limit(1000);
-        if (showCardio) {
-          query = query.in('name', [
-            'Bicycling, Stationary',
-            'Stairmaster',
-            'Elliptical Trainer',
-            'Rowing, Stationary',
-            'Jogging, Treadmill',
-          ]);
-        } else if (selectedMuscle) {
-          query = query.contains('primary_muscles', [selectedMuscle]);
-        }
-
-        const { data } = await query;
-        if (data) {
-          if (search.trim()) {
-            setExercises(rankExercisesBySearch(data, search));
-          } else {
-            setExercises(data);
-          }
-        }
+        setExercises([]);
       }
       setLoading(false);
     }
 
     const debounce = setTimeout(load, 300);
-    return () => clearTimeout(debounce);
-  }, [search, selectedMuscle, showCardio, showRecentlyUsed, recentlyUsedIds, supabase]);
+    return () => {
+      cancelled = true;
+      clearTimeout(debounce);
+    };
+  }, [search, libraryView, favoriteExerciseIds, supabase]);
+
+  const isFavorite = useCallback((exerciseId: string) => {
+    return favoriteIdSet.has(exerciseId);
+  }, [favoriteIdSet]);
+
+  const toggleFavorite = useCallback(async (exerciseId: string) => {
+    if (!currentUserId) return;
+
+    const currentlyFavorite = favoriteIdSet.has(exerciseId);
+    const optimisticFavorites = currentlyFavorite
+      ? favoriteExerciseIds.filter((id) => id !== exerciseId)
+      : [...favoriteExerciseIds, exerciseId];
+    setFavoriteExerciseIds(optimisticFavorites);
+
+    const profilePrefs = { ...profilePreferences };
+    const currentPrefFavorites = Array.isArray(profilePrefs.favoriteExerciseIds)
+      ? (profilePrefs.favoriteExerciseIds as unknown[]).filter((id): id is string => typeof id === 'string')
+      : [];
+
+    const nextPrefFavorites = currentlyFavorite
+      ? currentPrefFavorites.filter((id) => id !== exerciseId)
+      : Array.from(new Set([...currentPrefFavorites, exerciseId]));
+
+    const nextPreferences = {
+      ...profilePrefs,
+      favoriteExerciseIds: nextPrefFavorites,
+    };
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ preferences: nextPreferences })
+      .eq('id', currentUserId);
+
+    if (error) {
+      // Revert optimistic update on write failure.
+      setFavoriteExerciseIds(favoriteExerciseIds);
+      return;
+    }
+
+    setProfilePreferences(nextPreferences);
+  }, [currentUserId, favoriteExerciseIds, favoriteIdSet, profilePreferences, supabase]);
 
   return {
     exercises,
@@ -124,12 +173,11 @@ export function useExerciseSearch(): UseExerciseSearchReturn {
     loading,
     search,
     setSearch,
-    selectedMuscle,
-    setSelectedMuscle,
-    showCardio,
-    setShowCardio,
-    showRecentlyUsed,
-    setShowRecentlyUsed,
+    libraryView,
+    setLibraryView,
+    favoriteExerciseIds,
+    isFavorite,
+    toggleFavorite,
     currentUserId,
   };
 }
@@ -291,10 +339,9 @@ function scoreExerciseName(name: string, query: string, tokens: string[]): numbe
   return score;
 }
 
-function rankExercisesBySearch(
+export function rankExercisesBySearch(
   exercises: ExerciseRow[],
   search: string,
-  recentOrder?: string[],
 ): ExerciseRow[] {
   const query = normalizeForSearch(search);
   const tokens = tokenizeSearch(search);
@@ -308,11 +355,6 @@ function rankExercisesBySearch(
     .filter((entry) => entry.score > 0)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
-      if (recentOrder) {
-        const ai = recentOrder.indexOf(a.exercise.id);
-        const bi = recentOrder.indexOf(b.exercise.id);
-        if (ai !== bi) return ai - bi;
-      }
       return a.exercise.name.localeCompare(b.exercise.name);
     });
 

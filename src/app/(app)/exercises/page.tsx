@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
-import { useExerciseSearch } from '@/hooks/useExerciseSearch';
+import { rankExercisesBySearch, useExerciseSearch } from '@/hooks/useExerciseSearch';
 import { CARDIO_DISPLAY_NAMES } from '@/lib/types/exercise';
 import type { ExerciseRow } from '@/lib/types/exercise';
 import { MUSCLE_GROUPS, EXERCISE_CATEGORIES } from '@/lib/constants';
@@ -37,12 +37,11 @@ function ExercisesContent() {
     loading,
     search,
     setSearch,
-    selectedMuscle,
-    setSelectedMuscle,
-    showCardio,
-    setShowCardio,
-    showRecentlyUsed,
-    setShowRecentlyUsed,
+    libraryView,
+    setLibraryView,
+    favoriteExerciseIds,
+    isFavorite,
+    toggleFavorite,
     currentUserId,
   } = useExerciseSearch();
 
@@ -69,6 +68,11 @@ function ExercisesContent() {
   const [mergeLoading, setMergeLoading] = useState(false);
   const [mergeSaving, setMergeSaving] = useState(false);
   const [mergeError, setMergeError] = useState<string | null>(null);
+  const [showDuplicateCheckModal, setShowDuplicateCheckModal] = useState(false);
+  const [duplicateCheckName, setDuplicateCheckName] = useState('');
+  const [duplicateResults, setDuplicateResults] = useState<ExerciseRow[]>([]);
+  const [duplicateChecking, setDuplicateChecking] = useState(false);
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
 
   function handleSelectExercise(exercise: ExerciseRow) {
     if (isSelecting) {
@@ -77,18 +81,77 @@ function ExercisesContent() {
     }
   }
 
-  function openCreateModal() {
+  async function findPotentialDuplicates(name: string) {
+    const { data, error } = await supabase
+      .from('exercises')
+      .select('id, name, category, primary_muscles, equipment, is_custom, user_id')
+      .order('name')
+      .limit(2000);
+
+    if (error || !data) {
+      return { matches: [] as ExerciseRow[], error: 'Could not run duplicate check.' };
+    }
+
+    return {
+      matches: rankExercisesBySearch(data as ExerciseRow[], name).slice(0, 12),
+      error: null,
+    };
+  }
+
+  function openCreateModal(initialName?: string) {
     setEditingExercise(null);
-    const initialName = search || '';
+    const initial = initialName ?? search ?? '';
     setExerciseForm({
-      name: initialName,
-      category: inferExerciseCategoryFromName(initialName),
-      primaryMuscle: inferPrimaryMuscleFromName(initialName),
+      name: initial,
+      category: inferExerciseCategoryFromName(initial),
+      primaryMuscle: inferPrimaryMuscleFromName(initial),
     });
     setCategoryManuallyChanged(false);
     setPrimaryMuscleManuallyChanged(false);
     setActionError(null);
     setShowCreateModal(true);
+  }
+
+  async function startCreateFlow() {
+    const candidate = search.trim();
+    if (!candidate) {
+      openCreateModal('');
+      return;
+    }
+
+    setDuplicateCheckName(candidate);
+    setDuplicateResults([]);
+    setDuplicateError(null);
+    setShowDuplicateCheckModal(true);
+    setDuplicateChecking(true);
+
+    const { matches, error } = await findPotentialDuplicates(candidate);
+    setDuplicateResults(matches);
+    setDuplicateError(error);
+    setDuplicateChecking(false);
+  }
+
+  function closeDuplicateCheckModal() {
+    if (duplicateChecking) return;
+    setShowDuplicateCheckModal(false);
+    setDuplicateCheckName('');
+    setDuplicateResults([]);
+    setDuplicateError(null);
+  }
+
+  function handleUsePotentialDuplicate(exercise: ExerciseRow) {
+    if (isSelecting) {
+      handleSelectExercise(exercise);
+    } else {
+      setSearch(exercise.name);
+    }
+    closeDuplicateCheckModal();
+  }
+
+  function handleCreateAnyway() {
+    const initial = duplicateCheckName || search;
+    closeDuplicateCheckModal();
+    openCreateModal(initial);
   }
 
   function openEditModal(exercise: ExerciseRow) {
@@ -478,59 +541,24 @@ function ExercisesContent() {
           />
         </div>
 
-        {/* Muscle Filter */}
+        {/* Library View */}
         <div className="flex overflow-x-auto gap-2 pb-2 -mx-4 px-4 scrollbar-hide">
           <button
-            onClick={() => {
-              setShowRecentlyUsed(true);
-              setShowCardio(false);
-              setSelectedMuscle(null);
-            }}
+            onClick={() => setLibraryView('favorites')}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              showRecentlyUsed ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
+              libraryView === 'favorites' ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
             }`}
           >
-            Recently Used
+            Favorites ({favoriteExerciseIds.length})
           </button>
           <button
-            onClick={() => {
-              setShowRecentlyUsed(false);
-              setShowCardio(false);
-              setSelectedMuscle(null);
-            }}
+            onClick={() => setLibraryView('all')}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              !showRecentlyUsed && !showCardio && !selectedMuscle ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
+              libraryView === 'all' ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
             }`}
           >
             All
           </button>
-          <button
-            onClick={() => {
-              setShowRecentlyUsed(false);
-              setShowCardio(true);
-              setSelectedMuscle(null);
-            }}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              showCardio ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
-            }`}
-          >
-            Cardio
-          </button>
-          {MUSCLE_GROUPS.map((m) => (
-            <button
-              key={m}
-              onClick={() => {
-                setShowRecentlyUsed(false);
-                setShowCardio(false);
-                setSelectedMuscle(selectedMuscle === m ? null : m);
-              }}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-colors ${
-                !showRecentlyUsed && !showCardio && selectedMuscle === m ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
-              }`}
-            >
-              {m.replace('_', ' ')}
-            </button>
-          ))}
         </div>
       </div>
 
@@ -540,8 +568,12 @@ function ExercisesContent() {
           <p className="text-text-muted text-sm text-center py-8">Loading...</p>
         ) : exercises.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-text-muted text-sm mb-4">No exercises found</p>
-            <Button variant="primary" onClick={openCreateModal}>
+            <p className="text-text-muted text-sm mb-4">
+              {libraryView === 'favorites' && !search.trim()
+                ? 'No favorites yet. Star exercises to pin them here.'
+                : 'No exercises found'}
+            </p>
+            <Button variant="primary" onClick={startCreateFlow}>
               Create &quot;{search || 'Custom Exercise'}&quot;
             </Button>
           </div>
@@ -549,7 +581,7 @@ function ExercisesContent() {
           <div className="space-y-1">
             {/* Create custom button at top */}
             <button
-              onClick={openCreateModal}
+              onClick={startCreateFlow}
               className="w-full text-left px-3 py-3 rounded-xl hover:bg-surface-light transition-colors min-h-[44px] border border-dashed border-border mb-2"
             >
               <div className="flex items-center gap-2 text-primary">
@@ -589,6 +621,18 @@ function ExercisesContent() {
                     </div>
                   </button>
                   <button
+                    onClick={() => { void toggleFavorite(ex.id); }}
+                    className={`p-2 transition-colors rounded-lg hover:bg-surface-light ${
+                      isFavorite(ex.id) ? 'text-primary' : 'text-text-muted hover:text-text'
+                    }`}
+                    aria-label={isFavorite(ex.id) ? 'Remove favorite' : 'Add favorite'}
+                    title={isFavorite(ex.id) ? 'Remove favorite' : 'Add favorite'}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill={isFavorite(ex.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  </button>
+                  <button
                     onClick={() => openEditModal(ex)}
                     className="p-2 text-text-muted hover:text-text transition-colors rounded-lg hover:bg-surface-light"
                     aria-label={isOwnCustom ? 'Manage exercise' : 'Rename exercise'}
@@ -604,6 +648,46 @@ function ExercisesContent() {
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={showDuplicateCheckModal}
+        onClose={closeDuplicateCheckModal}
+        title="Possible Duplicates"
+        actions={[
+          { label: 'Cancel', onClick: closeDuplicateCheckModal, variant: 'ghost', disabled: duplicateChecking },
+          { label: 'Create Anyway', onClick: handleCreateAnyway, variant: 'primary', disabled: duplicateChecking },
+        ]}
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-text-secondary">
+            Final duplicate check for <span className="font-medium text-text">&quot;{duplicateCheckName}&quot;</span>.
+            Use an existing exercise if it matches.
+          </p>
+          {duplicateError && (
+            <p className="text-xs text-error bg-error/10 rounded-lg px-3 py-2">{duplicateError}</p>
+          )}
+          <div className="max-h-64 overflow-y-auto space-y-1">
+            {duplicateChecking ? (
+              <p className="text-xs text-text-muted py-2 text-center">Searching full library...</p>
+            ) : duplicateResults.length === 0 ? (
+              <p className="text-xs text-text-muted py-2 text-center">No close matches found.</p>
+            ) : (
+              duplicateResults.map((exercise) => (
+                <button
+                  key={exercise.id}
+                  onClick={() => handleUsePotentialDuplicate(exercise)}
+                  className="w-full text-left rounded-lg border border-border px-3 py-2 hover:bg-surface-light transition-colors"
+                >
+                  <p className="text-sm font-medium text-text">{CARDIO_DISPLAY_NAMES[exercise.name] || exercise.name}</p>
+                  <p className="text-xs text-text-muted mt-0.5 capitalize">
+                    {exercise.category.replace('_', ' ')}
+                  </p>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      </Modal>
 
       {/* Create/Edit Exercise Modal */}
       <Modal
