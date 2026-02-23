@@ -61,7 +61,7 @@ export default function SetInputCell({
           {isActive && <span className="animate-pulse ml-px">|</span>}
         </span>
       ) : (
-        <span className={isActive ? 'text-text-muted' : 'text-text-muted/50'}>
+        <span className={isActive ? 'text-muted-foreground' : 'text-muted-foreground/50'}>
           {isActive && <span className="animate-pulse mr-px">|</span>}
           {!isActive && placeholder}
         </span>

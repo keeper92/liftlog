@@ -111,7 +111,7 @@ interface TemplateApiResponse {
 
 export default function TrainerPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-dvh text-text-muted">Loading...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-dvh text-muted-foreground">Loading...</div>}>
       <TrainerContent />
     </Suspense>
   );
@@ -598,7 +598,7 @@ function TrainerContent() {
           onClick={() => setSidebarOpen(true)}
           className="ui-icon-pill w-10 h-10 -ml-2 flex items-center justify-center rounded-full"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-foreground">
             <line x1="3" y1="6" x2="21" y2="6" />
             <line x1="3" y1="12" x2="21" y2="12" />
             <line x1="3" y1="18" x2="21" y2="18" />
@@ -606,7 +606,7 @@ function TrainerContent() {
         </Button>
         <div className="text-right">
           {exerciseName && (
-            <p className="text-xs text-text-muted">Helping with: {exerciseName}</p>
+            <p className="text-xs text-muted-foreground">Helping with: {exerciseName}</p>
           )}
           {profileMode && (
             <p className="text-xs text-primary">Setting up your profile...</p>
@@ -623,8 +623,8 @@ function TrainerContent() {
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
-            <p className="text-text font-semibold mb-1">Your AI Trainer</p>
-            <p className="text-text-muted text-sm mb-6">
+            <p className="text-foreground font-semibold mb-1">Your AI Trainer</p>
+            <p className="text-muted-foreground text-sm mb-6">
               Ask me anything about your training
             </p>
 
@@ -642,8 +642,8 @@ function TrainerContent() {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-text">Set up your training profile</p>
-                    <p className="text-xs text-text-muted mt-0.5">Quick chat so I can personalize your experience</p>
+                    <p className="text-sm font-medium text-foreground">Set up your training profile</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Quick chat so I can personalize your experience</p>
                   </div>
                 </div>
               </Button>
@@ -654,7 +654,7 @@ function TrainerContent() {
                 <Button unstyled
                   key={s}
                   onClick={() => handleSend(s)}
-                  className="ui-icon-pill px-4 py-2.5 rounded-full text-text-secondary text-xs font-medium"
+                  className="ui-icon-pill px-4 py-2.5 rounded-full text-muted-foreground text-xs font-medium"
                 >
                   {s}
                 </Button>
@@ -669,8 +669,8 @@ function TrainerContent() {
                   <div
                     className={`max-w-[85%] px-4 py-2.5 text-sm leading-relaxed ${
                       msg.role === 'user'
-                        ? 'bg-primary text-white rounded-2xl rounded-br-md shadow-sm'
-                        : 'bg-surface text-text rounded-2xl rounded-bl-md border border-border/70 card-shadow'
+                        ? 'bg-primary text-primary-foreground rounded-2xl rounded-br-md shadow-sm'
+                        : 'bg-card text-foreground rounded-2xl rounded-bl-md border border-border/70 card-shadow'
                     }`}
                   >
                     {msg.content ? (
@@ -694,7 +694,7 @@ function TrainerContent() {
                 {/* Import Preview */}
                 {msg.importData && msg.importData.status === 'pending' && (
                   <div className="mt-3 ml-0 max-w-[90%]">
-                    <div className="bg-surface border border-border/70 rounded-xl p-4 card-shadow">
+                    <div className="bg-card border border-border/70 rounded-xl p-4 card-shadow">
                       <div className="flex items-center gap-2 mb-3">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary">
                           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
@@ -704,23 +704,23 @@ function TrainerContent() {
                         <span className="text-sm font-medium">Import Preview</span>
                       </div>
 
-                      <div className="text-xs text-text-muted mb-3">
+                      <div className="text-xs text-muted-foreground mb-3">
                         {msg.importData.workouts.length} workout{msg.importData.workouts.length !== 1 ? 's' : ''} to import
                       </div>
 
                       <div className="space-y-2 mb-4">
                         {msg.importData.workouts.slice(0, 3).map((workout, i) => (
-                          <div key={i} className="text-xs bg-surface rounded-lg p-2">
-                            <div className="font-medium text-text">
+                          <div key={i} className="text-xs bg-card rounded-lg p-2">
+                            <div className="font-medium text-foreground">
                               {workout.name || new Date(workout.date).toLocaleDateString()}
                             </div>
-                            <div className="text-text-muted mt-1">
+                            <div className="text-muted-foreground mt-1">
                               {workout.exercises.map((ex) => ex.name).join(', ')}
                             </div>
                           </div>
                         ))}
                         {msg.importData.workouts.length > 3 && (
-                          <div className="text-xs text-text-muted">
+                          <div className="text-xs text-muted-foreground">
                             +{msg.importData.workouts.length - 3} more...
                           </div>
                         )}
@@ -730,7 +730,7 @@ function TrainerContent() {
                         <div className="bg-warning/10 border border-warning/30 rounded-lg p-2 mb-4">
                           <div className="text-xs text-warning font-medium mb-1">Questions:</div>
                           {msg.importData.questions.map((q, i) => (
-                            <div key={i} className="text-xs text-text-secondary">• {q}</div>
+                            <div key={i} className="text-xs text-muted-foreground">• {q}</div>
                           ))}
                         </div>
                       )}
@@ -739,14 +739,14 @@ function TrainerContent() {
                         <Button unstyled
                           onClick={() => handleConfirmImport(msg.id, msg.importData!)}
                           disabled={importingMessageId === msg.id}
-                          className="flex-1 bg-primary text-white text-xs font-medium py-2 rounded-lg hover:bg-primary-light disabled:opacity-50 transition-colors"
+                          className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-lg hover:bg-primary-light disabled:opacity-50 transition-colors"
                         >
                           {importingMessageId === msg.id ? 'Importing...' : 'Confirm Import'}
                         </Button>
                         <Button unstyled
                           onClick={() => handleCancelImport(msg.id)}
                           disabled={importingMessageId === msg.id}
-                          className="flex-1 bg-surface text-text-secondary text-xs font-medium py-2 rounded-lg hover:bg-surface-light disabled:opacity-50 transition-colors"
+                          className="flex-1 bg-card text-muted-foreground text-xs font-medium py-2 rounded-lg hover:bg-muted disabled:opacity-50 transition-colors"
                         >
                           Cancel
                         </Button>
@@ -769,7 +769,7 @@ function TrainerContent() {
 
                 {msg.importData && msg.importData.status === 'cancelled' && (
                   <div className="mt-2 ml-0">
-                    <span className="inline-flex items-center gap-1 text-xs text-text-muted bg-surface px-2 py-1 rounded-full">
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-card px-2 py-1 rounded-full">
                       Cancelled
                     </span>
                   </div>
@@ -778,7 +778,7 @@ function TrainerContent() {
                 {/* Template Preview */}
                 {msg.templateData && msg.templateData.status === 'pending' && (
                   <div className="mt-3 ml-0 max-w-[90%]">
-                    <div className="bg-surface border border-border/70 rounded-xl p-4 card-shadow">
+                    <div className="bg-card border border-border/70 rounded-xl p-4 card-shadow">
                       <div className="flex items-center gap-2 mb-3">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -789,15 +789,15 @@ function TrainerContent() {
                         <span className="text-sm font-medium">{msg.templateData.name}</span>
                       </div>
 
-                      <div className="text-xs text-text-muted mb-3">
+                      <div className="text-xs text-muted-foreground mb-3">
                         {msg.templateData.exercises.length} exercise{msg.templateData.exercises.length !== 1 ? 's' : ''}
                       </div>
 
                       <div className="space-y-1.5 mb-4">
                         {msg.templateData.exercises.map((exercise, i) => (
-                          <div key={i} className="text-xs bg-surface rounded-lg px-3 py-2 flex items-center justify-between">
-                            <span className="font-medium text-text">{exercise.name}</span>
-                            <span className="text-text-muted">{exercise.defaultSets} sets</span>
+                          <div key={i} className="text-xs bg-card rounded-lg px-3 py-2 flex items-center justify-between">
+                            <span className="font-medium text-foreground">{exercise.name}</span>
+                            <span className="text-muted-foreground">{exercise.defaultSets} sets</span>
                           </div>
                         ))}
                       </div>
@@ -806,14 +806,14 @@ function TrainerContent() {
                         <Button unstyled
                           onClick={() => handleConfirmTemplate(msg.id, msg.templateData!)}
                           disabled={savingTemplateId === msg.id}
-                          className="flex-1 bg-primary text-white text-xs font-medium py-2 rounded-lg hover:bg-primary-light disabled:opacity-50 transition-colors"
+                          className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-lg hover:bg-primary-light disabled:opacity-50 transition-colors"
                         >
                           {savingTemplateId === msg.id ? 'Saving...' : 'Save Template'}
                         </Button>
                         <Button unstyled
                           onClick={() => handleCancelTemplate(msg.id)}
                           disabled={savingTemplateId === msg.id}
-                          className="flex-1 bg-surface text-text-secondary text-xs font-medium py-2 rounded-lg hover:bg-surface-light disabled:opacity-50 transition-colors"
+                          className="flex-1 bg-card text-muted-foreground text-xs font-medium py-2 rounded-lg hover:bg-muted disabled:opacity-50 transition-colors"
                         >
                           Cancel
                         </Button>
@@ -837,7 +837,7 @@ function TrainerContent() {
                 {/* Template Cancelled Status */}
                 {msg.templateData && msg.templateData.status === 'cancelled' && (
                   <div className="mt-2 ml-0">
-                    <span className="inline-flex items-center gap-1 text-xs text-text-muted bg-surface px-2 py-1 rounded-full">
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-card px-2 py-1 rounded-full">
                       Cancelled
                     </span>
                   </div>
@@ -850,7 +850,7 @@ function TrainerContent() {
                   <Button unstyled
                     key={s}
                     onClick={() => handleSend(s)}
-                    className="ui-icon-pill px-4 py-2.5 rounded-full text-text-secondary text-xs font-medium"
+                    className="ui-icon-pill px-4 py-2.5 rounded-full text-muted-foreground text-xs font-medium"
                   >
                     {s}
                   </Button>
@@ -863,7 +863,7 @@ function TrainerContent() {
                   <Button unstyled
                     key={s}
                     onClick={() => handleSend(s)}
-                    className="ui-icon-pill px-4 py-2.5 rounded-full text-text-secondary text-xs font-medium"
+                    className="ui-icon-pill px-4 py-2.5 rounded-full text-muted-foreground text-xs font-medium"
                   >
                     {s}
                   </Button>
@@ -872,13 +872,13 @@ function TrainerContent() {
             )}
             {!profileMode && !showExerciseSuggestions && (
               <div className="mt-4">
-                <p className="text-[11px] text-text-muted uppercase tracking-[0.08em] mb-2">Quick actions</p>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-[0.08em] mb-2">Quick actions</p>
                 <div className="flex flex-wrap gap-2">
                   {contextualMainSuggestions.map((s) => (
                     <Button unstyled
                       key={s}
                       onClick={() => handleSend(s)}
-                      className="ui-icon-pill px-4 py-2.5 rounded-full text-text-secondary text-xs font-medium"
+                      className="ui-icon-pill px-4 py-2.5 rounded-full text-muted-foreground text-xs font-medium"
                     >
                       {s}
                     </Button>
@@ -892,7 +892,7 @@ function TrainerContent() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-border/80 bg-background-elevated/95 backdrop-blur px-4 py-3">
+      <div className="border-t border-border/80 bg-background/95 backdrop-blur px-4 py-3">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -913,12 +913,12 @@ function TrainerContent() {
             onChange={(e) => setInput(e.target.value)}
             placeholder={profileMode ? 'Tell me about your training...' : 'Ask your trainer or paste workout data...'}
             disabled={isLoading || !context}
-            className="flex-1 min-h-[44px] rounded-full border border-border/70 bg-surface px-4 text-sm text-text placeholder:text-text-muted outline-none card-shadow focus:border-border-strong disabled:opacity-50"
+            className="flex-1 min-h-[44px] rounded-full border border-border/70 bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none card-shadow focus:border-input disabled:opacity-50"
           />
           <Button unstyled
             type="submit"
             disabled={!input.trim() || isLoading || !context}
-            className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-30 transition-opacity button-soft-shadow"
+            className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-30 transition-opacity button-soft-shadow"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="19" x2="12" y2="5" />

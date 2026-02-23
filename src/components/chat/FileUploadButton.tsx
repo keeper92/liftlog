@@ -60,7 +60,7 @@ export default function FileUploadButton({
         type="button"
         onClick={handleClick}
         disabled={disabled}
-        className="w-10 h-10 rounded-full bg-surface text-text-secondary flex items-center justify-center hover:bg-surface-light disabled:opacity-30 transition-all"
+        className="w-10 h-10 rounded-full bg-card text-muted-foreground flex items-center justify-center hover:bg-muted disabled:opacity-30 transition-all"
         aria-label="Upload file"
         title="Import workout data from file"
       >

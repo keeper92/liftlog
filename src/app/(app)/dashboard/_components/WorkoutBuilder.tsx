@@ -250,7 +250,7 @@ export default function WorkoutBuilder() {
           </div>
           <div>
             <p className="font-semibold text-sm">Workout Builder</p>
-            <p className="text-xs text-text-muted">Create a custom workout</p>
+            <p className="text-xs text-muted-foreground">Create a custom workout</p>
           </div>
         </div>
       </Card>
@@ -270,22 +270,22 @@ export default function WorkoutBuilder() {
           },
         ]}
       >
-        <p className="text-sm text-text-muted mb-4">
+        <p className="text-sm text-muted-foreground mb-4">
           Which muscle groups do you want to train?
         </p>
         <div className="flex flex-wrap gap-2">
           {BODY_PARTS.map((part) => (
-            <button
+            <Button unstyled
               key={part.id}
               onClick={() => toggleBodyPart(part.id)}
               className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
                 selectedBodyParts.includes(part.id)
-                  ? 'bg-primary text-white'
-                  : 'bg-surface-light text-text-secondary hover:bg-surface-light/80'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`}
             >
               {part.label}
-            </button>
+            </Button>
           ))}
         </div>
       </Modal>
@@ -305,22 +305,22 @@ export default function WorkoutBuilder() {
           },
         ]}
       >
-        <p className="text-sm text-text-muted mb-4">
+        <p className="text-sm text-muted-foreground mb-4">
           What equipment do you have access to?
         </p>
         <div className="flex flex-wrap gap-2">
           {EQUIPMENT_OPTIONS.map((option) => (
-            <button
+            <Button unstyled
               key={option.id}
               onClick={() => toggleEquipment(option.id)}
               className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
                 selectedEquipment.includes(option.id)
-                  ? 'bg-primary text-white'
-                  : 'bg-surface-light text-text-secondary hover:bg-surface-light/80'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`}
             >
               {option.label}
-            </button>
+            </Button>
           ))}
         </div>
       </Modal>
@@ -342,23 +342,23 @@ export default function WorkoutBuilder() {
         {generating ? (
           <div className="py-8 text-center">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-sm text-text-muted">Generating your workout...</p>
+            <p className="text-sm text-muted-foreground">Generating your workout...</p>
           </div>
         ) : exercises.length > 0 ? (
           <div className="space-y-2">
             {exercises.map((ex, idx) => (
               <div
                 key={ex.id}
-                className="flex items-center justify-between py-2 px-3 bg-surface-light rounded-lg"
+                className="flex items-center justify-between py-2 px-3 bg-muted rounded-lg"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{ex.name}</p>
-                  <p className="text-xs text-text-muted">3 sets</p>
+                  <p className="text-xs text-muted-foreground">3 sets</p>
                 </div>
-                <button
+                <Button unstyled
                   onClick={() => handleReplaceExercise(idx)}
                   disabled={replacingIndex === idx}
-                  className="ml-2 p-2 text-text-muted hover:text-primary transition-colors disabled:opacity-50"
+                  className="ml-2 p-2 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
                   title="Replace with similar exercise"
                 >
                   {replacingIndex === idx ? (
@@ -368,13 +368,13 @@ export default function WorkoutBuilder() {
                       <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16" />
                     </svg>
                   )}
-                </button>
+                </Button>
               </div>
             ))}
           </div>
         ) : (
           <div className="py-8 text-center">
-            <p className="text-sm text-text-muted">
+            <p className="text-sm text-muted-foreground">
               No exercises found matching your criteria. Try selecting different options.
             </p>
             <Button

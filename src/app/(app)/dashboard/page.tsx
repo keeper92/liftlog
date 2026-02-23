@@ -8,6 +8,7 @@ import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
+import { Input } from '@/components/ui/input-shadcn';
 import DemoFeatureTour from '@/components/onboarding/DemoFeatureTour';
 
 import HistoryOverlay from '@/components/history/HistoryOverlay';
@@ -314,12 +315,12 @@ export default function DashboardPage() {
       >
         <div className="space-y-4">
           {manualTemplateError && (
-            <p className="text-xs text-error bg-error/10 rounded-lg px-3 py-2">{manualTemplateError}</p>
+            <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">{manualTemplateError}</p>
           )}
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">Template Name</label>
-            <input
+            <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Template Name</label>
+            <Input
               value={manualTemplateName}
               onChange={(e) => setManualTemplateName(e.target.value)}
               placeholder="e.g., Push Day"
@@ -329,61 +330,61 @@ export default function DashboardPage() {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Exercises</p>
-              <button
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Exercises</p>
+              <Button unstyled
                 onClick={() => setShowTemplateExercisePicker(true)}
                 className="text-xs font-semibold text-primary hover:text-primary-light"
               >
                 + Add Exercise
-              </button>
+              </Button>
             </div>
 
             <div className="max-h-64 overflow-y-auto rounded-2xl border border-border bg-background px-3 py-2 space-y-2">
               {manualTemplateExercises.length === 0 ? (
-                <p className="text-xs text-text-muted py-2">No exercises yet. Add one to start building your template.</p>
+                <p className="text-xs text-muted-foreground py-2">No exercises yet. Add one to start building your template.</p>
               ) : (
                 manualTemplateExercises.map((exercise, index) => (
                   <div key={`${exercise.exerciseId}-${index}`} className="grid grid-cols-[1fr_72px_84px] gap-2 items-center">
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{exercise.name}</p>
-                      <p className="text-[11px] text-text-muted capitalize">{exercise.category.replace('_', ' ')}</p>
+                      <p className="text-[11px] text-muted-foreground capitalize">{exercise.category.replace('_', ' ')}</p>
                     </div>
-                    <input
+                    <Input
                       type="number"
                       min={1}
                       max={12}
                       value={exercise.defaultSets}
                       onChange={(e) => updateManualTemplateSets(index, e.target.value)}
-                      className="w-full bg-surface border border-border rounded-lg px-2 py-1.5 text-sm text-center"
+                      className="w-full bg-card border border-border rounded-lg px-2 py-1.5 text-sm text-center"
                     />
                     <div className="flex items-center justify-end gap-1">
-                      <button
+                      <Button unstyled
                         onClick={() => moveManualTemplateExercise(index, 'up')}
-                        className="w-7 h-7 rounded-md border border-border text-text-muted hover:text-text"
+                        className="w-7 h-7 rounded-md border border-border text-muted-foreground hover:text-foreground"
                         aria-label="Move exercise up"
                       >
                         ↑
-                      </button>
-                      <button
+                      </Button>
+                      <Button unstyled
                         onClick={() => moveManualTemplateExercise(index, 'down')}
-                        className="w-7 h-7 rounded-md border border-border text-text-muted hover:text-text"
+                        className="w-7 h-7 rounded-md border border-border text-muted-foreground hover:text-foreground"
                         aria-label="Move exercise down"
                       >
                         ↓
-                      </button>
-                      <button
+                      </Button>
+                      <Button unstyled
                         onClick={() => removeManualTemplateExercise(index)}
-                        className="w-7 h-7 rounded-md border border-border text-text-muted hover:text-error"
+                        className="w-7 h-7 rounded-md border border-border text-muted-foreground hover:text-destructive"
                         aria-label="Remove exercise"
                       >
                         ×
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))
               )}
             </div>
-            <p className="text-[11px] text-text-muted mt-2">Default sets per exercise.</p>
+            <p className="text-[11px] text-muted-foreground mt-2">Default sets per exercise.</p>
           </div>
         </div>
       </Modal>
@@ -405,35 +406,35 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
           {/* Records button */}
-          <button
+          <Button unstyled
             onClick={() => setShowPRFeed(true)}
             data-tour-anchor="pr-feed"
             aria-label="Open personal records"
-            className="ui-icon-pill relative w-10 h-10 flex items-center justify-center rounded-full text-text-secondary"
+            className="ui-icon-pill relative w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-foreground">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+              <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
-          </button>
+          </Button>
           {/* Consistency button */}
-          <button
+          <Button unstyled
             onClick={() => setShowHistory(true)}
             data-tour-anchor="history"
             aria-label="Open consistency calendar"
-            className="ui-icon-pill w-10 h-10 flex items-center justify-center rounded-full text-text-secondary"
+            className="ui-icon-pill w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-text">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-foreground">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-          </button>
+          </Button>
           </div>
         </div>
 
@@ -442,7 +443,7 @@ export default function DashboardPage() {
           <Card className="!p-6">
             <p className="ui-kicker mb-2">Quick Start</p>
             <h2 className="text-lg font-bold mb-1">Ready to train?</h2>
-            <p className="text-sm text-text-secondary mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               {isActive ? 'You have a workout in progress.' : 'Start a quick workout or choose a template.'}
             </p>
             {isActive ? (
@@ -472,16 +473,16 @@ export default function DashboardPage() {
             <Card className="!p-4">
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div>
-                  <p className="text-base font-semibold text-text">{stats.weekWorkouts}</p>
-                  <p className="text-[11px] text-text-muted mt-0.5">This Week</p>
+                  <p className="text-base font-semibold text-foreground">{stats.weekWorkouts}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">This Week</p>
                 </div>
                 <div>
-                  <p className="text-base font-semibold text-text">{stats.currentStreak}</p>
-                  <p className="text-[11px] text-text-muted mt-0.5">Current Streak</p>
+                  <p className="text-base font-semibold text-foreground">{stats.currentStreak}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Current Streak</p>
                 </div>
                 <div>
-                  <p className="text-base font-semibold text-text">{stats.totalWorkouts}</p>
-                  <p className="text-[11px] text-text-muted mt-0.5">Sessions Logged</p>
+                  <p className="text-base font-semibold text-foreground">{stats.totalWorkouts}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Sessions Logged</p>
                 </div>
               </div>
             </Card>
@@ -494,43 +495,43 @@ export default function DashboardPage() {
             <h2 className="ui-kicker">Saved Templates</h2>
             <div className="flex items-center gap-2">
               {templates.length > 0 && (
-                <span className="text-xs text-text-muted">{templates.length} saved</span>
+                <span className="text-xs text-muted-foreground">{templates.length} saved</span>
               )}
-              <button
+              <Button unstyled
                 onClick={openManualTemplateBuilder}
                 aria-label="Build template manually"
-                className="ui-icon-pill w-8 h-8 rounded-full flex items-center justify-center text-text-secondary"
+                className="ui-icon-pill w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
-              </button>
+              </Button>
             </div>
           </div>
 
           {templates.length === 0 ? (
             <Card>
               <div className="text-center py-4">
-                <div className="w-12 h-12 rounded-full border border-border/80 bg-surface-light flex items-center justify-center mx-auto mb-3">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-muted">
+                <div className="w-12 h-12 rounded-full border border-border/80 bg-muted flex items-center justify-center mx-auto mb-3">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted-foreground">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
                     <line x1="12" y1="18" x2="12" y2="12" />
                     <line x1="9" y1="15" x2="15" y2="15" />
                   </svg>
                 </div>
-                <p className="text-sm text-text-muted">No templates yet</p>
-                <p className="text-xs text-text-muted mt-1">Build one yourself in seconds.</p>
+                <p className="text-sm text-muted-foreground">No templates yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Build one yourself in seconds.</p>
                 <Button onClick={openManualTemplateBuilder} size="sm" className="mt-4">
                   + Build Template
                 </Button>
-                <button
+                <Button unstyled
                   onClick={handleCreateTemplateWithAI}
-                  className="mt-3 text-xs font-medium text-text-muted hover:text-text"
+                  className="mt-3 text-xs font-medium text-muted-foreground hover:text-foreground"
                 >
                   Or chat with AI trainer to build
-                </button>
+                </Button>
               </div>
             </Card>
           ) : (
@@ -547,12 +548,12 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm">{t.name}</p>
-                        <p className="text-xs text-text-muted mt-0.5 truncate">
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
                           {exerciseNames.join(' • ')}
                           {moreCount > 0 && ` +${moreCount}`}
                         </p>
                       </div>
-                      <div className="ml-3 w-8 h-8 rounded-full bg-surface-light text-text-muted flex items-center justify-center">
+                      <div className="ml-3 w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="9 18 15 12 9 6" />
                         </svg>
@@ -562,12 +563,12 @@ export default function DashboardPage() {
                 );
               })}
               <div className="text-center pt-1">
-                <button
+                <Button unstyled
                   onClick={handleCreateTemplateWithAI}
-                  className="text-xs font-medium text-text-muted hover:text-text"
+                  className="text-xs font-medium text-muted-foreground hover:text-foreground"
                 >
                   Or chat with AI trainer to build
-                </button>
+                </Button>
               </div>
             </div>
           )}

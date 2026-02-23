@@ -12,10 +12,10 @@ interface TrainerProfileCardProps {
 export default function TrainerProfileCard({ profile, onUpdate, onClose }: TrainerProfileCardProps) {
   return (
     <div className="absolute inset-x-0 top-0 z-20 bg-background/80 backdrop-blur-sm min-h-full">
-      <div className="mx-4 mt-4 rounded-2xl bg-surface card-shadow overflow-hidden">
+      <div className="mx-4 mt-4 rounded-2xl bg-card card-shadow overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
-          <h2 className="font-semibold text-text">Training Profile</h2>
-          <Button unstyled onClick={onClose} className="text-text-muted hover:text-text-secondary p-1">
+          <h2 className="font-semibold text-foreground">Training Profile</h2>
+          <Button unstyled onClick={onClose} className="text-muted-foreground hover:text-muted-foreground p-1">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -67,8 +67,8 @@ export default function TrainerProfileCard({ profile, onUpdate, onClose }: Train
 function ProfileRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs text-text-muted font-medium uppercase tracking-wide">{label}</p>
-      <p className="text-sm text-text mt-0.5">{value}</p>
+      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
+      <p className="text-sm text-foreground mt-0.5">{value}</p>
     </div>
   );
 }

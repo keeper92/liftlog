@@ -198,7 +198,7 @@ function WarmupToggle({ isWarmup, setNumber, onToggle }: { isWarmup: boolean; se
   return (
     <Button unstyled
       className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium select-none touch-none ${
-        isWarmup ? 'text-warning bg-warning/10' : 'text-text-secondary'
+        isWarmup ? 'text-warning bg-warning/10' : 'text-muted-foreground'
       }`}
       onPointerDown={startPress}
       onPointerUp={cancelPress}
@@ -313,7 +313,7 @@ function SwipeToDeleteRow({
     <div className="relative mb-2 overflow-hidden rounded-lg">
       {enabled && (
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-end gap-1 px-3 rounded-lg bg-error/10 border border-error/20 text-error transition-opacity duration-150"
+          className="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-end gap-1 px-3 rounded-lg bg-destructive/10 border border-error/20 text-destructive transition-opacity duration-150"
           style={{ opacity: actionOpacity }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -328,7 +328,7 @@ function SwipeToDeleteRow({
         </div>
       )}
       {enabled && showHint && revealProgress === 0 && (
-        <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-text-muted/45">
+        <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-muted-foreground/45">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <polyline points="15 18 9 12 15 6" />
           </svg>
@@ -946,13 +946,13 @@ function WorkoutContent({
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-surface border-b border-border">
-        <Button unstyled onClick={handleDiscard} className="text-error text-sm font-medium min-h-[44px] px-2 flex items-center">
+      <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
+        <Button unstyled onClick={handleDiscard} className="text-destructive text-sm font-medium min-h-[44px] px-2 flex items-center">
           Discard
         </Button>
         <div className="text-center">
           <p className="font-semibold text-sm">{store.workoutName}</p>
-          <p className="text-xs text-text-secondary">{formatDuration(elapsed)}</p>
+          <p className="text-xs text-muted-foreground">{formatDuration(elapsed)}</p>
         </div>
         <Button variant="primary" size="sm" onClick={handleFinish} loading={saving}>
           Finish
@@ -975,7 +975,7 @@ function WorkoutContent({
             <div
               key={ex.exerciseId + exIdx}
               ref={(el) => { exerciseRefs.current[exIdx] = el; }}
-              className={`bg-surface rounded-xl p-4 transition-all duration-150 ${
+              className={`bg-card rounded-xl p-4 transition-all duration-150 ${
                 isDragging ? 'opacity-50 scale-[0.98]' : ''
               } ${isDragOver ? 'ring-2 ring-primary ring-offset-2' : ''}`}
             >
@@ -1013,7 +1013,7 @@ function WorkoutContent({
                       // but show visual hint on hover
                     }}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-muted-foreground">
                       <circle cx="9" cy="6" r="1.5" />
                       <circle cx="15" cy="6" r="1.5" />
                       <circle cx="9" cy="12" r="1.5" />
@@ -1023,7 +1023,7 @@ function WorkoutContent({
                     </svg>
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-text">{ex.exerciseName}</h3>
+                    <h3 className="font-semibold text-foreground">{ex.exerciseName}</h3>
                     {isAssistanceExercise && (
                       <div className="mt-1">
                         <span className="text-[10px] px-2 py-0.5 rounded-full border border-warning/30 bg-warning/10 text-warning">
@@ -1041,7 +1041,7 @@ function WorkoutContent({
                       exerciseIndex: exIdx,
                     })}
                     aria-label={`Open options for ${ex.exerciseName}`}
-                    className="w-8 h-8 rounded-full border border-border bg-surface-light text-text-muted hover:text-text hover:bg-surface-light/80 flex items-center justify-center"
+                    className="w-8 h-8 rounded-full border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 flex items-center justify-center"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <circle cx="5" cy="12" r="1.8" />
@@ -1051,7 +1051,7 @@ function WorkoutContent({
                   </Button>
                   <Button unstyled
                     onClick={() => store.removeExercise(ex.exerciseId)}
-                    className="text-text-muted text-xs hover:text-error"
+                    className="text-muted-foreground text-xs hover:text-destructive"
                   >
                     Remove
                   </Button>
@@ -1060,7 +1060,7 @@ function WorkoutContent({
 
               {/* Column Headers - Cardio vs Strength */}
               {ex.exerciseCategory === 'cardio' ? (
-                <div className="grid grid-cols-[40px_1fr_1fr_40px] gap-2 text-xs text-text-muted mb-2 text-center">
+                <div className="grid grid-cols-[40px_1fr_1fr_40px] gap-2 text-xs text-muted-foreground mb-2 text-center">
                   <span>SET</span>
                   <span>TIME</span>
                   <span>{distanceUnit(unitSystem).toUpperCase()}</span>
@@ -1068,14 +1068,14 @@ function WorkoutContent({
                 </div>
               ) : (
                 ex.logMode === 'split_lr' ? (
-                  <div className="grid grid-cols-[40px_1fr_1fr_40px] gap-2 text-[11px] text-text-muted mb-2 text-center">
+                  <div className="grid grid-cols-[40px_1fr_1fr_40px] gap-2 text-[11px] text-muted-foreground mb-2 text-center">
                     <span>SET</span>
                     <span>L ({unit.toUpperCase()} / REPS)</span>
                     <span>R ({unit.toUpperCase()} / REPS)</span>
                     <span></span>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 text-xs text-text-muted mb-2 text-center">
+                  <div className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 text-xs text-muted-foreground mb-2 text-center">
                     <span>SET</span>
                     <span>PREV</span>
                     <span>{unit.toUpperCase()}</span>
@@ -1098,7 +1098,7 @@ function WorkoutContent({
                             s.isCompleted ? 'opacity-60' : ''
                           }`}
                         >
-                          <span className="text-center text-sm font-medium text-text-secondary">
+                          <span className="text-center text-sm font-medium text-muted-foreground">
                             {s.setNumber}
                           </span>
                           <SetInputCell
@@ -1128,7 +1128,7 @@ function WorkoutContent({
                               }
                             }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-success text-white' : 'bg-surface-light text-text-muted'
+                              s.isCompleted ? 'bg-success text-white' : 'bg-muted text-muted-foreground'
                             }`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -1237,7 +1237,7 @@ function WorkoutContent({
                               }
                             }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-success text-white' : 'bg-surface-light text-text-muted'
+                              s.isCompleted ? 'bg-success text-white' : 'bg-muted text-muted-foreground'
                             }`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -1256,7 +1256,7 @@ function WorkoutContent({
                             setNumber={s.setNumber}
                             onToggle={() => store.updateSet(exIdx, setIdx, { isWarmup: !s.isWarmup })}
                           />
-                          <span className="text-center text-sm text-text-muted">
+                          <span className="text-center text-sm text-muted-foreground">
                             {(() => {
                               const previousSet = getPreviousSetForNumber(prev, setIdx + 1);
                               return previousSet
@@ -1311,7 +1311,7 @@ function WorkoutContent({
                               }
                             }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-success text-white' : 'bg-surface-light text-text-muted'
+                              s.isCompleted ? 'bg-success text-white' : 'bg-muted text-muted-foreground'
                             }`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -1350,8 +1350,8 @@ function WorkoutContent({
 
       {pendingSetDelete && (
         <div className={`fixed left-4 right-4 z-[70] ${numberPadVisible ? 'bottom-64' : 'bottom-24'}`}>
-          <div className="flex items-center justify-between rounded-xl border border-border bg-surface shadow-lg px-3 py-2">
-            <p className="text-sm text-text-secondary truncate pr-3">
+          <div className="flex items-center justify-between rounded-xl border border-border bg-card shadow-lg px-3 py-2">
+            <p className="text-sm text-muted-foreground truncate pr-3">
               Set deleted from {pendingSetDelete.exerciseName}
             </p>
             <Button unstyled
@@ -1369,18 +1369,18 @@ function WorkoutContent({
 
       {/* Rest Timer - shown only when number pad is NOT visible */}
       {restTimer.isActive && !numberPadVisible && (
-        <div className="fixed bottom-16 left-0 right-0 bg-surface border-t border-border px-4 py-3 z-50">
+        <div className="fixed bottom-16 left-0 right-0 bg-card border-t border-border px-4 py-3 z-50">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Rest Timer</span>
             <Button unstyled
               onClick={stopRestTimer}
-              className="text-xs text-text-muted hover:text-text"
+              className="text-xs text-muted-foreground hover:text-foreground"
             >
               Skip
             </Button>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-2 bg-surface-light rounded-full overflow-hidden">
+            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary transition-all duration-1000 ease-linear"
                 style={{
@@ -1405,14 +1405,14 @@ function WorkoutContent({
         ]}
       >
         {loadingHistory ? (
-          <p className="text-text-muted text-sm text-center py-4">Loading...</p>
+          <p className="text-muted-foreground text-sm text-center py-4">Loading...</p>
         ) : historyData.length === 0 ? (
-          <p className="text-text-muted text-sm text-center py-4">No logged sets found for this exercise yet.</p>
+          <p className="text-muted-foreground text-sm text-center py-4">No logged sets found for this exercise yet.</p>
         ) : (
           <div className="space-y-4 max-h-80 overflow-y-auto">
             {historyData.map((entry, idx) => (
               <Card key={idx}>
-                <p className="text-xs text-text-muted mb-2">
+                <p className="text-xs text-muted-foreground mb-2">
                   {new Date(entry.date).toLocaleDateString(undefined, {
                     weekday: 'short',
                     month: 'short',
@@ -1422,7 +1422,7 @@ function WorkoutContent({
                 </p>
                 <div className="space-y-1">
                   {entry.sets.map((s, sIdx) => (
-                    <p key={sIdx} className="text-sm text-text-secondary">
+                    <p key={sIdx} className="text-sm text-muted-foreground">
                       Set {s.set_number}:{' '}
                       {s.is_split_lr ? (
                         <>
@@ -1461,7 +1461,7 @@ function WorkoutContent({
               }
               setTrainingGuideMenu(null);
             }}
-            className="w-full py-3 px-4 text-left bg-surface-light hover:bg-surface-light/80 rounded-lg flex items-center gap-3 transition-colors"
+            className="w-full py-3 px-4 text-left bg-muted hover:bg-muted/80 rounded-lg flex items-center gap-3 transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
               <path d="M3 12a9 9 0 1 0 3-6.7" />
@@ -1469,8 +1469,8 @@ function WorkoutContent({
               <path d="M12 7v5l3 3" />
             </svg>
             <div>
-              <p className="font-medium text-text">Exercise History</p>
-              <p className="text-xs text-text-muted">Past sessions with sets, reps, and weight</p>
+              <p className="font-medium text-foreground">Exercise History</p>
+              <p className="text-xs text-muted-foreground">Past sessions with sets, reps, and weight</p>
             </div>
           </Button>
 
@@ -1481,7 +1481,7 @@ function WorkoutContent({
               }
               setTrainingGuideMenu(null);
             }}
-            className="w-full py-3 px-4 text-left bg-surface-light hover:bg-surface-light/80 rounded-lg flex items-center gap-3 transition-colors"
+            className="w-full py-3 px-4 text-left bg-muted hover:bg-muted/80 rounded-lg flex items-center gap-3 transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -1491,8 +1491,8 @@ function WorkoutContent({
               <polyline points="10 9 9 9 8 9" />
             </svg>
             <div>
-              <p className="font-medium text-text">Exercise Info</p>
-              <p className="text-xs text-text-muted">Equipment, muscles, and form instructions</p>
+              <p className="font-medium text-foreground">Exercise Info</p>
+              <p className="text-xs text-muted-foreground">Equipment, muscles, and form instructions</p>
             </div>
           </Button>
 
@@ -1507,19 +1507,19 @@ function WorkoutContent({
             disabled={!canToggleSplitMode}
             className={`w-full py-3 px-4 text-left rounded-lg flex items-center gap-3 transition-colors ${
               canToggleSplitMode
-                ? 'bg-surface-light hover:bg-surface-light/80'
-                : 'bg-surface-light/60 text-text-muted cursor-not-allowed'
+                ? 'bg-muted hover:bg-muted/80'
+                : 'bg-muted/60 text-muted-foreground cursor-not-allowed'
             }`}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={canToggleSplitMode ? 'text-primary' : 'text-text-muted'}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={canToggleSplitMode ? 'text-primary' : 'text-muted-foreground'}>
               <polyline points="17 1 21 5 17 9" />
               <path d="M3 11V9a4 4 0 0 1 4-4h14" />
               <polyline points="7 23 3 19 7 15" />
               <path d="M21 13v2a4 4 0 0 1-4 4H3" />
             </svg>
             <div>
-              <p className="font-medium text-text">Split L/R</p>
-              <p className="text-xs text-text-muted">{splitToggleDescription}</p>
+              <p className="font-medium text-foreground">Split L/R</p>
+              <p className="text-xs text-muted-foreground">{splitToggleDescription}</p>
             </div>
           </Button>
 
@@ -1531,15 +1531,15 @@ function WorkoutContent({
               }
               setTrainingGuideMenu(null);
             }}
-            className="w-full py-3 px-4 text-left bg-surface-light hover:bg-surface-light/80 rounded-lg flex items-center gap-3 transition-colors"
+            className="w-full py-3 px-4 text-left bg-muted hover:bg-muted/80 rounded-lg flex items-center gap-3 transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
               <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
               <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" />
             </svg>
             <div>
-              <p className="font-medium text-text">Watch the Movement</p>
-              <p className="text-xs text-text-muted">View exercise demos on YouTube</p>
+              <p className="font-medium text-foreground">Watch the Movement</p>
+              <p className="text-xs text-muted-foreground">View exercise demos on YouTube</p>
             </div>
           </Button>
 
@@ -1550,14 +1550,14 @@ function WorkoutContent({
               }
               setTrainingGuideMenu(null);
             }}
-            className="w-full py-3 px-4 text-left bg-surface-light hover:bg-surface-light/80 rounded-lg flex items-center gap-3 transition-colors"
+            className="w-full py-3 px-4 text-left bg-muted hover:bg-muted/80 rounded-lg flex items-center gap-3 transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
             <div>
-              <p className="font-medium text-text">Chat with Trainer</p>
-              <p className="text-xs text-text-muted">Get personalized guidance and answers</p>
+              <p className="font-medium text-foreground">Chat with Trainer</p>
+              <p className="text-xs text-muted-foreground">Get personalized guidance and answers</p>
             </div>
           </Button>
         </div>
@@ -1573,22 +1573,22 @@ function WorkoutContent({
         ]}
       >
         {loadingTips ? (
-          <p className="text-text-muted text-sm text-center py-4">Loading...</p>
+          <p className="text-muted-foreground text-sm text-center py-4">Loading...</p>
         ) : !exerciseDetails ? (
-          <p className="text-text-muted text-sm text-center py-4">No tips available for this exercise.</p>
+          <p className="text-muted-foreground text-sm text-center py-4">No tips available for this exercise.</p>
         ) : (
           <div className="space-y-4 max-h-96 overflow-y-auto">
             {(exerciseDetails.equipment || exerciseDetails.level) && (
               <div>
-                <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">Setup</h4>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Setup</h4>
                 <div className="flex flex-wrap gap-2">
                   {exerciseDetails.equipment && (
-                    <span className="text-xs bg-surface-light px-2 py-1 rounded-full text-text-secondary">
+                    <span className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">
                       {exerciseDetails.equipment}
                     </span>
                   )}
                   {exerciseDetails.level && (
-                    <span className="text-xs bg-surface-light px-2 py-1 rounded-full text-text-secondary capitalize">
+                    <span className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground capitalize">
                       {exerciseDetails.level}
                     </span>
                   )}
@@ -1598,16 +1598,16 @@ function WorkoutContent({
 
             {(exerciseDetails.primary_muscles?.length > 0 || exerciseDetails.secondary_muscles?.length > 0) && (
               <div>
-                <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">Muscles Worked</h4>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Muscles Worked</h4>
                 <div className="space-y-1">
                   {exerciseDetails.primary_muscles?.length > 0 && (
-                    <p className="text-sm text-text">
-                      <span className="text-text-muted">Primary:</span> {exerciseDetails.primary_muscles.join(', ')}
+                    <p className="text-sm text-foreground">
+                      <span className="text-muted-foreground">Primary:</span> {exerciseDetails.primary_muscles.join(', ')}
                     </p>
                   )}
                   {exerciseDetails.secondary_muscles?.length > 0 && (
-                    <p className="text-sm text-text-secondary">
-                      <span className="text-text-muted">Secondary:</span> {exerciseDetails.secondary_muscles.join(', ')}
+                    <p className="text-sm text-muted-foreground">
+                      <span className="text-muted-foreground">Secondary:</span> {exerciseDetails.secondary_muscles.join(', ')}
                     </p>
                   )}
                 </div>
@@ -1616,10 +1616,10 @@ function WorkoutContent({
 
             {exerciseDetails.instructions?.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">Form Tips</h4>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Form Tips</h4>
                 <ol className="space-y-2">
                   {exerciseDetails.instructions.map((instruction, idx) => (
-                    <li key={idx} className="text-sm text-text-secondary flex gap-2">
+                    <li key={idx} className="text-sm text-muted-foreground flex gap-2">
                       <span className="text-primary font-medium">{idx + 1}.</span>
                       <span>{instruction}</span>
                     </li>

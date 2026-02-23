@@ -495,7 +495,7 @@ function PickerContent({
       <div className="px-4 pt-3 flex justify-end">
         <Button unstyled
           onClick={onClose}
-          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-light transition-colors"
+          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -507,7 +507,7 @@ function PickerContent({
       {/* Search */}
       <div className="px-4 pt-3 pb-2">
         <div className="relative mb-3">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
@@ -516,7 +516,7 @@ function PickerContent({
             placeholder="Search exercises..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-surface border border-border rounded-xl pl-10 pr-4 py-3 min-h-[48px] text-sm focus:border-primary outline-none"
+            className="w-full bg-card border border-border rounded-xl pl-10 pr-4 py-3 min-h-[48px] text-sm focus:border-primary outline-none"
             autoFocus
           />
         </div>
@@ -526,7 +526,7 @@ function PickerContent({
           <Button unstyled
             onClick={() => setLibraryView('favorites')}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              libraryView === 'favorites' ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
+              libraryView === 'favorites' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
             }`}
           >
             Favorites ({favoriteExerciseIds.length})
@@ -534,7 +534,7 @@ function PickerContent({
           <Button unstyled
             onClick={() => setLibraryView('all')}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              libraryView === 'all' ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
+              libraryView === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
             }`}
           >
             All
@@ -545,10 +545,10 @@ function PickerContent({
       {/* Exercise List */}
       <div className="flex-1 overflow-y-auto px-4 pb-8">
         {loading ? (
-          <p className="text-text-muted text-sm text-center py-8">Loading...</p>
+          <p className="text-muted-foreground text-sm text-center py-8">Loading...</p>
         ) : exercises.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-text-muted text-sm mb-4">
+            <p className="text-muted-foreground text-sm mb-4">
               {libraryView === 'favorites' && !search.trim()
                 ? 'No favorites yet. Star exercises to pin them here.'
                 : 'No exercises found'}
@@ -562,7 +562,7 @@ function PickerContent({
             {/* Create custom button */}
             <Button unstyled
               onClick={startCreateFlow}
-              className="w-full text-left px-3 py-3 rounded-xl hover:bg-surface-light transition-colors min-h-[44px] border border-dashed border-border mb-2"
+              className="w-full text-left px-3 py-3 rounded-xl hover:bg-muted transition-colors min-h-[44px] border border-dashed border-border mb-2"
             >
               <div className="flex items-center gap-2 text-primary">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -579,7 +579,7 @@ function PickerContent({
                 <div key={ex.id} className="flex items-center gap-2">
                   <Button unstyled
                     onClick={() => handleSelectExercise(ex)}
-                    className="flex-1 text-left px-3 py-3 rounded-xl hover:bg-surface-light transition-colors min-h-[44px]"
+                    className="flex-1 text-left px-3 py-3 rounded-xl hover:bg-muted transition-colors min-h-[44px]"
                   >
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-sm">{CARDIO_DISPLAY_NAMES[ex.name] || ex.name}</p>
@@ -590,11 +590,11 @@ function PickerContent({
                       )}
                     </div>
                     <div className="flex gap-2 mt-1">
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-surface text-text-secondary capitalize">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-card text-muted-foreground capitalize">
                         {ex.category.replace('_', ' ')}
                       </span>
                       {ex.primary_muscles.slice(0, 2).map((m) => (
-                        <span key={m} className="text-xs text-text-muted capitalize">
+                        <span key={m} className="text-xs text-muted-foreground capitalize">
                           {m.replace('_', ' ')}
                         </span>
                       ))}
@@ -602,8 +602,8 @@ function PickerContent({
                   </Button>
                   <Button unstyled
                     onClick={() => { void toggleFavorite(ex.id); }}
-                    className={`p-2 transition-colors rounded-lg hover:bg-surface-light ${
-                      isFavorite(ex.id) ? 'text-primary' : 'text-text-muted hover:text-text'
+                    className={`p-2 transition-colors rounded-lg hover:bg-muted ${
+                      isFavorite(ex.id) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                     }`}
                     aria-label={isFavorite(ex.id) ? 'Remove favorite' : 'Add favorite'}
                     title={isFavorite(ex.id) ? 'Remove favorite' : 'Add favorite'}
@@ -614,7 +614,7 @@ function PickerContent({
                   </Button>
                   <Button unstyled
                     onClick={() => openEditModal(ex)}
-                    className="p-2 text-text-muted hover:text-text transition-colors rounded-lg hover:bg-surface-light"
+                    className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
                     aria-label={isOwnCustom ? 'Manage exercise' : 'Rename exercise'}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -639,27 +639,27 @@ function PickerContent({
         ]}
       >
         <div className="space-y-3">
-          <p className="text-sm text-text-secondary">
-            Final duplicate check for <span className="font-medium text-text">&quot;{duplicateCheckName}&quot;</span>.
+          <p className="text-sm text-muted-foreground">
+            Final duplicate check for <span className="font-medium text-foreground">&quot;{duplicateCheckName}&quot;</span>.
             Use an existing exercise if it matches.
           </p>
           {duplicateError && (
-            <p className="text-xs text-error bg-error/10 rounded-lg px-3 py-2">{duplicateError}</p>
+            <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">{duplicateError}</p>
           )}
           <div className="max-h-64 overflow-y-auto space-y-1">
             {duplicateChecking ? (
-              <p className="text-xs text-text-muted py-2 text-center">Searching full library...</p>
+              <p className="text-xs text-muted-foreground py-2 text-center">Searching full library...</p>
             ) : duplicateResults.length === 0 ? (
-              <p className="text-xs text-text-muted py-2 text-center">No close matches found.</p>
+              <p className="text-xs text-muted-foreground py-2 text-center">No close matches found.</p>
             ) : (
               duplicateResults.map((exercise) => (
                 <Button unstyled
                   key={exercise.id}
                   onClick={() => handleUsePotentialDuplicate(exercise)}
-                  className="w-full text-left rounded-lg border border-border px-3 py-2 hover:bg-surface-light transition-colors"
+                  className="w-full text-left rounded-lg border border-border px-3 py-2 hover:bg-muted transition-colors"
                 >
-                  <p className="text-sm font-medium text-text">{CARDIO_DISPLAY_NAMES[exercise.name] || exercise.name}</p>
-                  <p className="text-xs text-text-muted mt-0.5 capitalize">
+                  <p className="text-sm font-medium text-foreground">{CARDIO_DISPLAY_NAMES[exercise.name] || exercise.name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 capitalize">
                     {exercise.category.replace('_', ' ')}
                   </p>
                 </Button>
@@ -687,16 +687,16 @@ function PickerContent({
       >
         <div className="space-y-4">
           {actionError && (
-            <p className="text-xs text-error bg-error/10 rounded-lg px-3 py-2">{actionError}</p>
+            <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">{actionError}</p>
           )}
           {editingExercise && !(editingExercise.is_custom && editingExercise.user_id === currentUserId) && (
-            <p className="text-xs text-text-muted bg-surface-light rounded-lg px-3 py-2">
+            <p className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
               This will create a custom copy with your preferred name. The original exercise will remain unchanged.
             </p>
           )}
           {editingExercise?.is_custom && editingExercise.user_id === currentUserId && (
-            <div className="bg-surface-light rounded-lg px-3 py-3 space-y-2">
-              <p className="text-xs text-text-muted">
+            <div className="bg-muted rounded-lg px-3 py-3 space-y-2">
+              <p className="text-xs text-muted-foreground">
                 Move this exercise&apos;s history into another exercise, or delete it with all linked history.
               </p>
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -801,11 +801,11 @@ function PickerContent({
       >
         <div className="space-y-4">
           {mergeError && (
-            <p className="text-xs text-error bg-error/10 rounded-lg px-3 py-2">{mergeError}</p>
+            <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">{mergeError}</p>
           )}
           {mergeSourceExercise && (
-            <div className="text-xs text-text-muted bg-surface-light rounded-lg px-3 py-2">
-              Merging from: <span className="text-text font-medium">{mergeSourceExercise.name}</span>
+            <div className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
+              Merging from: <span className="text-foreground font-medium">{mergeSourceExercise.name}</span>
             </div>
           )}
           <div>
@@ -829,9 +829,9 @@ function PickerContent({
 
           <div className="max-h-64 overflow-y-auto space-y-1">
             {mergeLoading ? (
-              <p className="text-xs text-text-muted py-3 text-center">Searching...</p>
+              <p className="text-xs text-muted-foreground py-3 text-center">Searching...</p>
             ) : mergeResults.length === 0 ? (
-              <p className="text-xs text-text-muted py-3 text-center">No exercises found.</p>
+              <p className="text-xs text-muted-foreground py-3 text-center">No exercises found.</p>
             ) : (
               mergeResults.map((exercise) => {
                 const selected = mergeTarget?.id === exercise.id;
@@ -841,16 +841,16 @@ function PickerContent({
                     key={exercise.id}
                     onClick={() => setMergeTarget(exercise)}
                     className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors ${
-                      selected ? 'border-primary bg-primary/5' : 'border-border hover:bg-surface-light'
+                      selected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-text">{CARDIO_DISPLAY_NAMES[exercise.name] || exercise.name}</p>
+                      <p className="text-sm font-medium text-foreground">{CARDIO_DISPLAY_NAMES[exercise.name] || exercise.name}</p>
                       {isOwnCustom && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">Custom</span>
                       )}
                     </div>
-                    <p className="text-xs text-text-muted capitalize mt-0.5">{exercise.category.replace('_', ' ')}</p>
+                    <p className="text-xs text-muted-foreground capitalize mt-0.5">{exercise.category.replace('_', ' ')}</p>
                   </Button>
                 );
               })
@@ -858,8 +858,8 @@ function PickerContent({
           </div>
 
           {mergeTarget && (
-            <p className="text-xs text-text-muted bg-surface-light rounded-lg px-3 py-2">
-              Target: <span className="text-text font-medium">{mergeTarget.name}</span>
+            <p className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
+              Target: <span className="text-foreground font-medium">{mergeTarget.name}</span>
             </p>
           )}
         </div>

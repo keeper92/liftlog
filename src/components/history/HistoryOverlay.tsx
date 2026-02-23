@@ -7,6 +7,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { formatRelativeDate, formatDuration, toDisplayWeight, weightUnit } from '@/lib/utils/units';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
+import { Input } from '@/components/ui/input-shadcn';
 
 interface WorkoutSet {
   id: string;
@@ -780,103 +781,103 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
         {editingWorkout && (
           <div className="space-y-4 text-sm">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">Workout Name</label>
-              <input
+              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Workout Name</label>
+              <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-text"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground"
                 placeholder="Workout"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">Date</label>
-              <input
+              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Date</label>
+              <Input
                 type="date"
                 value={editDate}
                 onChange={(e) => setEditDate(e.target.value)}
-                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-text"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Sets</p>
-                <button
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sets</p>
+                <Button unstyled
                   type="button"
                   onClick={() => addExerciseGroup()}
                   className="text-[11px] font-semibold text-primary hover:text-primary-dark"
                 >
                   + Add Exercise
-                </button>
+                </Button>
               </div>
               <div className="max-h-[42vh] overflow-y-auto rounded-2xl border border-border bg-background px-3 py-2 space-y-3">
                 {editableGroups.length === 0 && (
-                  <p className="text-xs text-text-muted py-3">
+                  <p className="text-xs text-muted-foreground py-3">
                     No exercises yet. Add an exercise to log this workout.
                   </p>
                 )}
                 {editableGroups.map((group) => (
                   <div key={group.exerciseId}>
                     <div className="flex items-center justify-between mb-1.5 gap-2">
-                      <p className="text-xs font-semibold text-text">{group.name}</p>
-                      <button
+                      <p className="text-xs font-semibold text-foreground">{group.name}</p>
+                      <Button unstyled
                         type="button"
                         onClick={() => addSetDraft(group.exerciseId, group.name)}
                         className="text-[11px] font-semibold text-primary hover:text-primary-dark"
                       >
                         + Add Set
-                      </button>
+                      </Button>
                     </div>
                     <div className="space-y-1.5">
                       {group.sets.map((set, idx) => (
                         <div key={set.localId} className="grid grid-cols-[56px,1fr,1fr,74px] gap-2 items-center">
-                          <span className="text-xs text-text-muted">Set {idx + 1}</span>
-                          <input
+                          <span className="text-xs text-muted-foreground">Set {idx + 1}</span>
+                          <Input
                             value={set.weight}
                             onChange={(e) => updateEditSetField(group.exerciseId, set.localId, 'weight', e.target.value)}
                             placeholder={`Weight (${unit})`}
-                            className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text"
+                            className="rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground"
                             disabled={set.isSplit || set.time !== null}
                           />
-                          <input
+                          <Input
                             value={set.reps}
                             onChange={(e) => updateEditSetField(group.exerciseId, set.localId, 'reps', e.target.value)}
                             placeholder="Reps"
-                            className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text"
+                            className="rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground"
                             disabled={set.isSplit || set.time !== null}
                           />
                           <div className="flex items-center justify-end gap-1">
-                            <button
+                            <Button unstyled
                               type="button"
                               onClick={() => moveSetDraft(group.exerciseId, set.localId, 'up')}
-                              className="w-6 h-6 rounded-md border border-border text-text-muted hover:text-text"
+                              className="w-6 h-6 rounded-md border border-border text-muted-foreground hover:text-foreground"
                               aria-label="Move set up"
                             >
                               ↑
-                            </button>
-                            <button
+                            </Button>
+                            <Button unstyled
                               type="button"
                               onClick={() => moveSetDraft(group.exerciseId, set.localId, 'down')}
-                              className="w-6 h-6 rounded-md border border-border text-text-muted hover:text-text"
+                              className="w-6 h-6 rounded-md border border-border text-muted-foreground hover:text-foreground"
                               aria-label="Move set down"
                             >
                               ↓
-                            </button>
-                            <button
+                            </Button>
+                            <Button unstyled
                               type="button"
                               onClick={() => removeSetDraft(group.exerciseId, set.localId)}
-                              className="w-6 h-6 rounded-md border border-border text-text-muted hover:text-error"
+                              className="w-6 h-6 rounded-md border border-border text-muted-foreground hover:text-destructive"
                               aria-label="Remove set"
                             >
                               ×
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       ))}
                     </div>
                     {group.sets.some((set) => set.isSplit || set.time !== null) && (
-                      <p className="mt-1 text-[11px] text-text-muted">Split/timed sets are read-only for weight/reps but can be reordered or removed.</p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">Split/timed sets are read-only for weight/reps but can be reordered or removed.</p>
                     )}
                   </div>
                 ))}
@@ -910,34 +911,34 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
         <div>
           <p className="ui-kicker">Calendar</p>
         </div>
-        <button
+        <Button unstyled
           onClick={onClose}
           className="ui-icon-pill w-10 h-10 flex items-center justify-center rounded-full"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
-        </button>
+        </Button>
       </div>
 
       {/* Streak Stats */}
       <div className="px-5 py-4">
         <div className="ui-overlay-shell rounded-2xl px-4 py-4 flex items-center justify-around">
           <div className="text-center">
-            <p className="text-2xl font-bold text-text">{longestStreak}</p>
-            <p className="text-xs text-text-muted mt-0.5">Best Streak</p>
+            <p className="text-2xl font-bold text-foreground">{longestStreak}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Best Streak</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-text">{currentStreak}</p>
-            <p className="text-xs text-text-muted mt-0.5">Current Streak</p>
+            <p className="text-2xl font-bold text-foreground">{currentStreak}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Current Streak</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-text">{totalWorkouts}</p>
-            <p className="text-xs text-text-muted mt-0.5">Total Sessions</p>
+            <p className="text-2xl font-bold text-foreground">{totalWorkouts}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Total Sessions</p>
           </div>
         </div>
-        <p className="text-xs text-text-secondary text-center mt-3">
+        <p className="text-xs text-muted-foreground text-center mt-3">
           {currentStreak > 0
             ? `${currentStreak}-day streak active. Keep the run going today.`
             : 'No active streak. One workout today starts a new streak.'}
@@ -947,30 +948,30 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto px-5 pt-4 pb-8">
         {loading ? (
-          <p className="text-text-muted text-sm text-center py-8">Loading...</p>
+          <p className="text-muted-foreground text-sm text-center py-8">Loading...</p>
         ) : (
           <div>
             {/* Calendar Card */}
-            <div className="bg-surface rounded-2xl border border-border/70 p-4 card-shadow">
+            <div className="bg-card rounded-2xl border border-border/70 p-4 card-shadow">
               {/* Calendar Header */}
               <div className="flex items-center justify-between mb-4">
-                <button onClick={prevMonth} className="p-2 -ml-2 text-text-muted hover:text-text transition-colors rounded-full hover:bg-surface-light">
+                <Button unstyled onClick={prevMonth} className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-muted">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="15 18 9 12 15 6" />
                   </svg>
-                </button>
+                </Button>
                 <h2 className="text-sm font-semibold">{monthName}</h2>
-                <button onClick={nextMonth} className="p-2 -mr-2 text-text-muted hover:text-text transition-colors rounded-full hover:bg-surface-light">
+                <Button unstyled onClick={nextMonth} className="p-2 -mr-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-muted">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
-                </button>
+                </Button>
               </div>
 
               {/* Day headers */}
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day, i) => (
-                  <div key={i} className="text-center text-xs text-text-muted font-medium py-1">
+                  <div key={i} className="text-center text-xs text-muted-foreground font-medium py-1">
                     {day}
                   </div>
                 ))}
@@ -990,17 +991,17 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                   const isToday = dateKey === getTodayDateKey();
 
                   return (
-                    <button
+                    <Button unstyled
                       key={day}
                       onClick={() => setSelectedDate(isSelected ? null : dateKey)}
                       className={`aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-semibold transition-all relative ${
                         isSelected
-                          ? 'bg-primary text-white shadow-sm'
+                          ? 'bg-primary text-primary-foreground shadow-sm'
                           : isToday
                             ? 'bg-text text-white'
                             : hasWorkout
-                              ? 'text-text hover:bg-surface-light'
-                              : 'text-text-secondary hover:bg-surface-light/60'
+                              ? 'text-foreground hover:bg-muted'
+                              : 'text-muted-foreground hover:bg-muted/60'
                       } cursor-pointer`}
                     >
                       {day}
@@ -1010,7 +1011,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                       {hasWorkout && isToday && !isSelected && (
                         <span className="absolute bottom-1 w-1 h-1 rounded-full bg-white" />
                       )}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -1020,7 +1021,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
             {/* Selected date details */}
             {selectedDate && selectedWorkouts.length > 0 && (
               <div className="mt-4">
-                <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                   {new Date(selectedDate + 'T12:00:00').toLocaleDateString(undefined, {
                     weekday: 'long',
                     month: 'long',
@@ -1035,19 +1036,19 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                       : 0;
 
                     return (
-                      <button
+                      <Button unstyled
                         key={w.id}
                         onClick={() => openEditOverlay(w)}
-                        className="w-full text-left bg-surface rounded-2xl border border-border/70 p-4 card-shadow hover:bg-surface-light transition-colors"
+                        className="w-full text-left bg-card rounded-2xl border border-border/70 p-4 card-shadow hover:bg-muted transition-colors"
                       >
                         <div className="flex justify-between items-start mb-2 gap-2">
                           <div>
                             <p className="font-semibold text-sm">{w.name || 'Workout'}</p>
-                            <p className="text-xs text-text-muted mt-0.5">{formatRelativeDate(w.date)}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{formatRelativeDate(w.date)}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             {duration > 0 && (
-                              <span className="text-xs text-text-muted bg-surface-light px-2 py-1 rounded-full">{formatDuration(duration)}</span>
+                              <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">{formatDuration(duration)}</span>
                             )}
                             <span className="text-xs font-semibold text-primary">Edit</span>
                           </div>
@@ -1055,14 +1056,14 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                         <div className="space-y-1.5">
                           {exercises.map((ex, i) => (
                             <div key={i} className="text-xs flex items-baseline">
-                              <span className="text-text font-medium">{ex.name}</span>
-                              <span className="text-text-muted ml-2">
+                              <span className="text-foreground font-medium">{ex.name}</span>
+                              <span className="text-muted-foreground ml-2">
                                 {ex.setLabels.length} × ({ex.setLabels.join(', ')})
                               </span>
                             </div>
                           ))}
                         </div>
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -1079,8 +1080,8 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
             )}
 
             {selectedDate && selectedWorkouts.length === 0 && (
-              <div className="mt-4 text-center bg-surface rounded-2xl border border-border/70 p-5 card-shadow">
-                <p className="text-sm text-text mb-2">
+              <div className="mt-4 text-center bg-card rounded-2xl border border-border/70 p-5 card-shadow">
+                <p className="text-sm text-foreground mb-2">
                   No workouts logged for this date.
                 </p>
                 <Button
@@ -1095,11 +1096,11 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
 
             {/* No date selected hint */}
             {!selectedDate && (
-              <p className="text-xs text-text-muted text-center mt-4">Tap any day to view or add workouts</p>
+              <p className="text-xs text-muted-foreground text-center mt-4">Tap any day to view or add workouts</p>
             )}
             {!selectedDate && workouts.length === 0 && onStartWorkout && (
               <div className="mt-4 text-center">
-                <p className="text-xs text-text-muted mb-2">No workouts yet. Add one from the calendar or start a live workout.</p>
+                <p className="text-xs text-muted-foreground mb-2">No workouts yet. Add one from the calendar or start a live workout.</p>
                 <Button onClick={onStartWorkout} size="sm">
                   Start Workout
                 </Button>

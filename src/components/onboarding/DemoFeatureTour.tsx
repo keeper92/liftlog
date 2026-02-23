@@ -209,10 +209,10 @@ export default function DemoFeatureTour({ onFinish }: DemoFeatureTourProps) {
           width: tooltipPosition.width,
         }}
       >
-        <h3 className="text-base font-semibold tracking-tight text-text">{currentStep.title}</h3>
-        <p className="mt-1 text-[13px] leading-snug text-text-secondary">{currentStep.description}</p>
+        <h3 className="text-base font-semibold tracking-tight text-foreground">{currentStep.title}</h3>
+        <p className="mt-1 text-[13px] leading-snug text-muted-foreground">{currentStep.description}</p>
 
-        <div className="mt-2.5 h-1 rounded-full bg-surface-light">
+        <div className="mt-2.5 h-1 rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-primary transition-all duration-200"
             style={{ width: `${progressPercent}%` }}
@@ -220,13 +220,13 @@ export default function DemoFeatureTour({ onFinish }: DemoFeatureTourProps) {
         </div>
 
         <div className="mt-2.5 flex items-center justify-between">
-          <button
+          <Button unstyled
             type="button"
             onClick={onFinish}
-            className="text-xs font-medium text-text-muted transition-colors hover:text-text"
+            className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Skip tour
-          </button>
+          </Button>
 
           <Button type="button" size="sm" onClick={goNext} className="min-h-[34px] px-3 text-xs">
             {canGoNext ? 'Next' : 'Done'}

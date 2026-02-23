@@ -73,7 +73,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       <div className="flex-1 flex flex-col items-center justify-center text-center overflow-hidden">
         {/* Screenshot, Icon Fallback, or Logo for welcome slide */}
         {slide.image ? (
-          <div className="relative w-48 h-80 mb-6 rounded-2xl overflow-hidden border border-border shadow-lg bg-surface flex items-center justify-center">
+          <div className="relative w-48 h-80 mb-6 rounded-2xl overflow-hidden border border-border shadow-lg bg-card flex items-center justify-center">
             {imageError[currentSlide] ? (
               <div className="text-primary">{slide.icon}</div>
             ) : (
@@ -90,8 +90,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           <p className="text-6xl font-black text-primary mb-8 font-[family-name:var(--font-outfit)]">reps</p>
         )}
 
-        <h1 className="text-2xl font-bold text-text mb-3">{slide.title}</h1>
-        <p className="text-text-muted text-sm max-w-xs">{slide.description}</p>
+        <h1 className="text-2xl font-bold text-foreground mb-3">{slide.title}</h1>
+        <p className="text-muted-foreground text-sm max-w-xs">{slide.description}</p>
       </div>
 
       <div className="flex justify-center gap-2 mb-8">
@@ -110,12 +110,12 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           {isLast ? 'Get Started' : 'Next'}
         </Button>
         {!isLast && (
-          <button
+          <Button unstyled
             onClick={handleSkip}
-            className="w-full text-center text-sm text-text-muted py-2"
+            className="w-full text-center text-sm text-muted-foreground py-2"
           >
             Skip
-          </button>
+          </Button>
         )}
       </div>
     </div>

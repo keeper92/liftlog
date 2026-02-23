@@ -7,6 +7,7 @@ import { useTrainerProfileStore } from '@/stores/trainerProfileStore';
 import type { UnitSystem } from '@/lib/types/user';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import { Select } from '@/components/ui/select-shadcn';
 
 const REST_TIMER_OPTIONS = [30, 60, 90, 120, 180, 300];
 
@@ -35,21 +36,21 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Unit System</p>
-              <p className="text-sm text-text-secondary">Weight display format</p>
+              <p className="text-sm text-muted-foreground">Weight display format</p>
             </div>
             <div className="flex rounded-lg overflow-hidden border border-border">
               {(['metric', 'imperial'] as UnitSystem[]).map((unit) => (
-                <button
+                <Button unstyled
                   key={unit}
                   onClick={() => setUnitSystem(unit)}
                   className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                     unitSystem === unit
-                      ? 'bg-primary text-white'
-                      : 'bg-surface text-text-secondary hover:text-text-primary'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-card text-muted-foreground hover:text-foreground-primary'
                   }`}
                 >
                   {unit === 'metric' ? 'kg' : 'lbs'}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -59,9 +60,9 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Rest Timer</p>
-              <p className="text-sm text-text-secondary">Default duration between sets</p>
+              <p className="text-sm text-muted-foreground">Default duration between sets</p>
             </div>
-            <select
+            <Select
               value={defaultRestTimer}
               onChange={(e) => setDefaultRestTimer(Number(e.target.value))}
               className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
@@ -72,7 +73,7 @@ export default function SettingsPage() {
                   {seconds < 60 ? '' : seconds % 60 !== 0 ? ` ${seconds % 60}s` : ''}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         </Card>
 
@@ -80,9 +81,9 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Auto-Start Rest Timer</p>
-              <p className="text-sm text-text-secondary">Start timer after logging a set</p>
+              <p className="text-sm text-muted-foreground">Start timer after logging a set</p>
             </div>
-            <button
+            <Button unstyled
               onClick={() => setAutoStartRestTimer(!autoStartRestTimer)}
               className={`relative h-7 w-12 rounded-full transition-colors ${
                 autoStartRestTimer ? 'bg-primary' : 'bg-border'
@@ -93,7 +94,7 @@ export default function SettingsPage() {
                   autoStartRestTimer ? 'translate-x-5' : 'translate-x-0'
                 }`}
               />
-            </button>
+            </Button>
           </div>
         </Card>
       </div>
@@ -103,13 +104,13 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Trainer Profile</p>
-              <p className="text-sm text-text-secondary">
+              <p className="text-sm text-muted-foreground">
                 {trainerProfile
                   ? `${trainerProfile.experienceLevel} · ${trainerProfile.goals.join(', ')}`
                   : 'Set up your training profile for personalized advice'}
               </p>
             </div>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </div>

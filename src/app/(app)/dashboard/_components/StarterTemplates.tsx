@@ -153,7 +153,7 @@ export default function StarterTemplates() {
 
   return (
     <div className="mt-6">
-      <h2 className="text-xs font-medium text-text-muted uppercase tracking-wider mb-4">
+      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
         Starter Templates
       </h2>
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5 scrollbar-hide">
@@ -164,7 +164,7 @@ export default function StarterTemplates() {
             className="shrink-0 w-36"
           >
             <p className="font-medium text-sm">{template.name}</p>
-            <p className="text-xs text-text-muted mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {template.exercises.length} exercises
             </p>
           </Card>
@@ -187,7 +187,7 @@ export default function StarterTemplates() {
             </svg>
             <p className="font-medium text-sm">Generate</p>
           </div>
-          <p className="text-xs text-text-muted mt-1">From your history</p>
+          <p className="text-xs text-muted-foreground mt-1">From your history</p>
         </Card>
       </div>
 
@@ -226,7 +226,7 @@ export default function StarterTemplates() {
             <ul className="space-y-2">
               {generatedExercises.map((ex) => (
                 <li key={ex.id} className="text-sm">
-                  {ex.name} <span className="text-text-muted">({ex.defaultSets} sets)</span>
+                  {ex.name} <span className="text-muted-foreground">({ex.defaultSets} sets)</span>
                 </li>
               ))}
             </ul>

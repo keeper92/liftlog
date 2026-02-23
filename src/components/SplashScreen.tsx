@@ -25,7 +25,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
         fadeOut ? 'opacity-0' : 'opacity-100'
       }`}
     >
-      <p className="text-4xl font-black text-text tracking-tight animate-fade-in font-[family-name:var(--font-outfit)]">
+      <p className="text-4xl font-black text-foreground tracking-tight animate-fade-in font-[family-name:var(--font-outfit)]">
         reps
       </p>
     </div>

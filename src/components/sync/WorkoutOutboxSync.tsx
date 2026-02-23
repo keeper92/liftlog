@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { uploadWorkoutSnapshot, withTimeout } from '@/lib/sync/workoutUpload';
 import { useWorkoutOutboxStore } from '@/stores/workoutOutboxStore';
+import Button from '@/components/ui/Button';
 
 const SYNC_TIMEOUT_MS = 15000;
 const SYNC_POLL_MS = 30000;
@@ -201,15 +202,15 @@ export default function WorkoutOutboxSync() {
       <div className="min-w-0">
         <p>{statusText}</p>
         {latestFailure && (
-          <p className="text-[11px] text-text-secondary truncate">{latestFailure}</p>
+          <p className="text-[11px] text-muted-foreground truncate">{latestFailure}</p>
         )}
       </div>
-      <button
+      <Button unstyled
         onClick={() => { runSync(); }}
         className="shrink-0 text-[11px] font-semibold text-primary hover:text-primary-light"
       >
         Retry
-      </button>
+      </Button>
     </div>
   );
 }

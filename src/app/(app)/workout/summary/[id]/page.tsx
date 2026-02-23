@@ -111,7 +111,7 @@ function normalizeLegacyWorkoutData(data: LegacyWorkoutData): WorkoutData {
 
 export default function WorkoutSummaryPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-dvh text-text-muted">Loading...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-dvh text-muted-foreground">Loading...</div>}>
       <WorkoutSummaryContent />
     </Suspense>
   );
@@ -376,7 +376,7 @@ function WorkoutSummaryContent() {
   }
 
   if (!workout) {
-    return <div className="flex items-center justify-center min-h-dvh text-text-muted">Loading...</div>;
+    return <div className="flex items-center justify-center min-h-dvh text-muted-foreground">Loading...</div>;
   }
 
   const duration = workout.end_time
@@ -400,39 +400,39 @@ function WorkoutSummaryContent() {
     <div className="px-4 pt-8 pb-20">
       <div className="text-center mb-8">
         <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-4">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2DA44E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-success" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
         <h1 className="text-2xl font-bold">Workout Complete!</h1>
-        <p className="text-text-secondary mt-1">{workout.name || 'Workout'}</p>
+        <p className="text-muted-foreground mt-1">{workout.name || 'Workout'}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-8">
         <Card className="text-center">
           <p className="text-xl font-bold">{formatDuration(duration)}</p>
-          <p className="text-xs text-text-secondary mt-1">Duration</p>
+          <p className="text-xs text-muted-foreground mt-1">Duration</p>
         </Card>
         <Card className="text-center">
           <p className="text-xl font-bold">{exerciseMap.size}</p>
-          <p className="text-xs text-text-secondary mt-1">Exercises</p>
+          <p className="text-xs text-muted-foreground mt-1">Exercises</p>
         </Card>
         <Card className="text-center">
           <p className="text-xl font-bold">{workout.sets.length}</p>
-          <p className="text-xs text-text-secondary mt-1">Sets</p>
+          <p className="text-xs text-muted-foreground mt-1">Sets</p>
         </Card>
         <Card className="text-center">
           <p className="text-xl font-bold">{toDisplayWeight(totalVolume, unitSystem).toLocaleString()}</p>
-          <p className="text-xs text-text-secondary mt-1">{unit} Volume</p>
+          <p className="text-xs text-muted-foreground mt-1">{unit} Volume</p>
         </Card>
       </div>
 
       {/* Training Notes */}
       <div className="mb-8">
-        <h2 className="text-xs font-medium text-text-muted uppercase tracking-wider mb-4">Training Notes</h2>
+        <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Training Notes</h2>
         <Card>
           {loadingNotes ? (
-            <div className="flex items-center gap-2 text-text-muted">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <span className="inline-flex gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-text-muted animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-1.5 h-1.5 rounded-full bg-text-muted animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -441,14 +441,14 @@ function WorkoutSummaryContent() {
               <span className="text-sm">Analyzing your workout...</span>
             </div>
           ) : trainingNotes ? (
-            <p className="text-sm text-text-secondary whitespace-pre-line">{trainingNotes}</p>
+            <p className="text-sm text-muted-foreground whitespace-pre-line">{trainingNotes}</p>
           ) : (
-            <p className="text-sm text-text-muted">No training notes available.</p>
+            <p className="text-sm text-muted-foreground">No training notes available.</p>
           )}
         </Card>
       </div>
 
-      <h2 className="text-xs font-medium text-text-muted uppercase tracking-wider mb-4">Exercises</h2>
+      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Exercises</h2>
       <div className="space-y-3 mb-8">
         {Array.from(exerciseMap.entries()).map(([exId, { name, sets }]) => (
           <Card key={exId}>
@@ -457,7 +457,7 @@ function WorkoutSummaryContent() {
               {sets
                 .sort((a, b) => a.set_number - b.set_number)
                 .map((s, i) => (
-                  <p key={i} className="text-sm text-text-secondary">
+                  <p key={i} className="text-sm text-muted-foreground">
                     {s.is_warmup ? 'Warmup' : `Set ${s.set_number}`}:{' '}
                     {s.is_split_lr ? (
                       <>
@@ -512,13 +512,13 @@ function WorkoutSummaryContent() {
         Done
       </Button>
 
-      <button
+      <Button unstyled
         onClick={handleDiscardWorkout}
         disabled={discarding}
-        className="w-full mt-4 mb-2 text-xs text-text-muted hover:text-error transition-colors disabled:opacity-50"
+        className="w-full mt-4 mb-2 text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
       >
         {discarding ? 'Discarding...' : 'Discard Workout'}
-      </button>
+      </Button>
     </div>
   );
 }
