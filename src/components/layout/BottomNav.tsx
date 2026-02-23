@@ -2,6 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { buttonVariants } from '@/components/ui/button-shadcn';
+import { Card } from '@/components/ui/card-shadcn';
+import { cn } from '@/lib/utils';
 
 interface NavItem {
   href: string;
@@ -63,32 +66,31 @@ export default function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[calc(env(safe-area-inset-bottom)+10px)]">
       <div className="mx-auto max-w-lg px-3">
-        <div className="flex items-center justify-around rounded-3xl border border-border/90 bg-card/95 px-2 py-2 shadow-lg backdrop-blur">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              data-tour-anchor={
-                item.href === '/trainer'
-                  ? 'nav-trainer'
-                  : item.href === '/progress'
-                    ? 'nav-progress'
-                    : undefined
-              }
-              className={`flex flex-col items-center justify-center gap-0.5 px-4 py-2 rounded-2xl transition-colors ${
-                isActive
-                  ? 'bg-accent text-foreground'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/70'
-              }`}
-            >
-              {item.icon(isActive)}
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </Link>
-          );
-        })}
-        </div>
+        <Card className="grid grid-cols-4 items-center gap-1 rounded-2xl border bg-background/95 p-1.5 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/90">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                data-tour-anchor={
+                  item.href === '/trainer'
+                    ? 'nav-trainer'
+                    : item.href === '/progress'
+                      ? 'nav-progress'
+                      : undefined
+                }
+                className={cn(
+                  buttonVariants[isActive ? 'default' : 'ghost'],
+                  'h-auto min-h-0 w-full flex-col gap-1 rounded-xl px-3 py-2 text-xs font-medium shadow-none'
+                )}
+              >
+                {item.icon(isActive)}
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </Card>
       </div>
     </nav>
   );
