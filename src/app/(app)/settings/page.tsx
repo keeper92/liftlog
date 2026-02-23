@@ -5,8 +5,15 @@ import { createClient } from '@/lib/supabase/client';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTrainerProfileStore } from '@/stores/trainerProfileStore';
 import type { UnitSystem } from '@/lib/types/user';
-import Card from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
+import { Button } from '@/components/ui/button-shadcn';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card-shadcn';
+import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select-shadcn';
 
 const REST_TIMER_OPTIONS = [30, 60, 90, 120, 180, 300];
@@ -31,96 +38,99 @@ export default function SettingsPage() {
 
   return (
     <div className="pb-24">
-      <div className="px-5 pt-4 space-y-4">
+      <div className="mx-auto w-full max-w-3xl space-y-4 px-4 pt-4 sm:px-6">
+        <header className="space-y-1">
+          <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
+          <p className="text-sm text-muted-foreground">Manage your app preferences and training defaults.</p>
+        </header>
+
         <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Unit System</p>
-              <p className="text-sm text-muted-foreground">Weight display format</p>
-            </div>
-            <div className="flex rounded-lg overflow-hidden border border-border">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Unit System</CardTitle>
+            <CardDescription>Choose your preferred weight display format.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-2">
               {(['metric', 'imperial'] as UnitSystem[]).map((unit) => (
-                <Button unstyled
+                <Button
+                  type="button"
                   key={unit}
+                  variant={unitSystem === unit ? 'default' : 'outline'}
                   onClick={() => setUnitSystem(unit)}
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                    unitSystem === unit
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-card text-muted-foreground hover:text-foreground-primary'
-                  }`}
+                  className="capitalize"
                 >
                   {unit === 'metric' ? 'kg' : 'lbs'}
                 </Button>
               ))}
             </div>
-          </div>
+          </CardContent>
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Rest Timer</p>
-              <p className="text-sm text-muted-foreground">Default duration between sets</p>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Rest Timer</CardTitle>
+            <CardDescription>Set default rest behavior for workouts.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="rest-duration">Default duration</Label>
+              <Select
+                id="rest-duration"
+                value={defaultRestTimer}
+                onChange={(e) => setDefaultRestTimer(Number(e.target.value))}
+              >
+                {REST_TIMER_OPTIONS.map((seconds) => (
+                  <option key={seconds} value={seconds}>
+                    {seconds >= 60 ? `${seconds / 60}m` : `${seconds}s`}
+                    {seconds < 60 ? '' : seconds % 60 !== 0 ? ` ${seconds % 60}s` : ''}
+                  </option>
+                ))}
+              </Select>
             </div>
-            <Select
-              value={defaultRestTimer}
-              onChange={(e) => setDefaultRestTimer(Number(e.target.value))}
-              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
-            >
-              {REST_TIMER_OPTIONS.map((seconds) => (
-                <option key={seconds} value={seconds}>
-                  {seconds >= 60 ? `${seconds / 60}m` : `${seconds}s`}
-                  {seconds < 60 ? '' : seconds % 60 !== 0 ? ` ${seconds % 60}s` : ''}
-                </option>
-              ))}
-            </Select>
-          </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="rest-autostart">Auto-start after each set</Label>
+              <Select
+                id="rest-autostart"
+                value={autoStartRestTimer ? 'enabled' : 'disabled'}
+                onChange={(e) => setAutoStartRestTimer(e.target.value === 'enabled')}
+              >
+                <option value="enabled">Enabled</option>
+                <option value="disabled">Disabled</option>
+              </Select>
+            </div>
+          </CardContent>
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Auto-Start Rest Timer</p>
-              <p className="text-sm text-muted-foreground">Start timer after logging a set</p>
-            </div>
-            <Button unstyled
-              onClick={() => setAutoStartRestTimer(!autoStartRestTimer)}
-              className={`relative h-7 w-12 rounded-full transition-colors ${
-                autoStartRestTimer ? 'bg-primary' : 'bg-border'
-              }`}
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Trainer Profile</CardTitle>
+            <CardDescription>
+              {trainerProfile
+                ? `${trainerProfile.experienceLevel} · ${trainerProfile.goals.join(', ')}`
+                : 'Set up your training profile for personalized advice.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-between"
+              onClick={() => router.push('/trainer')}
             >
-              <span
-                className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white transition-transform ${
-                  autoStartRestTimer ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
+              Open Trainer
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
             </Button>
-          </div>
+          </CardContent>
         </Card>
-      </div>
 
-      <div className="mt-6">
-        <Card onClick={() => router.push('/trainer')}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Trainer Profile</p>
-              <p className="text-sm text-muted-foreground">
-                {trainerProfile
-                  ? `${trainerProfile.experienceLevel} · ${trainerProfile.goals.join(', ')}`
-                  : 'Set up your training profile for personalized advice'}
-              </p>
-            </div>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </div>
-        </Card>
-      </div>
-
-      <div className="px-5 mt-10">
-        <Button variant="outline" fullWidth onClick={handleSignOut}>
-          Sign Out
-        </Button>
+        <div className="pt-4">
+          <Button variant="outline" className="w-full" onClick={handleSignOut}>
+            Sign Out
+          </Button>
+        </div>
       </div>
     </div>
   );
