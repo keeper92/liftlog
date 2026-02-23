@@ -23,7 +23,7 @@ export default function Input({
       <ShadcnInput
         id={inputId}
         className={cn(
-          'h-11 rounded-xl',
+          'h-10 rounded-md',
           error && 'border-destructive focus-visible:ring-destructive/25',
           className
         )}

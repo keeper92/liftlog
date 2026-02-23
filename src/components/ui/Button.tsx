@@ -82,7 +82,6 @@ export default function Button({
       disabled={disabled || loading}
       className={cn(
         fullWidth && 'w-full',
-        variant === 'primary' && 'rounded-full',
         className
       )}
       {...rest}

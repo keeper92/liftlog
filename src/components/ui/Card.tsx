@@ -9,7 +9,7 @@ interface CardProps {
 }
 
 const baseClassName =
-  'rounded-2xl border border-border bg-card text-card-foreground shadow-sm';
+  'rounded-xl border border-border bg-card text-card-foreground shadow-sm';
 
 export default function Card({ children, className, onClick, noPadding = false }: CardProps) {
   if (onClick) {
