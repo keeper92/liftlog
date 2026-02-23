@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback } from 'react';
 import { useChatStore } from '@/stores/chatStore';
-import Button from '@/components/ui/Button';
+import { Button } from '@/components/ui/button-shadcn';
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -98,18 +98,23 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-5 pb-3">
-          <Button unstyled
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+            className="h-10 w-10 rounded-full"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-foreground">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </Button>
-          <Button unstyled
+          <Button
+            type="button"
+            size="sm"
             onClick={handleNewChat}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-sm"
+            className="rounded-full"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -132,7 +137,7 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
               if (!items || items.length === 0) return null;
               return (
                 <div key={group} className="mb-4">
-                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide px-2 mb-1.5">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-2 mb-1.5">
                     {group}
                   </p>
                   <div className="space-y-0.5">
@@ -149,9 +154,12 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
                         <p className="text-sm text-foreground truncate flex-1 min-w-0 pr-2">
                           {conv.title}
                         </p>
-                        <Button unstyled
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
                           onClick={(e) => handleDeleteConversation(e, conv.id)}
-                          className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 hover:bg-border/50 transition-all"
+                          className="h-7 w-7 flex-shrink-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
                             <polyline points="3 6 5 6 21 6" />
