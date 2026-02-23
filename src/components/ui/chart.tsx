@@ -96,7 +96,7 @@ const ChartTooltipContent = React.forwardRef<HTMLDivElement, ChartTooltipContent
         {...props}
       >
         {!hideLabel && label && (
-          <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">{label}</p>
+          <p className="mb-1.5 text-xs font-medium text-muted-foreground">{label}</p>
         )}
         <div className="space-y-1">
           {payload.map((item, idx) => {
@@ -113,7 +113,7 @@ const ChartTooltipContent = React.forwardRef<HTMLDivElement, ChartTooltipContent
                   ) : (
                     <span className="h-0.5 w-3 rounded-full" style={{ backgroundColor: itemColor }} />
                   )}
-                  <span className="text-[11px] text-muted-foreground">{itemLabel}</span>
+                  <span className="text-xs text-muted-foreground">{itemLabel}</span>
                 </div>
                 <span className="text-sm font-semibold tabular-nums">
                   {typeof item.value === 'number' ? item.value.toLocaleString() : item.value}
