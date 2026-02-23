@@ -208,10 +208,14 @@ function WarmupToggle({ isWarmup, setNumber, onToggle }: { isWarmup: boolean; se
 function SwipeToDeleteRow({
   enabled,
   onDelete,
+  onSwipeIntent,
+  showHint = false,
   children,
 }: {
   enabled: boolean;
   onDelete: () => void;
+  onSwipeIntent?: () => void;
+  showHint?: boolean;
   children: ReactNode;
 }) {
   const [offsetX, setOffsetX] = useState(0);
@@ -219,6 +223,7 @@ function SwipeToDeleteRow({
   const axisRef = useRef<'x' | 'y' | null>(null);
   const swipingRef = useRef(false);
   const offsetRef = useRef(0);
+  const swipeIntentNotifiedRef = useRef(false);
 
   const updateOffset = useCallback((next: number) => {
     offsetRef.current = next;
@@ -239,6 +244,7 @@ function SwipeToDeleteRow({
     touchStartRef.current = { x: touch.clientX, y: touch.clientY };
     axisRef.current = null;
     swipingRef.current = false;
+    swipeIntentNotifiedRef.current = false;
   }, [enabled]);
 
   const handleTouchMove = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
@@ -259,13 +265,18 @@ function SwipeToDeleteRow({
     event.preventDefault();
     swipingRef.current = true;
 
+    if (deltaX < -8 && !swipeIntentNotifiedRef.current) {
+      swipeIntentNotifiedRef.current = true;
+      onSwipeIntent?.();
+    }
+
     if (deltaX >= 0) {
       updateOffset(Math.min(0, deltaX * 0.15));
       return;
     }
 
     updateOffset(Math.max(-96, deltaX));
-  }, [enabled, updateOffset]);
+  }, [enabled, onSwipeIntent, updateOffset]);
 
   const handleTouchEnd = useCallback(() => {
     if (!enabled) {
@@ -289,21 +300,36 @@ function SwipeToDeleteRow({
     resetSwipe();
   }, [enabled, onDelete, resetSwipe, updateOffset]);
 
+  const revealProgress = Math.min(Math.abs(offsetX) / 96, 1);
+  const actionOpacity = enabled ? Math.max(0, (revealProgress - 0.08) / 0.92) : 0;
+
   return (
     <div className="relative mb-2 overflow-hidden rounded-lg">
       {enabled && (
-        <div className="absolute inset-y-0 right-0 flex items-center justify-end gap-1 px-3 rounded-lg bg-error/10 border border-error/20 text-error">
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-end gap-1 px-3 rounded-lg bg-error/10 border border-error/20 text-error transition-opacity duration-150"
+          style={{ opacity: actionOpacity }}
+        >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <polyline points="3 6 5 6 21 6" />
             <path d="M19 6l-1 14H6L5 6" />
             <path d="M10 11v6M14 11v6" />
             <path d="M9 6V4h6v2" />
           </svg>
-          <span className="text-[11px] font-semibold tracking-wide">DELETE</span>
+          {revealProgress > 0.72 && (
+            <span className="text-[10px] font-semibold tracking-wide uppercase">Release</span>
+          )}
+        </div>
+      )}
+      {enabled && showHint && revealProgress === 0 && (
+        <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-text-muted/45">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
         </div>
       )}
       <div
-        className="relative transition-transform duration-150 ease-out"
+        className="relative z-10 transition-transform duration-150 ease-out"
         style={{ transform: `translateX(${offsetX}px)`, touchAction: 'pan-y' }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -755,6 +781,7 @@ function WorkoutContent({
   const numberPadVisible = activeFocus !== null;
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [pendingSetDelete, setPendingSetDelete] = useState<PendingSetDelete | null>(null);
+  const [showSwipeDeleteHint, setShowSwipeDeleteHint] = useState(true);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Drag-to-reorder state
@@ -829,6 +856,7 @@ function WorkoutContent({
       deactivate();
     }
 
+    setShowSwipeDeleteHint(false);
     clearPendingDelete();
     state.removeSet(exerciseIndex, setIndex);
     setPendingSetDelete({
@@ -1113,6 +1141,8 @@ function WorkoutContent({
                     <SwipeToDeleteRow
                       key={s.id}
                       enabled={canDeleteSet}
+                      showHint={showSwipeDeleteHint}
+                      onSwipeIntent={() => setShowSwipeDeleteHint(false)}
                       onDelete={() => handleDeleteSet(exIdx, setIdx)}
                     >
                       {ex.logMode === 'split_lr' ? (
