@@ -1,133 +1,105 @@
 'use client';
 
 import * as React from 'react';
-import { Button } from '@/components/ui/button-shadcn';
+import { DayPicker } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 
-const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
-interface CalendarProps extends React.HTMLAttributes<HTMLDivElement> {
-  month?: Date;
-  onMonthChange?: (month: Date) => void;
-  selected?: Date;
-  onDateSelect?: (date?: Date) => void;
+export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
   highlighted?: Date[];
-}
+};
 
-function startOfMonth(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function toDateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function getDaysInMonth(date: Date): number {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-}
-
-function getFirstDayOfMonth(date: Date): number {
-  return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-}
+const navButtonClass = cn(
+  'inline-flex h-7 w-7 items-center justify-center rounded-md border border-input bg-background p-0 shadow-sm',
+  'text-muted-foreground opacity-80 transition-colors hover:bg-accent hover:text-accent-foreground hover:opacity-100',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30',
+  'disabled:pointer-events-none disabled:opacity-40',
+);
 
 export function Calendar({
   className,
-  month,
-  onMonthChange,
-  selected,
-  onDateSelect,
+  classNames,
+  showOutsideDays = true,
   highlighted = [],
+  modifiers,
+  modifiersClassNames,
+  components,
   ...props
 }: CalendarProps) {
-  const [internalMonth, setInternalMonth] = React.useState<Date>(startOfMonth(month ?? selected ?? new Date()));
-  const isControlledMonth = typeof month !== 'undefined';
-  const displayMonth = isControlledMonth ? startOfMonth(month) : internalMonth;
-
-  const selectedDateKey = selected ? toDateKey(selected) : null;
-  const todayDateKey = toDateKey(new Date());
-  const highlightedDateKeys = React.useMemo(() => new Set(highlighted.map((date) => toDateKey(date))), [highlighted]);
-
-  const daysInMonth = getDaysInMonth(displayMonth);
-  const firstDay = getFirstDayOfMonth(displayMonth);
-  const monthLabel = displayMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-
-  function moveMonth(offset: number) {
-    const nextMonth = new Date(displayMonth.getFullYear(), displayMonth.getMonth() + offset, 1);
-    if (!isControlledMonth) {
-      setInternalMonth(nextMonth);
-    }
-    onMonthChange?.(nextMonth);
-  }
+  const mergedModifiers = React.useMemo(
+    () => ({
+      ...modifiers,
+      highlighted,
+    }),
+    [highlighted, modifiers],
+  );
 
   return (
-    <div className={cn('space-y-3', className)} {...props}>
-      <div className="flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-md"
-          onClick={() => moveMonth(-1)}
-          aria-label="Go to previous month"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </Button>
-        <p className="text-sm font-medium">{monthLabel}</p>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-md"
-          onClick={() => moveMonth(1)}
-          aria-label="Go to next month"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-7 gap-1">
-        {DAY_LABELS.map((day) => (
-          <div key={day} className="text-center text-xs text-muted-foreground py-1 font-medium">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-7 gap-1">
-        {Array.from({ length: firstDay }).map((_, i) => (
-          <div key={`empty-${i}`} className="h-9 w-9" />
-        ))}
-        {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day = i + 1;
-          const date = new Date(displayMonth.getFullYear(), displayMonth.getMonth(), day);
-          const dateKey = toDateKey(date);
-          const isSelected = selectedDateKey === dateKey;
-          const isToday = todayDateKey === dateKey;
-          const isHighlighted = highlightedDateKeys.has(dateKey);
+    <DayPicker
+      showOutsideDays={showOutsideDays}
+      className={cn('p-1', className)}
+      modifiers={mergedModifiers}
+      modifiersClassNames={{
+        highlighted:
+          'after:content-[""] after:absolute after:left-1/2 after:bottom-1.5 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-current',
+        ...modifiersClassNames,
+      }}
+      classNames={{
+        months: 'flex flex-col gap-2 sm:flex-row',
+        month: 'space-y-3',
+        month_caption: 'relative flex items-center justify-center pt-1',
+        caption_label: 'text-sm font-medium',
+        nav: 'flex items-center gap-1',
+        button_previous: cn(navButtonClass, 'absolute left-1'),
+        button_next: cn(navButtonClass, 'absolute right-1'),
+        month_grid: 'w-full border-collapse space-y-1',
+        weekdays: 'flex',
+        weekday: 'w-9 rounded-md text-[0.75rem] font-medium text-muted-foreground',
+        week: 'mt-1.5 flex w-full',
+        day: cn(
+          'relative p-0 text-center text-sm focus-within:relative focus-within:z-20',
+          '[&:has([aria-selected])]:bg-accent/40 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md',
+        ),
+        day_button: cn(
+          'inline-flex h-9 w-9 items-center justify-center rounded-md p-0 text-sm font-normal',
+          'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30',
+        ),
+        selected:
+          'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
+        today: 'border border-primary/35 text-foreground',
+        outside:
+          'text-muted-foreground opacity-55 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-40',
+        disabled: 'text-muted-foreground opacity-40',
+        range_middle: 'aria-selected:bg-accent aria-selected:text-accent-foreground',
+        hidden: 'invisible',
+        ...classNames,
+      }}
+      components={{
+        Chevron: ({ className: chevronClassName, orientation = 'left', ...rest }) => {
+          const rotationClass =
+            orientation === 'up'
+              ? '-rotate-90'
+              : orientation === 'down'
+                ? 'rotate-90'
+                : orientation === 'right'
+                  ? 'rotate-180'
+                  : '';
 
           return (
-            <Button
-              key={dateKey}
-              type="button"
-              variant="ghost"
-              className={cn(
-                'h-9 w-9 rounded-md p-0 text-xs font-medium relative',
-                isSelected && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground',
-                !isSelected && isToday && 'border border-primary/40 text-foreground',
-                !isSelected && !isToday && 'hover:bg-accent hover:text-accent-foreground',
-              )}
-              onClick={() => onDateSelect?.(isSelected ? undefined : date)}
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className={cn('h-4 w-4', rotationClass, chevronClassName)}
+              {...rest}
             >
-              <time dateTime={dateKey}>{day}</time>
-              {isHighlighted && !isSelected && (
-                <span className="absolute bottom-1.5 h-1 w-1 rounded-full bg-primary" />
-              )}
-            </Button>
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
           );
-        })}
-      </div>
-    </div>
+        },
+        ...components,
+      }}
+      {...props}
+    />
   );
 }

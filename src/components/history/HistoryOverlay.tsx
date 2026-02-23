@@ -932,13 +932,14 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
             <div className="bg-card rounded-2xl border border-border/70 p-4 card-shadow">
               <Calendar
                 month={currentMonth}
+                mode="single"
                 onMonthChange={(month) => {
                   setCurrentMonth(month);
                   setSelectedDate(null);
                 }}
                 selected={selectedDateValue}
                 highlighted={highlightedDates}
-                onDateSelect={(date) => {
+                onSelect={(date) => {
                   if (!date) {
                     setSelectedDate(null);
                     return;
