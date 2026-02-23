@@ -331,9 +331,11 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Exercises</p>
-              <Button unstyled
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowTemplateExercisePicker(true)}
-                className="text-xs font-semibold text-primary hover:text-primary/80"
+                className="h-auto px-0 py-0 text-xs font-semibold text-primary hover:bg-transparent hover:text-primary/80"
               >
                 + Add Exercise
               </Button>
@@ -358,23 +360,29 @@ export default function DashboardPage() {
                       className="w-full bg-card border border-border rounded-lg px-2 py-1.5 text-sm text-center"
                     />
                     <div className="flex items-center justify-end gap-1">
-                      <Button unstyled
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => moveManualTemplateExercise(index, 'up')}
-                        className="w-7 h-7 rounded-md border border-border text-muted-foreground hover:text-foreground"
+                        className="h-7 w-7 rounded-md p-0 text-muted-foreground hover:text-foreground"
                         aria-label="Move exercise up"
                       >
                         ↑
                       </Button>
-                      <Button unstyled
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => moveManualTemplateExercise(index, 'down')}
-                        className="w-7 h-7 rounded-md border border-border text-muted-foreground hover:text-foreground"
+                        className="h-7 w-7 rounded-md p-0 text-muted-foreground hover:text-foreground"
                         aria-label="Move exercise down"
                       >
                         ↓
                       </Button>
-                      <Button unstyled
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => removeManualTemplateExercise(index)}
-                        className="w-7 h-7 rounded-md border border-border text-muted-foreground hover:text-destructive"
+                        className="h-7 w-7 rounded-md p-0 text-muted-foreground hover:text-destructive"
                         aria-label="Remove exercise"
                       >
                         ×
@@ -406,11 +414,13 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
           {/* Records button */}
-          <Button unstyled
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setShowPRFeed(true)}
             data-tour-anchor="pr-feed"
             aria-label="Open personal records"
-            className="ui-icon-pill relative w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground"
+            className="ui-icon-pill relative h-10 w-10 rounded-full p-0 text-muted-foreground"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-foreground">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -422,11 +432,13 @@ export default function DashboardPage() {
             )}
           </Button>
           {/* Consistency button */}
-          <Button unstyled
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setShowHistory(true)}
             data-tour-anchor="history"
             aria-label="Open consistency calendar"
-            className="ui-icon-pill w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground"
+            className="ui-icon-pill h-10 w-10 rounded-full p-0 text-muted-foreground"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-foreground">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -497,10 +509,12 @@ export default function DashboardPage() {
               {templates.length > 0 && (
                 <span className="text-xs text-muted-foreground">{templates.length} saved</span>
               )}
-              <Button unstyled
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={openManualTemplateBuilder}
                 aria-label="Build template manually"
-                className="ui-icon-pill w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground"
+                className="ui-icon-pill h-8 w-8 rounded-full p-0 text-muted-foreground"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="12" y1="5" x2="12" y2="19" />
@@ -526,9 +540,11 @@ export default function DashboardPage() {
                 <Button onClick={openManualTemplateBuilder} size="sm" className="mt-4">
                   + Build Template
                 </Button>
-                <Button unstyled
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={handleCreateTemplateWithAI}
-                  className="mt-3 text-xs font-medium text-muted-foreground hover:text-foreground"
+                  className="mt-3 h-auto px-0 py-0 text-xs font-medium text-muted-foreground hover:bg-transparent hover:text-foreground"
                 >
                   Or chat with AI trainer to build
                 </Button>
@@ -563,9 +579,11 @@ export default function DashboardPage() {
                 );
               })}
               <div className="text-center pt-1">
-                <Button unstyled
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={handleCreateTemplateWithAI}
-                  className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                  className="h-auto px-0 py-0 text-xs font-medium text-muted-foreground hover:bg-transparent hover:text-foreground"
                 >
                   Or chat with AI trainer to build
                 </Button>
