@@ -7,6 +7,13 @@ import { createClient } from '@/lib/supabase/client';
 import { registerSchema, type RegisterInput } from '@/lib/validation/auth';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card-shadcn';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -68,52 +75,56 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="p-8">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-black text-text tracking-tight font-[family-name:var(--font-outfit)]">reps</h1>
-        <p className="mt-2 text-text-secondary">Create your account</p>
-      </div>
+    <Card className="border-border/80 shadow-lg">
+      <CardHeader className="space-y-2 pb-5 text-center">
+        <CardTitle className="text-3xl font-black tracking-tight font-[family-name:var(--font-heading)]">
+          repsfit
+        </CardTitle>
+        <CardDescription>Create your account</CardDescription>
+      </CardHeader>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <Input
-          label="Email"
-          type="email"
-          name="email"
-          placeholder="you@example.com"
-          value={formData.email}
-          onChange={handleChange}
-          error={errors.email}
-          autoComplete="email"
-        />
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <Input
+            label="Email"
+            type="email"
+            name="email"
+            placeholder="you@example.com"
+            value={formData.email}
+            onChange={handleChange}
+            error={errors.email}
+            autoComplete="email"
+          />
 
-        <Input
-          label="Password"
-          type="password"
-          name="password"
-          placeholder="At least 8 characters"
-          value={formData.password}
-          onChange={handleChange}
-          error={errors.password}
-          autoComplete="new-password"
-        />
+          <Input
+            label="Password"
+            type="password"
+            name="password"
+            placeholder="At least 8 characters"
+            value={formData.password}
+            onChange={handleChange}
+            error={errors.password}
+            autoComplete="new-password"
+          />
 
-        {generalError && (
-          <div className="rounded-lg border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
-            {generalError}
-          </div>
-        )}
+          {generalError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {generalError}
+            </div>
+          )}
 
-        <Button type="submit" variant="primary" fullWidth loading={loading}>
-          Create Account
-        </Button>
-      </form>
+          <Button type="submit" variant="primary" fullWidth loading={loading}>
+            Create Account
+          </Button>
+        </form>
 
-      <p className="mt-6 text-center text-sm text-text-secondary">
-        Already have an account?{' '}
-        <Link href="/login" className="font-medium text-primary hover:text-primary-dark transition-colors">
-          Sign in
-        </Link>
-      </p>
-    </div>
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Already have an account?{' '}
+          <Link href="/login" className="font-medium text-primary hover:text-primary/80 transition-colors">
+            Sign in
+          </Link>
+        </p>
+      </CardContent>
+    </Card>
   );
 }

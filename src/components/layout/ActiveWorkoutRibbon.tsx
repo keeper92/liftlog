@@ -21,8 +21,8 @@ export default function ActiveWorkoutRibbon() {
       className="fixed bottom-[calc(86px+env(safe-area-inset-bottom))] left-0 right-0 z-50 animate-slide-up"
     >
       <div className="mx-auto max-w-lg">
-        <div className="mx-3 flex items-center justify-center rounded-2xl border border-primary/30 bg-primary px-4 py-3 button-soft-shadow">
-          <span className="text-sm font-semibold text-white">
+        <div className="mx-3 flex items-center justify-center rounded-2xl border border-primary/25 bg-primary px-4 py-3 shadow-lg">
+          <span className="text-sm font-semibold text-primary-foreground">
             Resume Workout &rarr;
           </span>
         </div>

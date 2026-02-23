@@ -9,6 +9,13 @@ import { DEMO_TOUR_PENDING_KEY } from '@/lib/constants/onboarding';
 import { useWorkoutOutboxStore } from '@/stores/workoutOutboxStore';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card-shadcn';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -106,65 +113,68 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="p-8">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-black text-text tracking-tight font-[family-name:var(--font-outfit)]">reps</h1>
-        <p className="mt-2 text-text-secondary">Sign in to your account</p>
-      </div>
+    <Card className="border-border/80 shadow-lg">
+      <CardHeader className="space-y-2 pb-5 text-center">
+        <CardTitle className="text-3xl font-black tracking-tight font-[family-name:var(--font-heading)]">
+          repsfit
+        </CardTitle>
+        <CardDescription>Sign in to your account</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <Input
+            label="Email"
+            type="email"
+            name="email"
+            placeholder="you@example.com"
+            value={formData.email}
+            onChange={handleChange}
+            error={errors.email}
+            autoComplete="email"
+          />
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <Input
-          label="Email"
-          type="email"
-          name="email"
-          placeholder="you@example.com"
-          value={formData.email}
-          onChange={handleChange}
-          error={errors.email}
-          autoComplete="email"
-        />
+          <Input
+            label="Password"
+            type="password"
+            name="password"
+            placeholder="Enter your password"
+            value={formData.password}
+            onChange={handleChange}
+            error={errors.password}
+            autoComplete="current-password"
+          />
 
-        <Input
-          label="Password"
-          type="password"
-          name="password"
-          placeholder="Enter your password"
-          value={formData.password}
-          onChange={handleChange}
-          error={errors.password}
-          autoComplete="current-password"
-        />
+          {generalError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {generalError}
+            </div>
+          )}
 
-        {generalError && (
-          <div className="rounded-lg border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
-            {generalError}
+          <Button type="submit" variant="primary" fullWidth loading={loading}>
+            Sign In
+          </Button>
+
+          <div className="relative my-2">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-card px-2 text-muted-foreground">or</span>
+            </div>
           </div>
-        )}
 
-        <Button type="submit" variant="primary" fullWidth loading={loading}>
-          Sign In
-        </Button>
+          <Button type="button" variant="outline" fullWidth loading={demoLoading} onClick={handleDemo}>
+            Try Demo
+          </Button>
+        </form>
 
-        <div className="relative my-2">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-background px-2 text-text-muted">or</span>
-          </div>
-        </div>
-
-        <Button type="button" variant="outline" fullWidth loading={demoLoading} onClick={handleDemo}>
-          Try Demo
-        </Button>
-      </form>
-
-      <p className="mt-6 text-center text-sm text-text-secondary">
-        Don&apos;t have an account?{' '}
-        <Link href="/register" className="font-medium text-primary hover:text-primary-dark transition-colors">
-          Create one
-        </Link>
-      </p>
-    </div>
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Don&apos;t have an account?{' '}
+          <Link href="/register" className="font-medium text-primary hover:text-primary/80 transition-colors">
+            Create one
+          </Link>
+        </p>
+      </CardContent>
+    </Card>
   );
 }

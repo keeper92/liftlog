@@ -1,30 +1,32 @@
 import { type ButtonHTMLAttributes } from 'react';
+import {
+  Button as ShadcnButton,
+  type ButtonSize,
+  type ButtonVariant,
+} from '@/components/ui/button-shadcn';
+import { cn } from '@/lib/utils';
 
-type ButtonVariant = 'primary' | 'outline' | 'ghost' | 'danger';
-type ButtonSize = 'sm' | 'md' | 'lg';
+type LegacyButtonVariant = 'primary' | 'outline' | 'ghost' | 'danger';
+type LegacyButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: ButtonVariant;
-  size?: ButtonSize;
+  variant?: LegacyButtonVariant;
+  size?: LegacyButtonSize;
   loading?: boolean;
   fullWidth?: boolean;
 }
 
-const variantClasses: Record<ButtonVariant, string> = {
-  primary:
-    'bg-primary text-white hover:bg-primary-light active:bg-primary-dark button-soft-shadow',
-  outline:
-    'border border-border-strong bg-surface text-text-secondary hover:bg-surface-light hover:text-text active:bg-surface-light button-soft-shadow',
-  ghost:
-    'text-text-secondary hover:bg-surface-light hover:text-text active:bg-surface-light',
-  danger:
-    'bg-error text-white hover:bg-error/90 active:bg-error/80 button-soft-shadow',
+const variantMap: Record<LegacyButtonVariant, ButtonVariant> = {
+  primary: 'default',
+  outline: 'outline',
+  ghost: 'ghost',
+  danger: 'destructive',
 };
 
-const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'min-h-[38px] px-4 text-sm',
-  md: 'min-h-[48px] px-5 text-sm',
-  lg: 'min-h-[56px] px-7 text-base',
+const sizeMap: Record<LegacyButtonSize, ButtonSize> = {
+  sm: 'sm',
+  md: 'default',
+  lg: 'lg',
 };
 
 export default function Button({
@@ -34,31 +36,23 @@ export default function Button({
   fullWidth = false,
   disabled,
   children,
-  className = '',
+  className,
   ...rest
 }: ButtonProps) {
   return (
-    <button
+    <ShadcnButton
+      variant={variantMap[variant]}
+      size={sizeMap[size]}
       disabled={disabled || loading}
-      className={`
-        inline-flex items-center justify-center gap-2 rounded-full font-semibold tracking-tight
-        transition-all duration-150 ease-in-out
-        active:translate-y-[0.5px]
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background
-        disabled:cursor-not-allowed disabled:opacity-50
-        ${variantClasses[variant]}
-        ${sizeClasses[size]}
-        ${fullWidth ? 'w-full' : ''}
-        ${className}
-      `}
+      className={cn(
+        fullWidth && 'w-full',
+        variant === 'primary' && 'rounded-full',
+        className
+      )}
       {...rest}
     >
       {loading && (
-        <svg
-          className="h-4 w-4 animate-spin"
-          viewBox="0 0 24 24"
-          fill="none"
-        >
+        <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle
             className="opacity-25"
             cx="12"
@@ -70,11 +64,11 @@ export default function Button({
           <path
             className="opacity-75"
             fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
           />
         </svg>
       )}
       {children}
-    </button>
+    </ShadcnButton>
   );
 }

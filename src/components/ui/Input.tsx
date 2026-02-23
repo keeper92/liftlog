@@ -1,4 +1,7 @@
 import { type InputHTMLAttributes } from 'react';
+import { Input as ShadcnInput } from '@/components/ui/input-shadcn';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -8,38 +11,25 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 export default function Input({
   label,
   error,
-  className = '',
+  className,
   id,
   ...rest
 }: InputProps) {
   const inputId = id || rest.name || label?.toLowerCase().replace(/\s+/g, '-');
 
   return (
-    <div className="w-full">
-      {label && (
-        <label
-          htmlFor={inputId}
-          className="mb-1.5 block text-sm font-medium text-text-secondary"
-        >
-          {label}
-        </label>
-      )}
-      <input
+    <div className="w-full space-y-1.5">
+      {label && <Label htmlFor={inputId}>{label}</Label>}
+      <ShadcnInput
         id={inputId}
-        className={`
-          min-h-[48px] w-full rounded-2xl border border-border/80 bg-surface px-4 text-text card-shadow
-          placeholder:text-text-muted
-          transition-colors duration-150 ease-in-out
-          focus:outline-none focus:ring-4 focus:ring-primary/15 focus:border-border-strong
-          disabled:cursor-not-allowed disabled:opacity-50
-          ${error ? 'border-error focus:ring-error/20 focus:border-error' : ''}
-          ${className}
-        `}
+        className={cn(
+          'h-11 rounded-xl',
+          error && 'border-destructive focus-visible:ring-destructive/25',
+          className
+        )}
         {...rest}
       />
-      {error && (
-        <p className="mt-1.5 text-xs text-error">{error}</p>
-      )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }

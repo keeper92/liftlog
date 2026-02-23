@@ -63,7 +63,7 @@ export default function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[calc(env(safe-area-inset-bottom)+10px)]">
       <div className="mx-auto max-w-lg px-3">
-        <div className="ui-overlay-shell rounded-3xl px-2 py-2 flex items-center justify-around">
+        <div className="flex items-center justify-around rounded-3xl border border-border/90 bg-card/95 px-2 py-2 shadow-lg backdrop-blur">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
@@ -79,8 +79,8 @@ export default function BottomNav() {
               }
               className={`flex flex-col items-center justify-center gap-0.5 px-4 py-2 rounded-2xl transition-colors ${
                 isActive
-                  ? 'bg-background-elevated text-primary'
-                  : 'text-text-muted hover:text-text-secondary hover:bg-surface-light/70'
+                  ? 'bg-accent text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/70'
               }`}
             >
               {item.icon(isActive)}

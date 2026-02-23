@@ -1,7 +1,13 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
 import Button from '@/components/ui/Button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface ModalAction {
   label: string;
@@ -25,53 +31,24 @@ export default function Modal({
   children,
   actions,
 }: ModalProps) {
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
-  useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden';
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-    };
-  }, [isOpen, handleKeyDown]);
-
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/35 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      {/* Modal content */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        className="ui-overlay-shell relative z-10 w-full max-w-md rounded-3xl p-6"
-      >
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent className="max-w-md rounded-2xl p-5 sm:p-6">
         {title && (
-          <h2 className="mb-3 text-xl font-semibold tracking-tight text-text">{title}</h2>
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+          </DialogHeader>
         )}
 
-        <div className="text-text-secondary">{children}</div>
+        <div className="mt-3 text-sm text-muted-foreground">{children}</div>
 
         {actions && actions.length > 0 && (
-          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+          <DialogFooter className="mt-6">
             {actions.map((action) => (
               <Button
                 key={action.label}
@@ -83,9 +60,9 @@ export default function Modal({
                 {action.label}
               </Button>
             ))}
-          </div>
+          </DialogFooter>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
