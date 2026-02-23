@@ -29,8 +29,6 @@
 
   /* legacy token compatibility */
   --background-elevated: #fbf8f3;
-  --primary-light: #94adbf;
-  --primary-dark: #627d91;
   --success: #6b9e7a;
   --warning: #d4a04a;
 
@@ -78,8 +76,6 @@
   --color-surface: var(--card);
   --color-surface-light: var(--secondary);
   --color-background-elevated: var(--background-elevated);
-  --color-primary-light: var(--primary-light);
-  --color-primary-dark: var(--primary-dark);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-error: var(--destructive);

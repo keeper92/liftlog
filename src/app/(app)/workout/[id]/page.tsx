@@ -1128,7 +1128,7 @@ function WorkoutContent({
                               }
                             }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-success text-white' : 'bg-muted text-muted-foreground'
+                              s.isCompleted ? 'bg-success text-primary-foreground' : 'bg-muted text-muted-foreground'
                             }`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -1237,7 +1237,7 @@ function WorkoutContent({
                               }
                             }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-success text-white' : 'bg-muted text-muted-foreground'
+                              s.isCompleted ? 'bg-success text-primary-foreground' : 'bg-muted text-muted-foreground'
                             }`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -1311,7 +1311,7 @@ function WorkoutContent({
                               }
                             }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-success text-white' : 'bg-muted text-muted-foreground'
+                              s.isCompleted ? 'bg-success text-primary-foreground' : 'bg-muted text-muted-foreground'
                             }`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -1329,7 +1329,7 @@ function WorkoutContent({
                 {ex.exerciseCategory !== 'cardio' && (
                   <Button unstyled
                     onClick={() => store.addSet(exIdx)}
-                    className="w-full py-2 text-sm text-primary hover:text-primary-light"
+                    className="w-full py-2 text-sm text-primary hover:text-primary/80"
                   >
                     + Add Set
                   </Button>
@@ -1356,7 +1356,7 @@ function WorkoutContent({
             </p>
             <Button unstyled
               onClick={handleUndoDeleteSet}
-              className="text-sm font-semibold text-primary hover:text-primary-light"
+              className="text-sm font-semibold text-primary hover:text-primary/80"
             >
               Undo
             </Button>

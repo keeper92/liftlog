@@ -333,7 +333,7 @@ export default function DashboardPage() {
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Exercises</p>
               <Button unstyled
                 onClick={() => setShowTemplateExercisePicker(true)}
-                className="text-xs font-semibold text-primary hover:text-primary-light"
+                className="text-xs font-semibold text-primary hover:text-primary/80"
               >
                 + Add Exercise
               </Button>

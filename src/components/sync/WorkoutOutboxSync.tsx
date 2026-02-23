@@ -207,7 +207,7 @@ export default function WorkoutOutboxSync() {
       </div>
       <Button unstyled
         onClick={() => { runSync(); }}
-        className="shrink-0 text-[11px] font-semibold text-primary hover:text-primary-light"
+        className="shrink-0 text-[11px] font-semibold text-primary hover:text-primary/80"
       >
         Retry
       </Button>

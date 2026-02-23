@@ -172,7 +172,7 @@ export default function ProgressPage() {
                       backgroundColor: tooltipBackground,
                       border: `1px solid ${tooltipBorder}`,
                       borderRadius: '12px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      boxShadow: 'var(--shadow-card-hover)',
                     }}
                     labelStyle={{ color: tooltipLabel, fontSize: '12px' }}
                     itemStyle={{ color: chartLineColor, fontSize: '14px', fontWeight: 600 }}

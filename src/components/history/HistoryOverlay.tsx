@@ -806,7 +806,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                 <Button unstyled
                   type="button"
                   onClick={() => addExerciseGroup()}
-                  className="text-[11px] font-semibold text-primary hover:text-primary-dark"
+                  className="text-[11px] font-semibold text-primary hover:text-primary/80"
                 >
                   + Add Exercise
                 </Button>
@@ -824,7 +824,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                       <Button unstyled
                         type="button"
                         onClick={() => addSetDraft(group.exerciseId, group.name)}
-                        className="text-[11px] font-semibold text-primary hover:text-primary-dark"
+                        className="text-[11px] font-semibold text-primary hover:text-primary/80"
                       >
                         + Add Set
                       </Button>
@@ -998,7 +998,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                         isSelected
                           ? 'bg-primary text-primary-foreground shadow-sm'
                           : isToday
-                            ? 'bg-text text-white'
+                            ? 'bg-foreground text-background'
                             : hasWorkout
                               ? 'text-foreground hover:bg-muted'
                               : 'text-muted-foreground hover:bg-muted/60'
@@ -1009,7 +1009,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                         <span className="absolute bottom-1 w-1 h-1 rounded-full bg-primary" />
                       )}
                       {hasWorkout && isToday && !isSelected && (
-                        <span className="absolute bottom-1 w-1 h-1 rounded-full bg-white" />
+                        <span className="absolute bottom-1 w-1 h-1 rounded-full bg-background" />
                       )}
                     </Button>
                   );

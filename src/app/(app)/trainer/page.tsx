@@ -739,7 +739,7 @@ function TrainerContent() {
                         <Button unstyled
                           onClick={() => handleConfirmImport(msg.id, msg.importData!)}
                           disabled={importingMessageId === msg.id}
-                          className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-lg hover:bg-primary-light disabled:opacity-50 transition-colors"
+                          className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
                         >
                           {importingMessageId === msg.id ? 'Importing...' : 'Confirm Import'}
                         </Button>
@@ -806,7 +806,7 @@ function TrainerContent() {
                         <Button unstyled
                           onClick={() => handleConfirmTemplate(msg.id, msg.templateData!)}
                           disabled={savingTemplateId === msg.id}
-                          className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-lg hover:bg-primary-light disabled:opacity-50 transition-colors"
+                          className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
                         >
                           {savingTemplateId === msg.id ? 'Saving...' : 'Save Template'}
                         </Button>
