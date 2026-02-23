@@ -117,6 +117,12 @@ interface PendingSetDelete {
   set: ActiveSet;
 }
 
+interface ExerciseMenuState {
+  exerciseId: string;
+  exerciseName: string;
+  exerciseIndex: number;
+}
+
 function normalizePreviousPerformanceRow(row: PreviousPerformanceRow): PerformanceSet | null {
   const splitWeight = Math.max(row.left_weight ?? 0, row.right_weight ?? 0);
   const splitReps = Math.max(row.left_reps ?? 0, row.right_reps ?? 0);
@@ -357,7 +363,7 @@ export default function ActiveWorkoutPage() {
   const [tipsModal, setTipsModal] = useState<{ exerciseId: string; exerciseName: string } | null>(null);
   const [exerciseDetails, setExerciseDetails] = useState<ExerciseDetails | null>(null);
   const [loadingTips, setLoadingTips] = useState(false);
-  const [trainingGuideMenu, setTrainingGuideMenu] = useState<{ exerciseId: string; exerciseName: string } | null>(null);
+  const [trainingGuideMenu, setTrainingGuideMenu] = useState<ExerciseMenuState | null>(null);
   const [toastQueue, setToastQueue] = useState<PRToastEntry[]>([]);
   const exercises = store.exercises;
   const previousPerformance = store.previousPerformance;
@@ -663,7 +669,6 @@ export default function ActiveWorkoutPage() {
 
       const history: HistoryEntry[] = Array.from(workoutMap.values())
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 10)
         .map((w) => ({
           date: w.date,
           sets: w.sets
@@ -765,8 +770,8 @@ function WorkoutContent({
   setHistoryModal: (v: { exerciseId: string; exerciseName: string } | null) => void;
   historyData: HistoryEntry[];
   loadingHistory: boolean;
-  trainingGuideMenu: { exerciseId: string; exerciseName: string } | null;
-  setTrainingGuideMenu: (v: { exerciseId: string; exerciseName: string } | null) => void;
+  trainingGuideMenu: ExerciseMenuState | null;
+  setTrainingGuideMenu: (v: ExerciseMenuState | null) => void;
   tipsModal: { exerciseId: string; exerciseName: string } | null;
   setTipsModal: (v: { exerciseId: string; exerciseName: string } | null) => void;
   exerciseDetails: ExerciseDetails | null;
@@ -903,6 +908,22 @@ function WorkoutContent({
   }, []);
 
   const unit = weightUnit(unitSystem);
+  const menuExerciseIndex = trainingGuideMenu
+    ? (() => {
+        const indexed = store.exercises[trainingGuideMenu.exerciseIndex];
+        if (indexed?.exerciseId === trainingGuideMenu.exerciseId) {
+          return trainingGuideMenu.exerciseIndex;
+        }
+        return store.exercises.findIndex((exercise) => exercise.exerciseId === trainingGuideMenu.exerciseId);
+      })()
+    : -1;
+  const menuExercise = menuExerciseIndex >= 0 ? store.exercises[menuExerciseIndex] : null;
+  const canToggleSplitMode = !!menuExercise && menuExercise.exerciseCategory !== 'cardio';
+  const splitToggleDescription = canToggleSplitMode
+    ? menuExercise.logMode === 'split_lr'
+      ? 'Currently split mode. Tap to switch to combined.'
+      : 'Currently combined mode. Tap to enable left/right logging.'
+    : 'Cardio exercises do not support split logging.';
 
   return (
     <div
@@ -958,8 +979,8 @@ function WorkoutContent({
                 isDragging ? 'opacity-50 scale-[0.98]' : ''
               } ${isDragOver ? 'ring-2 ring-primary ring-offset-2' : ''}`}
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
+              <div className="flex items-start justify-between mb-3 gap-2">
+                <div className="flex items-start gap-2 min-w-0">
                   {/* Drag handle — long press to reorder */}
                   <div
                     className="flex items-center justify-center w-8 h-10 -ml-1 cursor-grab active:cursor-grabbing touch-none"
@@ -1001,49 +1022,40 @@ function WorkoutContent({
                       <circle cx="15" cy="18" r="1.5" />
                     </svg>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="font-semibold text-text">{ex.exerciseName}</h3>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {isAssistanceExercise && (
+                    {isAssistanceExercise && (
+                      <div className="mt-1">
                         <span className="text-[10px] px-2 py-0.5 rounded-full border border-warning/30 bg-warning/10 text-warning">
                           Assistance (lower = harder)
                         </span>
-                      )}
-                      <button
-                        onClick={() => setTrainingGuideMenu({ exerciseId: ex.exerciseId, exerciseName: ex.exerciseName })}
-                        className="text-xs text-primary hover:text-primary-light font-medium"
-                      >
-                        Training Guide
-                      </button>
-                      <button
-                        onClick={() => openHistory(ex.exerciseId, ex.exerciseName)}
-                        className="text-xs text-text-muted hover:text-text font-medium"
-                      >
-                        Training Log
-                      </button>
-                      {ex.exerciseCategory !== 'cardio' && (
-                        <button
-                          onClick={() =>
-                            store.setExerciseLogMode(exIdx, ex.logMode === 'split_lr' ? 'combined' : 'split_lr')
-                          }
-                          className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors ${
-                            ex.logMode === 'split_lr'
-                              ? 'border-primary/30 bg-primary/10 text-primary'
-                              : 'border-border text-text-muted hover:text-text'
-                          }`}
-                        >
-                          {ex.logMode === 'split_lr' ? 'Combined' : 'Split L/R'}
-                        </button>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <button
-                  onClick={() => store.removeExercise(ex.exerciseId)}
-                  className="text-text-muted text-xs hover:text-error"
-                >
-                  Remove
-                </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => setTrainingGuideMenu({
+                      exerciseId: ex.exerciseId,
+                      exerciseName: ex.exerciseName,
+                      exerciseIndex: exIdx,
+                    })}
+                    aria-label={`Open options for ${ex.exerciseName}`}
+                    className="w-8 h-8 rounded-full border border-border bg-surface-light text-text-muted hover:text-text hover:bg-surface-light/80 flex items-center justify-center"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <circle cx="5" cy="12" r="1.8" />
+                      <circle cx="12" cy="12" r="1.8" />
+                      <circle cx="19" cy="12" r="1.8" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => store.removeExercise(ex.exerciseId)}
+                    className="text-text-muted text-xs hover:text-error"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
 
               {/* Column Headers - Cardio vs Strength */}
@@ -1387,7 +1399,7 @@ function WorkoutContent({
       <Modal
         isOpen={!!historyModal}
         onClose={() => setHistoryModal(null)}
-        title={historyModal?.exerciseName ? `${historyModal.exerciseName} Training Log` : 'Training Log'}
+        title={historyModal?.exerciseName ? `${historyModal.exerciseName} Exercise History` : 'Exercise History'}
         actions={[
           { label: 'Close', onClick: () => setHistoryModal(null), variant: 'ghost' },
         ]}
@@ -1432,16 +1444,36 @@ function WorkoutContent({
         )}
       </Modal>
 
-      {/* Training Guide Menu */}
+      {/* Exercise Options Menu */}
       <Modal
         isOpen={!!trainingGuideMenu}
         onClose={() => setTrainingGuideMenu(null)}
-        title="Training Guide"
+        title={trainingGuideMenu?.exerciseName ? `${trainingGuideMenu.exerciseName} Options` : 'Exercise Options'}
         actions={[
-          { label: 'Cancel', onClick: () => setTrainingGuideMenu(null), variant: 'ghost' },
+          { label: 'Close', onClick: () => setTrainingGuideMenu(null), variant: 'ghost' },
         ]}
       >
         <div className="space-y-2">
+          <button
+            onClick={() => {
+              if (trainingGuideMenu) {
+                openHistory(trainingGuideMenu.exerciseId, trainingGuideMenu.exerciseName);
+              }
+              setTrainingGuideMenu(null);
+            }}
+            className="w-full py-3 px-4 text-left bg-surface-light hover:bg-surface-light/80 rounded-lg flex items-center gap-3 transition-colors"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+              <path d="M3 12a9 9 0 1 0 3-6.7" />
+              <polyline points="3 3 3 9 9 9" />
+              <path d="M12 7v5l3 3" />
+            </svg>
+            <div>
+              <p className="font-medium text-text">Exercise History</p>
+              <p className="text-xs text-text-muted">Past sessions with sets, reps, and weight</p>
+            </div>
+          </button>
+
           <button
             onClick={() => {
               if (trainingGuideMenu) {
@@ -1459,8 +1491,35 @@ function WorkoutContent({
               <polyline points="10 9 9 9 8 9" />
             </svg>
             <div>
-              <p className="font-medium text-text">Details & Tips</p>
+              <p className="font-medium text-text">Exercise Info</p>
               <p className="text-xs text-text-muted">Equipment, muscles, and form instructions</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              if (trainingGuideMenu && canToggleSplitMode && menuExercise) {
+                const nextMode = menuExercise.logMode === 'split_lr' ? 'combined' : 'split_lr';
+                store.setExerciseLogMode(menuExerciseIndex, nextMode);
+              }
+              setTrainingGuideMenu(null);
+            }}
+            disabled={!canToggleSplitMode}
+            className={`w-full py-3 px-4 text-left rounded-lg flex items-center gap-3 transition-colors ${
+              canToggleSplitMode
+                ? 'bg-surface-light hover:bg-surface-light/80'
+                : 'bg-surface-light/60 text-text-muted cursor-not-allowed'
+            }`}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={canToggleSplitMode ? 'text-primary' : 'text-text-muted'}>
+              <polyline points="17 1 21 5 17 9" />
+              <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+              <polyline points="7 23 3 19 7 15" />
+              <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+            </svg>
+            <div>
+              <p className="font-medium text-text">Split L/R</p>
+              <p className="text-xs text-text-muted">{splitToggleDescription}</p>
             </div>
           </button>
 
@@ -1497,7 +1556,7 @@ function WorkoutContent({
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
             <div>
-              <p className="font-medium text-text">Chat with AI Trainer</p>
+              <p className="font-medium text-text">Chat with Trainer</p>
               <p className="text-xs text-text-muted">Get personalized guidance and answers</p>
             </div>
           </button>
