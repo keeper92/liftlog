@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { isMissingSplitSetColumnsError } from '@/lib/supabase/schemaCompat';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { formatDuration, toDisplayWeight, weightUnit } from '@/lib/utils/units';
 import { isAssistanceExerciseName } from '@/lib/utils/exerciseSemantics';
@@ -26,6 +27,21 @@ interface WorkoutData {
     set_number: number;
     is_warmup: boolean;
     exercises: { name: string };
+  }[];
+}
+
+interface LegacyWorkoutData {
+  id: string;
+  name: string | null;
+  start_time: string;
+  end_time: string | null;
+  sets: {
+    exercise_id: string;
+    weight: number | null;
+    reps: number | null;
+    set_number: number;
+    is_warmup: boolean;
+    exercises: { name: string } | Array<{ name: string }> | null;
   }[];
 }
 
@@ -71,6 +87,28 @@ function pickBestSet(
   return best ?? { weight: 0, reps: 0 };
 }
 
+function normalizeLegacyWorkoutData(data: LegacyWorkoutData): WorkoutData {
+  return {
+    ...data,
+    sets: data.sets.map((set) => {
+      const exerciseRef = Array.isArray(set.exercises) ? set.exercises[0] : set.exercises;
+      return {
+        exercise_id: set.exercise_id,
+        weight: set.weight,
+        reps: set.reps,
+        set_number: set.set_number,
+        is_warmup: set.is_warmup,
+        exercises: { name: exerciseRef?.name || 'Exercise' },
+        left_weight: null,
+        left_reps: null,
+        right_weight: null,
+        right_reps: null,
+        is_split_lr: false,
+      };
+    }),
+  };
+}
+
 export default function WorkoutSummaryPage() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-dvh text-text-muted">Loading...</div>}>
@@ -95,12 +133,27 @@ function WorkoutSummaryContent() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('workouts')
         .select('id, name, start_time, end_time, sets(exercise_id, weight, reps, left_weight, left_reps, right_weight, right_reps, is_split_lr, set_number, is_warmup, exercises(name))')
         .eq('id', params.id as string)
         .single();
-      if (data) setWorkout(data as unknown as WorkoutData);
+      if (data && !error) {
+        setWorkout(data as unknown as WorkoutData);
+        return;
+      }
+
+      if (!isMissingSplitSetColumnsError(error)) return;
+
+      const { data: legacyData, error: legacyError } = await supabase
+        .from('workouts')
+        .select('id, name, start_time, end_time, sets(exercise_id, weight, reps, set_number, is_warmup, exercises(name))')
+        .eq('id', params.id as string)
+        .single();
+
+      if (legacyData && !legacyError) {
+        setWorkout(normalizeLegacyWorkoutData(legacyData as unknown as LegacyWorkoutData));
+      }
     }
     load();
   }, [params.id, supabase]);
