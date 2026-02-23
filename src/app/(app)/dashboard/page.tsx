@@ -13,6 +13,7 @@ import DemoFeatureTour from '@/components/onboarding/DemoFeatureTour';
 import HistoryOverlay from '@/components/history/HistoryOverlay';
 import PRFeedOverlay from '@/components/pr/PRFeedOverlay';
 import { usePRStore } from '@/stores/prStore';
+import ExercisePickerOverlay from '@/components/workout/ExercisePickerOverlay';
 
 interface TemplateSummary {
   id: string;
@@ -32,6 +33,13 @@ interface ProgressSummary {
   weekWorkouts: number;
 }
 
+interface ManualTemplateExercise {
+  exerciseId: string;
+  name: string;
+  category: string;
+  defaultSets: number;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -41,6 +49,12 @@ export default function DashboardPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [showPRFeed, setShowPRFeed] = useState(false);
   const [tourStage, setTourStage] = useState<'idle' | 'intro' | 'active'>('idle');
+  const [showManualTemplateModal, setShowManualTemplateModal] = useState(false);
+  const [showTemplateExercisePicker, setShowTemplateExercisePicker] = useState(false);
+  const [manualTemplateName, setManualTemplateName] = useState('');
+  const [manualTemplateExercises, setManualTemplateExercises] = useState<ManualTemplateExercise[]>([]);
+  const [savingManualTemplate, setSavingManualTemplate] = useState(false);
+  const [manualTemplateError, setManualTemplateError] = useState<string | null>(null);
   const unreadCount = usePRStore((s) => s.unreadCount);
 
   useEffect(() => {
@@ -69,9 +83,8 @@ export default function DashboardPage() {
           weekWorkouts: s.weekWorkouts,
         });
       }
-
     }
-    load();
+    void load();
   }, [supabase]);
 
   useEffect(() => {
@@ -113,6 +126,129 @@ export default function DashboardPage() {
     setShowHistory(false);
     setShowPRFeed(false);
     router.push('/trainer?intent=create-template');
+  }
+
+  function openManualTemplateBuilder() {
+    setShowHistory(false);
+    setShowPRFeed(false);
+    setManualTemplateName('');
+    setManualTemplateExercises([]);
+    setManualTemplateError(null);
+    setShowManualTemplateModal(true);
+  }
+
+  function closeManualTemplateBuilder() {
+    if (savingManualTemplate) return;
+    setShowManualTemplateModal(false);
+    setShowTemplateExercisePicker(false);
+    setManualTemplateError(null);
+  }
+
+  function addExerciseToManualTemplate(exercise: { id: string; name: string; category: string }) {
+    setManualTemplateError(null);
+    setManualTemplateExercises((prev) => {
+      if (prev.some((item) => item.exerciseId === exercise.id)) {
+        setManualTemplateError('Exercise already added to this template.');
+        return prev;
+      }
+      return [
+        ...prev,
+        {
+          exerciseId: exercise.id,
+          name: exercise.name,
+          category: exercise.category,
+          defaultSets: 3,
+        },
+      ];
+    });
+  }
+
+  function updateManualTemplateSets(index: number, value: string) {
+    const parsed = Number.parseInt(value, 10);
+    setManualTemplateExercises((prev) => {
+      const next = [...prev];
+      if (!next[index]) return prev;
+      next[index] = {
+        ...next[index],
+        defaultSets: Number.isFinite(parsed) ? Math.max(1, Math.min(12, parsed)) : 1,
+      };
+      return next;
+    });
+  }
+
+  function removeManualTemplateExercise(index: number) {
+    setManualTemplateExercises((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function moveManualTemplateExercise(index: number, direction: 'up' | 'down') {
+    setManualTemplateExercises((prev) => {
+      const target = direction === 'up' ? index - 1 : index + 1;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
+  async function handleSaveManualTemplate() {
+    const trimmedName = manualTemplateName.trim();
+    if (!trimmedName) {
+      setManualTemplateError('Template name is required.');
+      return;
+    }
+    if (manualTemplateExercises.length === 0) {
+      setManualTemplateError('Add at least one exercise.');
+      return;
+    }
+
+    setSavingManualTemplate(true);
+    setManualTemplateError(null);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setManualTemplateError('Please sign in again.');
+      setSavingManualTemplate(false);
+      return;
+    }
+
+    const { data: template, error: templateError } = await supabase
+      .from('workout_templates')
+      .insert({ user_id: user.id, name: trimmedName })
+      .select('id')
+      .single();
+
+    if (templateError || !template) {
+      setManualTemplateError(templateError?.message || 'Could not create template.');
+      setSavingManualTemplate(false);
+      return;
+    }
+
+    const templateRows = manualTemplateExercises.map((exercise, index) => ({
+      template_id: template.id,
+      exercise_id: exercise.exerciseId,
+      order_index: index,
+      default_sets: exercise.defaultSets,
+    }));
+
+    const { error: templateExercisesError } = await supabase
+      .from('template_exercises')
+      .insert(templateRows);
+
+    if (templateExercisesError) {
+      setManualTemplateError(templateExercisesError.message || 'Could not save template exercises.');
+      await supabase.from('workout_templates').delete().eq('id', template.id);
+      setSavingManualTemplate(false);
+      return;
+    }
+
+    const { data: templatesData } = await supabase
+      .from('workout_templates')
+      .select('id, name, template_exercises(exercise_id, order_index, default_sets, exercises(name, category))')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .limit(10);
+    if (templatesData) setTemplates(templatesData as unknown as TemplateSummary[]);
+    setSavingManualTemplate(false);
+    setShowManualTemplateModal(false);
   }
 
   function handleStartFromTemplate(template: TemplateSummary) {
@@ -166,6 +302,100 @@ export default function DashboardPage() {
           onStartWorkout={handleStartWorkoutFromOverlay}
         />
       )}
+
+      <Modal
+        isOpen={showManualTemplateModal}
+        onClose={closeManualTemplateBuilder}
+        title="Build Template"
+        actions={[
+          { label: 'Cancel', variant: 'ghost', onClick: closeManualTemplateBuilder, disabled: savingManualTemplate },
+          { label: savingManualTemplate ? 'Saving...' : 'Save Template', onClick: handleSaveManualTemplate, disabled: savingManualTemplate },
+        ]}
+      >
+        <div className="space-y-4">
+          {manualTemplateError && (
+            <p className="text-xs text-error bg-error/10 rounded-lg px-3 py-2">{manualTemplateError}</p>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">Template Name</label>
+            <input
+              value={manualTemplateName}
+              onChange={(e) => setManualTemplateName(e.target.value)}
+              placeholder="e.g., Push Day"
+              className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm focus:border-primary outline-none"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Exercises</p>
+              <button
+                onClick={() => setShowTemplateExercisePicker(true)}
+                className="text-xs font-semibold text-primary hover:text-primary-light"
+              >
+                + Add Exercise
+              </button>
+            </div>
+
+            <div className="max-h-64 overflow-y-auto rounded-2xl border border-border bg-background px-3 py-2 space-y-2">
+              {manualTemplateExercises.length === 0 ? (
+                <p className="text-xs text-text-muted py-2">No exercises yet. Add one to start building your template.</p>
+              ) : (
+                manualTemplateExercises.map((exercise, index) => (
+                  <div key={`${exercise.exerciseId}-${index}`} className="grid grid-cols-[1fr_72px_84px] gap-2 items-center">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{exercise.name}</p>
+                      <p className="text-[11px] text-text-muted capitalize">{exercise.category.replace('_', ' ')}</p>
+                    </div>
+                    <input
+                      type="number"
+                      min={1}
+                      max={12}
+                      value={exercise.defaultSets}
+                      onChange={(e) => updateManualTemplateSets(index, e.target.value)}
+                      className="w-full bg-surface border border-border rounded-lg px-2 py-1.5 text-sm text-center"
+                    />
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => moveManualTemplateExercise(index, 'up')}
+                        className="w-7 h-7 rounded-md border border-border text-text-muted hover:text-text"
+                        aria-label="Move exercise up"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        onClick={() => moveManualTemplateExercise(index, 'down')}
+                        className="w-7 h-7 rounded-md border border-border text-text-muted hover:text-text"
+                        aria-label="Move exercise down"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        onClick={() => removeManualTemplateExercise(index)}
+                        className="w-7 h-7 rounded-md border border-border text-text-muted hover:text-error"
+                        aria-label="Remove exercise"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <p className="text-[11px] text-text-muted mt-2">Default sets per exercise.</p>
+          </div>
+        </div>
+      </Modal>
+
+      <ExercisePickerOverlay
+        isOpen={showTemplateExercisePicker}
+        onClose={() => setShowTemplateExercisePicker(false)}
+        onSelect={(exercise) => {
+          addExerciseToManualTemplate(exercise);
+          setShowTemplateExercisePicker(false);
+        }}
+      />
 
       <div className="pb-24">
         {/* Header and utility actions */}
@@ -262,9 +492,21 @@ export default function DashboardPage() {
         <div className="px-5 mt-6" data-tour-anchor="saved-templates">
           <div className="flex items-center justify-between mb-3">
             <h2 className="ui-kicker">Saved Templates</h2>
-            {templates.length > 0 && (
-              <span className="text-xs text-text-muted">{templates.length} saved</span>
-            )}
+            <div className="flex items-center gap-2">
+              {templates.length > 0 && (
+                <span className="text-xs text-text-muted">{templates.length} saved</span>
+              )}
+              <button
+                onClick={openManualTemplateBuilder}
+                aria-label="Build template manually"
+                className="ui-icon-pill w-8 h-8 rounded-full flex items-center justify-center text-text-secondary"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {templates.length === 0 ? (
@@ -279,10 +521,16 @@ export default function DashboardPage() {
                   </svg>
                 </div>
                 <p className="text-sm text-text-muted">No templates yet</p>
-                <p className="text-xs text-text-muted mt-1">Build your first one with AI Trainer</p>
-                <Button onClick={handleCreateTemplateWithAI} size="sm" className="mt-4">
-                  Create Template with AI
+                <p className="text-xs text-text-muted mt-1">Build one yourself in seconds.</p>
+                <Button onClick={openManualTemplateBuilder} size="sm" className="mt-4">
+                  + Build Template
                 </Button>
+                <button
+                  onClick={handleCreateTemplateWithAI}
+                  className="mt-3 text-xs font-medium text-text-muted hover:text-text"
+                >
+                  Or chat with AI trainer to build
+                </button>
               </div>
             </Card>
           ) : (
@@ -313,6 +561,14 @@ export default function DashboardPage() {
                   </Card>
                 );
               })}
+              <div className="text-center pt-1">
+                <button
+                  onClick={handleCreateTemplateWithAI}
+                  className="text-xs font-medium text-text-muted hover:text-text"
+                >
+                  Or chat with AI trainer to build
+                </button>
+              </div>
             </div>
           )}
         </div>
