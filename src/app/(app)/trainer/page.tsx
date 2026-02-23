@@ -8,7 +8,7 @@ import { useChatStore, type ImportData, type TemplateData } from '@/stores/chatS
 import { useTrainerProfileStore } from '@/stores/trainerProfileStore';
 import { toDisplayWeight } from '@/lib/utils/units';
 import { FileUploadButton, ChatSidebar } from '@/components/chat';
-import Button from '@/components/ui/Button';
+import { Button } from '@/components/ui/button-shadcn';
 import { Input } from '@/components/ui/input-shadcn';
 import type { TrainerProfile } from '@/lib/types/user';
 
@@ -594,9 +594,12 @@ function TrainerContent() {
     <div className="flex flex-col h-[calc(100dvh-64px)] relative">
       {/* Header icons */}
       <div className="px-5 pt-4 pb-1 flex items-center justify-between">
-        <Button unstyled
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
           onClick={() => setSidebarOpen(true)}
-          className="ui-icon-pill w-10 h-10 -ml-2 flex items-center justify-center rounded-full"
+          className="h-10 w-10 rounded-full"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-foreground">
             <line x1="3" y1="6" x2="21" y2="6" />
@@ -630,9 +633,11 @@ function TrainerContent() {
 
             {/* Profile setup banner — shown when no profile exists */}
             {!trainerProfile && (
-              <Button unstyled
+              <Button
+                type="button"
+                variant="outline"
                 onClick={startProfileSetup}
-                className="w-full max-w-sm mb-6 p-4 rounded-2xl bg-primary/5 border border-primary/20 card-shadow card-shadow-interactive text-left hover:bg-primary/10 transition-colors"
+                className="mb-6 h-auto w-full max-w-sm justify-start rounded-xl border-primary/20 bg-primary/5 p-4 text-left hover:bg-primary/10"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -651,10 +656,13 @@ function TrainerContent() {
 
             <div className="flex flex-wrap justify-center gap-2">
               {suggestions.map((s) => (
-                <Button unstyled
+                <Button
+                  type="button"
                   key={s}
                   onClick={() => handleSend(s)}
-                  className="ui-icon-pill px-4 py-2.5 rounded-full text-muted-foreground text-xs font-medium"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
                 >
                   {s}
                 </Button>
@@ -670,7 +678,7 @@ function TrainerContent() {
                     className={`max-w-[85%] px-4 py-2.5 text-sm leading-relaxed ${
                       msg.role === 'user'
                         ? 'bg-primary text-primary-foreground rounded-2xl rounded-br-md shadow-sm'
-                        : 'bg-card text-foreground rounded-2xl rounded-bl-md border border-border/70 card-shadow'
+                        : 'bg-card text-foreground rounded-2xl rounded-bl-md border border-border/70'
                     }`}
                   >
                     {msg.content ? (
@@ -694,7 +702,7 @@ function TrainerContent() {
                 {/* Import Preview */}
                 {msg.importData && msg.importData.status === 'pending' && (
                   <div className="mt-3 ml-0 max-w-[90%]">
-                    <div className="bg-card border border-border/70 rounded-xl p-4 card-shadow">
+                    <div className="bg-card border border-border/70 rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-3">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary">
                           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
@@ -736,17 +744,20 @@ function TrainerContent() {
                       )}
 
                       <div className="flex gap-2">
-                        <Button unstyled
+                        <Button
+                          type="button"
                           onClick={() => handleConfirmImport(msg.id, msg.importData!)}
                           disabled={importingMessageId === msg.id}
-                          className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                          className="flex-1"
                         >
                           {importingMessageId === msg.id ? 'Importing...' : 'Confirm Import'}
                         </Button>
-                        <Button unstyled
+                        <Button
+                          type="button"
+                          variant="secondary"
                           onClick={() => handleCancelImport(msg.id)}
                           disabled={importingMessageId === msg.id}
-                          className="flex-1 bg-card text-muted-foreground text-xs font-medium py-2 rounded-lg hover:bg-muted disabled:opacity-50 transition-colors"
+                          className="flex-1"
                         >
                           Cancel
                         </Button>
@@ -778,7 +789,7 @@ function TrainerContent() {
                 {/* Template Preview */}
                 {msg.templateData && msg.templateData.status === 'pending' && (
                   <div className="mt-3 ml-0 max-w-[90%]">
-                    <div className="bg-card border border-border/70 rounded-xl p-4 card-shadow">
+                    <div className="bg-card border border-border/70 rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-3">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -803,17 +814,20 @@ function TrainerContent() {
                       </div>
 
                       <div className="flex gap-2">
-                        <Button unstyled
+                        <Button
+                          type="button"
                           onClick={() => handleConfirmTemplate(msg.id, msg.templateData!)}
                           disabled={savingTemplateId === msg.id}
-                          className="flex-1 bg-primary text-primary-foreground text-xs font-medium py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                          className="flex-1"
                         >
                           {savingTemplateId === msg.id ? 'Saving...' : 'Save Template'}
                         </Button>
-                        <Button unstyled
+                        <Button
+                          type="button"
+                          variant="secondary"
                           onClick={() => handleCancelTemplate(msg.id)}
                           disabled={savingTemplateId === msg.id}
-                          className="flex-1 bg-card text-muted-foreground text-xs font-medium py-2 rounded-lg hover:bg-muted disabled:opacity-50 transition-colors"
+                          className="flex-1"
                         >
                           Cancel
                         </Button>
@@ -847,10 +861,13 @@ function TrainerContent() {
             {showExerciseSuggestions && exerciseSuggestions && (
               <div className="flex flex-wrap gap-2 mt-4">
                 {exerciseSuggestions.map((s) => (
-                  <Button unstyled
+                  <Button
+                    type="button"
                     key={s}
                     onClick={() => handleSend(s)}
-                    className="ui-icon-pill px-4 py-2.5 rounded-full text-muted-foreground text-xs font-medium"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
                   >
                     {s}
                   </Button>
@@ -860,10 +877,13 @@ function TrainerContent() {
             {lastMessageSuggestions.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {lastMessageSuggestions.map((s) => (
-                  <Button unstyled
+                  <Button
+                    type="button"
                     key={s}
                     onClick={() => handleSend(s)}
-                    className="ui-icon-pill px-4 py-2.5 rounded-full text-muted-foreground text-xs font-medium"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
                   >
                     {s}
                   </Button>
@@ -872,13 +892,16 @@ function TrainerContent() {
             )}
             {!profileMode && !showExerciseSuggestions && (
               <div className="mt-4">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-[0.08em] mb-2">Quick actions</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Quick actions</p>
                 <div className="flex flex-wrap gap-2">
                   {contextualMainSuggestions.map((s) => (
-                    <Button unstyled
+                    <Button
+                      type="button"
                       key={s}
                       onClick={() => handleSend(s)}
-                      className="ui-icon-pill px-4 py-2.5 rounded-full text-muted-foreground text-xs font-medium"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full"
                     >
                       {s}
                     </Button>
@@ -913,12 +936,13 @@ function TrainerContent() {
             onChange={(e) => setInput(e.target.value)}
             placeholder={profileMode ? 'Tell me about your training...' : 'Ask your trainer or paste workout data...'}
             disabled={isLoading || !context}
-            className="flex-1 min-h-[44px] rounded-full border border-border/70 bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none card-shadow focus:border-input disabled:opacity-50"
+            className="h-11 flex-1 rounded-full"
           />
-          <Button unstyled
+          <Button
             type="submit"
+            size="icon"
             disabled={!input.trim() || isLoading || !context}
-            className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-30 transition-opacity button-soft-shadow"
+            className="h-10 w-10 rounded-full"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="19" x2="12" y2="5" />

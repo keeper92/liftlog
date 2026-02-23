@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
-import Button from '@/components/ui/Button';
+import { Button } from '@/components/ui/button-shadcn';
 import { Input } from '@/components/ui/input-shadcn';
 
 interface FileUploadButtonProps {
@@ -56,11 +56,13 @@ export default function FileUploadButton({
         className="hidden"
         aria-hidden="true"
       />
-      <Button unstyled
+      <Button
         type="button"
         onClick={handleClick}
         disabled={disabled}
-        className="w-10 h-10 rounded-full bg-card text-muted-foreground flex items-center justify-center hover:bg-muted disabled:opacity-30 transition-all"
+        variant="outline"
+        size="icon"
+        className="h-10 w-10 rounded-full"
         aria-label="Upload file"
         title="Import workout data from file"
       >
