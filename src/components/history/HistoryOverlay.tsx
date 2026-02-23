@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { isMissingSplitSetColumnsError } from '@/lib/supabase/schemaCompat';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { formatRelativeDate, formatDuration, toDisplayWeight, weightUnit } from '@/lib/utils/units';
 import Modal from '@/components/ui/Modal';
@@ -33,8 +34,23 @@ interface HistoryWorkout {
   sets: WorkoutSet[];
 }
 
+interface WorkoutSetRow {
+  id: string;
+  exercise_id: string;
+  set_number: number;
+  weight: number | null;
+  reps: number | null;
+  time: number | null;
+  is_split_lr?: boolean | null;
+  left_weight?: number | null;
+  left_reps?: number | null;
+  right_weight?: number | null;
+  right_reps?: number | null;
+  exercises: { name: string } | Array<{ name: string }> | null;
+}
+
 type HistoryWorkoutRow = Omit<HistoryWorkout, 'sets'> & {
-  sets?: WorkoutSet[] | null;
+  sets?: WorkoutSetRow[] | null;
 };
 
 interface GroupedExercise {
@@ -61,6 +77,37 @@ interface HistoryOverlayProps {
   totalWorkouts: number;
 }
 
+function normalizeWorkoutSet(row: WorkoutSetRow): WorkoutSet {
+  const exerciseRef = Array.isArray(row.exercises) ? row.exercises[0] : row.exercises;
+  return {
+    id: row.id,
+    exercise_id: row.exercise_id,
+    set_number: row.set_number,
+    weight: row.weight,
+    reps: row.reps,
+    time: row.time,
+    is_split_lr: !!row.is_split_lr,
+    left_weight: row.left_weight ?? null,
+    left_reps: row.left_reps ?? null,
+    right_weight: row.right_weight ?? null,
+    right_reps: row.right_reps ?? null,
+    exercises: {
+      name: exerciseRef?.name || 'Exercise',
+    },
+  };
+}
+
+function normalizeWorkoutRows(rows: HistoryWorkoutRow[]): HistoryWorkout[] {
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    date: row.date,
+    start_time: row.start_time,
+    end_time: row.end_time,
+    sets: (row.sets ?? []).map((set) => normalizeWorkoutSet(set)),
+  }));
+}
+
 export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak, currentStreak, totalWorkouts }: HistoryOverlayProps) {
   const supabase = useMemo(() => createClient(), []);
   const unitSystem = useSettingsStore((s) => s.unitSystem);
@@ -83,17 +130,6 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
   const monthInitializedRef = useRef(false);
 
   const editingWorkout = editingWorkoutId ? workouts.find((w) => w.id === editingWorkoutId) || null : null;
-
-  function normalizeWorkoutRows(rows: HistoryWorkoutRow[]): HistoryWorkout[] {
-    return rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      date: row.date,
-      start_time: row.start_time,
-      end_time: row.end_time,
-      sets: row.sets ?? [],
-    }));
-  }
 
   function setInitialMonthFromWorkouts(rows: HistoryWorkout[]) {
     if (monthInitializedRef.current || rows.length === 0) return;
@@ -142,6 +178,24 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
       setWorkouts(normalized);
       setInitialMonthFromWorkouts(normalized);
       return;
+    }
+
+    if (isMissingSplitSetColumnsError(error)) {
+      const { data: legacyData, error: legacyError } = await supabase
+        .from('workouts')
+        .select(
+          'id, name, date, start_time, end_time, sets(id, exercise_id, set_number, weight, reps, time, exercises(name))',
+        )
+        .eq('user_id', userId)
+        .order('date', { ascending: false })
+        .limit(250);
+
+      if (legacyData && !legacyError) {
+        const normalized = normalizeWorkoutRows(legacyData as unknown as HistoryWorkoutRow[]);
+        setWorkouts(normalized);
+        setInitialMonthFromWorkouts(normalized);
+        return;
+      }
     }
 
     const { data: fallbackData, error: fallbackError } = await supabase
