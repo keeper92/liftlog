@@ -9,7 +9,8 @@ import { toDisplayWeight, weightUnit } from '@/lib/utils/units';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { Select } from '@/components/ui/select-shadcn';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 interface ExerciseOption {
   id: string;
@@ -37,11 +38,12 @@ export default function ProgressPage() {
   const unit = weightUnit(unitSystem);
   const selectedExerciseName = exercises.find((ex) => ex.id === selectedExercise)?.name ?? 'this exercise';
   const chartUnlockThreshold: number = 3;
-  const chartAxisColor = 'var(--muted-foreground)';
-  const chartLineColor = 'var(--primary)';
-  const tooltipBackground = 'var(--card)';
-  const tooltipBorder = 'var(--border)';
-  const tooltipLabel = 'var(--muted-foreground)';
+  const chartConfig: ChartConfig = {
+    maxWeight: {
+      label: `Max Weight (${unit})`,
+      color: 'var(--primary)',
+    },
+  };
 
   // Load exercises the user has done
   useEffect(() => {
@@ -163,30 +165,37 @@ export default function ProgressPage() {
             <Card className="mb-4">
               <p className="ui-kicker mb-2">Lift Trend</p>
               <p className="text-sm font-semibold mb-3">Max Weight ({unit})</p>
-              <ResponsiveContainer width="100%" height={200}>
+              <ChartContainer config={chartConfig} className="h-[200px]">
                 <LineChart data={chartData}>
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: chartAxisColor }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} width={40} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: tooltipBackground,
-                      border: `1px solid ${tooltipBorder}`,
-                      borderRadius: '12px',
-                      boxShadow: 'var(--shadow-card-hover)',
-                    }}
-                    labelStyle={{ color: tooltipLabel, fontSize: '12px' }}
-                    itemStyle={{ color: chartLineColor, fontSize: '14px', fontWeight: 600 }}
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickMargin={8}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10 }}
+                    width={40}
+                    axisLine={false}
+                    tickLine={false}
+                    tickMargin={8}
+                  />
+                  <ChartTooltip
+                    cursor={{ stroke: 'var(--border)', strokeDasharray: '4 4' }}
+                    content={<ChartTooltipContent indicator="line" />}
                   />
                   <Line
                     type="monotone"
                     dataKey="maxWeight"
-                    stroke={chartLineColor}
+                    stroke="var(--color-maxWeight)"
                     strokeWidth={2.5}
-                    dot={{ fill: chartLineColor, r: 4, strokeWidth: 0 }}
-                    activeDot={{ r: 6, fill: chartLineColor }}
+                    dot={{ fill: 'var(--color-maxWeight)', r: 4, strokeWidth: 0 }}
+                    activeDot={{ r: 6, fill: 'var(--color-maxWeight)' }}
                   />
                 </LineChart>
-              </ResponsiveContainer>
+              </ChartContainer>
             </Card>
           ) : chartData.length > 0 ? (
             <Card className="mb-4 text-center">

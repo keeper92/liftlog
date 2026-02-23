@@ -7,6 +7,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { formatRelativeDate, formatDuration, toDisplayWeight, weightUnit } from '@/lib/utils/units';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
+import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input-shadcn';
 
 interface WorkoutSet {
@@ -682,16 +683,6 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
     return workouts.filter((w) => toDateKey(w.date) === dateStr);
   }
 
-  const workoutDates = new Set(workouts.map((w) => toDateKey(w.date)));
-
-  function getDaysInMonth(date: Date): number {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  }
-
-  function getFirstDayOfMonth(date: Date): number {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-  }
-
   function formatDateKey(year: number, month: number, day: number): string {
     return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   }
@@ -706,11 +697,6 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
     if (match) return `${match[1]}-${match[2]}-${match[3]}`;
 
     return value.split('T')[0];
-  }
-
-  function getTodayDateKey(): string {
-    const now = new Date();
-    return formatDateKey(now.getFullYear(), now.getMonth(), now.getDate());
   }
 
   function toDateAtNoonUtc(dateKey: string): string {
@@ -759,19 +745,10 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
     }
   }
 
-  function prevMonth() {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-    setSelectedDate(null);
-  }
-
-  function nextMonth() {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-    setSelectedDate(null);
-  }
-
-  const daysInMonth = getDaysInMonth(currentMonth);
-  const firstDay = getFirstDayOfMonth(currentMonth);
-  const monthName = currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const highlightedDates = Array.from(new Set(workouts.map((w) => toDateKey(w.date))))
+    .map((dateKey) => new Date(`${dateKey}T12:00:00`))
+    .filter((date) => !Number.isNaN(date.getTime()));
+  const selectedDateValue = selectedDate ? new Date(`${selectedDate}T12:00:00`) : undefined;
   const selectedWorkouts = selectedDate ? getWorkoutsForDate(selectedDate) : [];
   const editableGroups = getEditableExerciseGroups();
 
@@ -953,69 +930,23 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
           <div>
             {/* Calendar Card */}
             <div className="bg-card rounded-2xl border border-border/70 p-4 card-shadow">
-              {/* Calendar Header */}
-              <div className="flex items-center justify-between mb-4">
-                <Button unstyled onClick={prevMonth} className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-muted">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="15 18 9 12 15 6" />
-                  </svg>
-                </Button>
-                <h2 className="text-sm font-semibold">{monthName}</h2>
-                <Button unstyled onClick={nextMonth} className="p-2 -mr-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-muted">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </Button>
-              </div>
-
-              {/* Day headers */}
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day, i) => (
-                  <div key={i} className="text-center text-xs text-muted-foreground font-medium py-1">
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              {/* Calendar grid */}
-              <div className="grid grid-cols-7 gap-1">
-                {Array.from({ length: firstDay }).map((_, i) => (
-                  <div key={`empty-${i}`} className="aspect-square" />
-                ))}
-
-                {Array.from({ length: daysInMonth }).map((_, i) => {
-                  const day = i + 1;
-                  const dateKey = formatDateKey(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-                  const hasWorkout = workoutDates.has(dateKey);
-                  const isSelected = selectedDate === dateKey;
-                  const isToday = dateKey === getTodayDateKey();
-
-                  return (
-                    <Button unstyled
-                      key={day}
-                      onClick={() => setSelectedDate(isSelected ? null : dateKey)}
-                      className={`aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-semibold transition-all relative ${
-                        isSelected
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : isToday
-                            ? 'bg-foreground text-background'
-                            : hasWorkout
-                              ? 'text-foreground hover:bg-muted'
-                              : 'text-muted-foreground hover:bg-muted/60'
-                      } cursor-pointer`}
-                    >
-                      {day}
-                      {hasWorkout && !isSelected && !isToday && (
-                        <span className="absolute bottom-1 w-1 h-1 rounded-full bg-primary" />
-                      )}
-                      {hasWorkout && isToday && !isSelected && (
-                        <span className="absolute bottom-1 w-1 h-1 rounded-full bg-background" />
-                      )}
-                    </Button>
-                  );
-                })}
-              </div>
-
+              <Calendar
+                month={currentMonth}
+                onMonthChange={(month) => {
+                  setCurrentMonth(month);
+                  setSelectedDate(null);
+                }}
+                selected={selectedDateValue}
+                highlighted={highlightedDates}
+                onDateSelect={(date) => {
+                  if (!date) {
+                    setSelectedDate(null);
+                    return;
+                  }
+                  const dateKey = formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
+                  setSelectedDate((prev) => (prev === dateKey ? null : dateKey));
+                }}
+              />
             </div>
 
             {/* Selected date details */}

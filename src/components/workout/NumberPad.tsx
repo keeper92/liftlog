@@ -1,7 +1,10 @@
 'use client';
 
+import * as React from 'react';
 import { useNumberPad } from './NumberPadContext';
-import Button from '@/components/ui/Button';
+import { Button } from '@/components/ui/button-shadcn';
+import { Card } from '@/components/ui/card-shadcn';
+import { cn } from '@/lib/utils';
 
 interface RestTimerState {
   isActive: boolean;
@@ -39,24 +42,26 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
   };
 
   const digitBtn = (digit: string) => (
-    <Button unstyled
+    <Button
       key={digit}
+      type="button"
+      variant="outline"
       onPointerDown={(e) => handlePointerDown(e, () => pressDigit(digit))}
-      className="rounded-lg border border-border/40 bg-background/20 text-primary-foreground text-lg font-medium min-h-[42px] flex items-center justify-center active:bg-background/30 select-none"
+      className="h-[42px] rounded-lg border-border/60 bg-background text-lg font-medium shadow-none select-none active:bg-accent"
     >
       {digit}
     </Button>
   );
 
   return (
-    <div
-      className="fixed bottom-[4.5rem] right-2 z-50 w-[min(22rem,calc(100vw-1rem))] rounded-2xl border border-border/60 bg-foreground px-2.5 pb-2 pt-2 shadow-2xl"
+    <Card
+      className="fixed bottom-[4.5rem] right-2 z-50 w-[min(22rem,calc(100vw-1rem))] rounded-2xl border-border/70 bg-card px-2.5 pb-2 pt-2 shadow-2xl"
       onPointerDown={(e) => e.stopPropagation()}
     >
       {/* Mini rest timer bar */}
       {restTimer.isActive && (
         <div className="flex items-center gap-2 mb-2 px-1">
-          <div className="flex-1 h-1.5 bg-background/25 rounded-full overflow-hidden">
+          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
             <div
               className="h-full bg-primary transition-all duration-1000 ease-linear"
               style={{
@@ -64,12 +69,15 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
               }}
             />
           </div>
-          <span className="text-xs text-primary-foreground/70 tabular-nums min-w-[36px] text-right">
+          <span className="text-xs text-muted-foreground tabular-nums min-w-[36px] text-right">
             {Math.floor(restTimer.secondsRemaining / 60)}:{(restTimer.secondsRemaining % 60).toString().padStart(2, '0')}
           </span>
-          <Button unstyled
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onPointerDown={(e) => handlePointerDown(e, onStopRestTimer)}
-            className="text-xs text-primary-foreground/50 hover:text-primary-foreground/80"
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
           >
             Skip
           </Button>
@@ -78,12 +86,15 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
 
       {/* Field indicator */}
       <div className="flex items-center justify-between mb-2 px-1">
-        <span className="text-xs text-primary-foreground/50 uppercase tracking-wide">
+        <span className="text-xs text-muted-foreground uppercase tracking-wide">
           {fieldLabelMap[activeFocus.field]}
         </span>
-        <Button unstyled
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           onPointerDown={(e) => handlePointerDown(e, deactivate)}
-          className="w-6 h-6 rounded-full text-primary-foreground/70 hover:text-primary-foreground hover:bg-background/20 flex items-center justify-center"
+          className="h-6 w-6 rounded-full text-muted-foreground hover:text-foreground"
           aria-label="Close numpad"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -101,9 +112,10 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
         {digitBtn('3')}
 
         {/* NEXT button spanning 4 rows */}
-        <Button unstyled
+        <Button
+          type="button"
           onPointerDown={(e) => handlePointerDown(e, pressNext)}
-          className="row-span-4 bg-primary text-primary-foreground font-bold text-sm rounded-xl flex items-center justify-center active:bg-primary/85 select-none"
+          className="row-span-4 h-auto rounded-xl bg-primary text-primary-foreground font-bold text-sm active:bg-primary/85 select-none"
         >
           NEXT
         </Button>
@@ -119,19 +131,24 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
         {digitBtn('9')}
 
         {/* Row 4 */}
-        <Button unstyled
+        <Button
+          type="button"
+          variant="outline"
           onPointerDown={(e) => handlePointerDown(e, pressDecimal)}
           disabled={isReps}
-          className={`rounded-lg border border-border/40 bg-background/20 text-primary-foreground text-lg font-medium min-h-[42px] flex items-center justify-center select-none ${
-            isReps ? 'opacity-30 pointer-events-none' : 'active:bg-background/30'
-          }`}
+          className={cn(
+            'h-[42px] rounded-lg border-border/60 bg-background text-lg font-medium shadow-none select-none',
+            isReps ? 'opacity-40 pointer-events-none' : 'active:bg-accent',
+          )}
         >
           {decimalLabel}
         </Button>
         {digitBtn('0')}
-        <Button unstyled
+        <Button
+          type="button"
+          variant="outline"
           onPointerDown={(e) => handlePointerDown(e, pressBackspace)}
-          className="rounded-lg border border-border/40 bg-background/20 text-primary-foreground min-h-[42px] flex items-center justify-center active:bg-background/30 select-none"
+          className="h-[42px] rounded-lg border-border/60 bg-background shadow-none select-none active:bg-accent"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
@@ -140,6 +157,6 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
           </svg>
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }
