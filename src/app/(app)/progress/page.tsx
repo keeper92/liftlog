@@ -6,8 +6,14 @@ import { createClient } from '@/lib/supabase/client';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import { toDisplayWeight, weightUnit } from '@/lib/utils/units';
-import Card from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
+import { Button } from '@/components/ui/button-shadcn';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card-shadcn';
 import { Select } from '@/components/ui/select-shadcn';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
@@ -121,134 +127,147 @@ export default function ProgressPage() {
 
   return (
     <div className="pb-24">
-      <div className="px-5 pt-4">
-      <div className="mb-5">
-        <p className="ui-kicker">Progress</p>
-      </div>
-      {exercises.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="w-12 h-12 rounded-full border border-border/80 bg-card flex items-center justify-center mx-auto mb-3 card-shadow">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted-foreground">
-              <line x1="18" y1="20" x2="18" y2="10" />
-              <line x1="12" y1="20" x2="12" y2="4" />
-              <line x1="6" y1="20" x2="6" y2="14" />
-            </svg>
-          </div>
-          <p className="text-muted-foreground">No exercise data yet.</p>
-          <p className="text-muted-foreground text-sm mt-1">Complete some workouts to see your progress!</p>
-          <Button onClick={handleStartWorkout} size="sm" className="mt-4">
-            Start Workout
-          </Button>
-        </div>
-      ) : (
-        <>
-          {/* Exercise Picker */}
-          <div className="relative bg-card rounded-2xl border border-border/70 card-shadow mb-4">
-            <Select
-              value={selectedExercise}
-              onChange={(e) => setSelectedExercise(e.target.value)}
-              className="w-full bg-transparent px-4 py-3.5 pr-10 min-h-[48px] text-sm font-medium focus:outline-none appearance-none cursor-pointer"
-            >
-              {exercises.map((ex) => (
-                <option key={ex.id} value={ex.id}>{ex.name}</option>
-              ))}
-            </Select>
-            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted-foreground">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </div>
-          </div>
+      <div className="mx-auto w-full max-w-3xl space-y-4 px-4 pt-4 sm:px-6">
+        <header className="space-y-1">
+          <h1 className="text-xl font-semibold tracking-tight">Progress</h1>
+          <p className="text-sm text-muted-foreground">Track trend lines and performance highs for each exercise.</p>
+        </header>
 
-          {/* Chart */}
-          {chartData.length >= chartUnlockThreshold ? (
-            <Card className="mb-4">
-              <p className="ui-kicker mb-2">Lift Trend</p>
-              <p className="text-sm font-semibold mb-3">Max Weight ({unit})</p>
-              <ChartContainer config={chartConfig} className="h-[200px]">
-                <LineChart data={chartData}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickMargin={8}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 10 }}
-                    width={40}
-                    axisLine={false}
-                    tickLine={false}
-                    tickMargin={8}
-                  />
-                  <ChartTooltip
-                    cursor={{ stroke: 'var(--border)', strokeDasharray: '4 4' }}
-                    content={<ChartTooltipContent indicator="line" />}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="maxWeight"
-                    stroke="var(--color-maxWeight)"
-                    strokeWidth={2.5}
-                    dot={{ fill: 'var(--color-maxWeight)', r: 4, strokeWidth: 0 }}
-                    activeDot={{ r: 6, fill: 'var(--color-maxWeight)' }}
-                  />
-                </LineChart>
-              </ChartContainer>
-            </Card>
-          ) : chartData.length > 0 ? (
-            <Card className="mb-4 text-center">
-              <p className="text-sm text-muted-foreground">
-                Max Weight: <span className="font-bold text-primary">{chartData[chartData.length - 1].maxWeight} {unit}</span>
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Log {sessionsNeeded} more {selectedExerciseName.toLowerCase()} session{sessionsNeeded === 1 ? '' : 's'} to unlock trend chart.
-              </p>
-              <Button onClick={handleStartWorkout} size="sm" className="mt-4">
-                Log Session
-              </Button>
-            </Card>
-          ) : (
-            <Card className="mb-4 text-center">
-              <p className="text-sm text-muted-foreground">No logged sessions for this exercise yet.</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Log {chartUnlockThreshold} {selectedExerciseName.toLowerCase()} session{chartUnlockThreshold === 1 ? '' : 's'} to unlock trend chart.
-              </p>
+        {exercises.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center py-10 text-center">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border bg-muted">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted-foreground">
+                  <line x1="18" y1="20" x2="18" y2="10" />
+                  <line x1="12" y1="20" x2="12" y2="4" />
+                  <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+              </span>
+              <p className="mt-3 text-sm text-muted-foreground">No exercise data yet.</p>
+              <p className="text-sm text-muted-foreground">Complete some workouts to see your progress.</p>
               <Button onClick={handleStartWorkout} size="sm" className="mt-4">
                 Start Workout
               </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Exercise</CardTitle>
+                <CardDescription>Choose an exercise to view trends and records.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Select
+                  value={selectedExercise}
+                  onChange={(e) => setSelectedExercise(e.target.value)}
+                  className="h-10"
+                >
+                  {exercises.map((ex) => (
+                    <option key={ex.id} value={ex.id}>{ex.name}</option>
+                  ))}
+                </Select>
+              </CardContent>
             </Card>
-          )}
 
-          {progressData.length > 0 && (
-            <div className="mt-6">
-              <h2 className="ui-kicker mb-3">Exercise Stats</h2>
+            {chartData.length >= chartUnlockThreshold ? (
               <Card>
-                <p className="font-semibold text-sm mb-3">{selectedExerciseName}</p>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-center bg-background rounded-xl py-2">
-                    <p className="text-lg font-bold text-primary">
-                      {toDisplayWeight(selectedExerciseStats.maxWeight, unitSystem)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Max {unit}</p>
-                  </div>
-                  <div className="text-center bg-background rounded-xl py-2">
-                    <p className="text-lg font-bold text-primary">{selectedExerciseStats.maxReps}</p>
-                    <p className="text-xs text-muted-foreground">Max Reps</p>
-                  </div>
-                  <div className="text-center bg-background rounded-xl py-2">
-                    <p className="text-lg font-bold text-primary">
-                      {Math.round(toDisplayWeight(selectedExerciseStats.estimated1RM, unitSystem))}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Est 1RM</p>
-                  </div>
-                </div>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Lift Trend</CardTitle>
+                  <CardDescription>Max Weight ({unit}) over time</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer config={chartConfig} className="h-[220px]">
+                    <LineChart data={chartData}>
+                      <CartesianGrid vertical={false} />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 10 }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickMargin={8}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 10 }}
+                        width={40}
+                        axisLine={false}
+                        tickLine={false}
+                        tickMargin={8}
+                      />
+                      <ChartTooltip
+                        cursor={{ stroke: 'var(--border)', strokeDasharray: '4 4' }}
+                        content={<ChartTooltipContent indicator="line" />}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="maxWeight"
+                        stroke="var(--color-maxWeight)"
+                        strokeWidth={2.5}
+                        dot={{ fill: 'var(--color-maxWeight)', r: 4, strokeWidth: 0 }}
+                        activeDot={{ r: 6, fill: 'var(--color-maxWeight)' }}
+                      />
+                    </LineChart>
+                  </ChartContainer>
+                </CardContent>
               </Card>
-            </div>
-          )}
-        </>
-      )}
+            ) : chartData.length > 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Max Weight: <span className="font-semibold text-foreground">{chartData[chartData.length - 1].maxWeight} {unit}</span>
+                  </p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Log {sessionsNeeded} more {selectedExerciseName.toLowerCase()} session{sessionsNeeded === 1 ? '' : 's'} to unlock the trend chart.
+                  </p>
+                  <Button onClick={handleStartWorkout} size="sm" className="mt-4">
+                    Log Session
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-sm text-muted-foreground">No logged sessions for this exercise yet.</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Log {chartUnlockThreshold} {selectedExerciseName.toLowerCase()} session{chartUnlockThreshold === 1 ? '' : 's'} to unlock the trend chart.
+                  </p>
+                  <Button onClick={handleStartWorkout} size="sm" className="mt-4">
+                    Start Workout
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {progressData.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Exercise Stats</CardTitle>
+                  <CardDescription>{selectedExerciseName}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-md border bg-muted/40 p-3 text-center">
+                      <p className="text-xl font-semibold text-foreground tabular-nums">
+                        {toDisplayWeight(selectedExerciseStats.maxWeight, unitSystem)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Max {unit}</p>
+                    </div>
+                    <div className="rounded-md border bg-muted/40 p-3 text-center">
+                      <p className="text-xl font-semibold text-foreground tabular-nums">{selectedExerciseStats.maxReps}</p>
+                      <p className="text-xs text-muted-foreground">Max Reps</p>
+                    </div>
+                    <div className="rounded-md border bg-muted/40 p-3 text-center">
+                      <p className="text-xl font-semibold text-foreground tabular-nums">
+                        {Math.round(toDisplayWeight(selectedExerciseStats.estimated1RM, unitSystem))}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Est 1RM</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
