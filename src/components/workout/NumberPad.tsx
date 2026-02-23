@@ -1,6 +1,7 @@
 'use client';
 
 import { useNumberPad } from './NumberPadContext';
+import Button from '@/components/ui/Button';
 
 interface RestTimerState {
   isActive: boolean;
@@ -38,13 +39,13 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
   };
 
   const digitBtn = (digit: string) => (
-    <button
+    <Button unstyled
       key={digit}
       onPointerDown={(e) => handlePointerDown(e, () => pressDigit(digit))}
       className="bg-[#2C2C2E] text-white text-lg font-medium rounded-lg min-h-[42px] flex items-center justify-center active:bg-[#3A3A3C] select-none"
     >
       {digit}
-    </button>
+    </Button>
   );
 
   return (
@@ -66,12 +67,12 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
           <span className="text-xs text-white/70 tabular-nums min-w-[36px] text-right">
             {Math.floor(restTimer.secondsRemaining / 60)}:{(restTimer.secondsRemaining % 60).toString().padStart(2, '0')}
           </span>
-          <button
+          <Button unstyled
             onPointerDown={(e) => handlePointerDown(e, onStopRestTimer)}
             className="text-xs text-white/50 hover:text-white/80"
           >
             Skip
-          </button>
+          </Button>
         </div>
       )}
 
@@ -80,7 +81,7 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
         <span className="text-xs text-white/50 uppercase tracking-wide">
           {fieldLabelMap[activeFocus.field]}
         </span>
-        <button
+        <Button unstyled
           onPointerDown={(e) => handlePointerDown(e, deactivate)}
           className="w-6 h-6 rounded-full text-white/70 hover:text-white hover:bg-white/10 flex items-center justify-center"
           aria-label="Close numpad"
@@ -89,7 +90,7 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
-        </button>
+        </Button>
       </div>
 
       {/* Number grid: 4 rows x 4 cols, NEXT spans right column */}
@@ -100,12 +101,12 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
         {digitBtn('3')}
 
         {/* NEXT button spanning 4 rows */}
-        <button
+        <Button unstyled
           onPointerDown={(e) => handlePointerDown(e, pressNext)}
           className="row-span-4 bg-primary text-white font-bold text-sm rounded-xl flex items-center justify-center active:bg-primary-dark select-none"
         >
           NEXT
-        </button>
+        </Button>
 
         {/* Row 2 */}
         {digitBtn('4')}
@@ -118,7 +119,7 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
         {digitBtn('9')}
 
         {/* Row 4 */}
-        <button
+        <Button unstyled
           onPointerDown={(e) => handlePointerDown(e, pressDecimal)}
           disabled={isReps}
           className={`bg-[#2C2C2E] text-white text-lg font-medium rounded-lg min-h-[42px] flex items-center justify-center select-none ${
@@ -126,9 +127,9 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
           }`}
         >
           {decimalLabel}
-        </button>
+        </Button>
         {digitBtn('0')}
-        <button
+        <Button unstyled
           onPointerDown={(e) => handlePointerDown(e, pressBackspace)}
           className="bg-[#2C2C2E] text-white rounded-lg min-h-[42px] flex items-center justify-center active:bg-[#3A3A3C] select-none"
         >
@@ -137,7 +138,7 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
             <line x1="18" y1="9" x2="12" y2="15" />
             <line x1="12" y1="9" x2="18" y2="15" />
           </svg>
-        </button>
+        </Button>
       </div>
     </div>
   );

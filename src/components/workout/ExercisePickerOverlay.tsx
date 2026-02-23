@@ -13,6 +13,8 @@ import {
 } from '@/lib/utils/exerciseInference';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
+import { Input } from '@/components/ui/input-shadcn';
+import { Select } from '@/components/ui/select-shadcn';
 
 interface ExercisePickerOverlayProps {
   isOpen: boolean;
@@ -491,7 +493,7 @@ function PickerContent({
     <div className="fixed inset-0 z-[100] bg-background flex flex-col">
       {/* Close button */}
       <div className="px-4 pt-3 flex justify-end">
-        <button
+        <Button unstyled
           onClick={onClose}
           className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-light transition-colors"
         >
@@ -499,7 +501,7 @@ function PickerContent({
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
-        </button>
+        </Button>
       </div>
 
       {/* Search */}
@@ -509,7 +511,7 @@ function PickerContent({
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-          <input
+          <Input
             type="text"
             placeholder="Search exercises..."
             value={search}
@@ -521,22 +523,22 @@ function PickerContent({
 
         {/* Filter Tabs */}
         <div className="flex overflow-x-auto gap-2 pb-2 -mx-4 px-4 scrollbar-hide">
-          <button
+          <Button unstyled
             onClick={() => setLibraryView('favorites')}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               libraryView === 'favorites' ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
             }`}
           >
             Favorites ({favoriteExerciseIds.length})
-          </button>
-          <button
+          </Button>
+          <Button unstyled
             onClick={() => setLibraryView('all')}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               libraryView === 'all' ? 'bg-primary text-white' : 'bg-surface-light text-text-secondary'
             }`}
           >
             All
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -558,7 +560,7 @@ function PickerContent({
         ) : (
           <div className="space-y-1">
             {/* Create custom button */}
-            <button
+            <Button unstyled
               onClick={startCreateFlow}
               className="w-full text-left px-3 py-3 rounded-xl hover:bg-surface-light transition-colors min-h-[44px] border border-dashed border-border mb-2"
             >
@@ -569,13 +571,13 @@ function PickerContent({
                 </svg>
                 <span className="font-medium text-sm">Create Custom Exercise</span>
               </div>
-            </button>
+            </Button>
 
             {exercises.map((ex) => {
               const isOwnCustom = ex.is_custom && ex.user_id === currentUserId;
               return (
                 <div key={ex.id} className="flex items-center gap-2">
-                  <button
+                  <Button unstyled
                     onClick={() => handleSelectExercise(ex)}
                     className="flex-1 text-left px-3 py-3 rounded-xl hover:bg-surface-light transition-colors min-h-[44px]"
                   >
@@ -597,8 +599,8 @@ function PickerContent({
                         </span>
                       ))}
                     </div>
-                  </button>
-                  <button
+                  </Button>
+                  <Button unstyled
                     onClick={() => { void toggleFavorite(ex.id); }}
                     className={`p-2 transition-colors rounded-lg hover:bg-surface-light ${
                       isFavorite(ex.id) ? 'text-primary' : 'text-text-muted hover:text-text'
@@ -609,8 +611,8 @@ function PickerContent({
                     <svg width="18" height="18" viewBox="0 0 24 24" fill={isFavorite(ex.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                     </svg>
-                  </button>
-                  <button
+                  </Button>
+                  <Button unstyled
                     onClick={() => openEditModal(ex)}
                     className="p-2 text-text-muted hover:text-text transition-colors rounded-lg hover:bg-surface-light"
                     aria-label={isOwnCustom ? 'Manage exercise' : 'Rename exercise'}
@@ -619,7 +621,7 @@ function PickerContent({
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
-                  </button>
+                  </Button>
                 </div>
               );
             })}
@@ -651,7 +653,7 @@ function PickerContent({
               <p className="text-xs text-text-muted py-2 text-center">No close matches found.</p>
             ) : (
               duplicateResults.map((exercise) => (
-                <button
+                <Button unstyled
                   key={exercise.id}
                   onClick={() => handleUsePotentialDuplicate(exercise)}
                   className="w-full text-left rounded-lg border border-border px-3 py-2 hover:bg-surface-light transition-colors"
@@ -660,7 +662,7 @@ function PickerContent({
                   <p className="text-xs text-text-muted mt-0.5 capitalize">
                     {exercise.category.replace('_', ' ')}
                   </p>
-                </button>
+                </Button>
               ))
             )}
           </div>
@@ -722,7 +724,7 @@ function PickerContent({
           )}
           <div>
             <label className="block text-sm font-medium mb-1.5">Exercise Name</label>
-            <input
+            <Input
               type="text"
               value={exerciseForm.name}
               onChange={(e) => {
@@ -746,7 +748,7 @@ function PickerContent({
 
           <div>
             <label className="block text-sm font-medium mb-1.5">Category</label>
-            <select
+            <Select
               value={exerciseForm.category}
               onChange={(e) => {
                 setCategoryManuallyChanged(true);
@@ -759,12 +761,12 @@ function PickerContent({
                   {cat.replace('_', ' ')}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1.5">Primary Muscle</label>
-            <select
+            <Select
               value={exerciseForm.primaryMuscle}
               onChange={(e) => {
                 setPrimaryMuscleManuallyChanged(true);
@@ -777,7 +779,7 @@ function PickerContent({
                   {muscle.replace('_', ' ')}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
       </Modal>
@@ -808,7 +810,7 @@ function PickerContent({
           )}
           <div>
             <label className="block text-sm font-medium mb-1.5">Merge Into</label>
-            <input
+            <Input
               type="text"
               value={mergeSearch}
               onChange={(e) => {
@@ -835,7 +837,7 @@ function PickerContent({
                 const selected = mergeTarget?.id === exercise.id;
                 const isOwnCustom = exercise.is_custom && exercise.user_id === currentUserId;
                 return (
-                  <button
+                  <Button unstyled
                     key={exercise.id}
                     onClick={() => setMergeTarget(exercise)}
                     className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors ${
@@ -849,7 +851,7 @@ function PickerContent({
                       )}
                     </div>
                     <p className="text-xs text-text-muted capitalize mt-0.5">{exercise.category.replace('_', ' ')}</p>
-                  </button>
+                  </Button>
                 );
               })
             )}

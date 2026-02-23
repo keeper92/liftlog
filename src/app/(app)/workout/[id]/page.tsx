@@ -196,7 +196,7 @@ function WarmupToggle({ isWarmup, setNumber, onToggle }: { isWarmup: boolean; se
   }
 
   return (
-    <button
+    <Button unstyled
       className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium select-none touch-none ${
         isWarmup ? 'text-warning bg-warning/10' : 'text-text-secondary'
       }`}
@@ -207,7 +207,7 @@ function WarmupToggle({ isWarmup, setNumber, onToggle }: { isWarmup: boolean; se
       title="Hold to toggle warm-up set"
     >
       {isWarmup ? 'W' : setNumber}
-    </button>
+    </Button>
   );
 }
 
@@ -947,9 +947,9 @@ function WorkoutContent({
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-surface border-b border-border">
-        <button onClick={handleDiscard} className="text-error text-sm font-medium min-h-[44px] px-2 flex items-center">
+        <Button unstyled onClick={handleDiscard} className="text-error text-sm font-medium min-h-[44px] px-2 flex items-center">
           Discard
-        </button>
+        </Button>
         <div className="text-center">
           <p className="font-semibold text-sm">{store.workoutName}</p>
           <p className="text-xs text-text-secondary">{formatDuration(elapsed)}</p>
@@ -1034,7 +1034,7 @@ function WorkoutContent({
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <button
+                  <Button unstyled
                     onClick={() => setTrainingGuideMenu({
                       exerciseId: ex.exerciseId,
                       exerciseName: ex.exerciseName,
@@ -1048,13 +1048,13 @@ function WorkoutContent({
                       <circle cx="12" cy="12" r="1.8" />
                       <circle cx="19" cy="12" r="1.8" />
                     </svg>
-                  </button>
-                  <button
+                  </Button>
+                  <Button unstyled
                     onClick={() => store.removeExercise(ex.exerciseId)}
                     className="text-text-muted text-xs hover:text-error"
                   >
                     Remove
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -1119,7 +1119,7 @@ function WorkoutContent({
                             placeholder="0"
                             isCompleted={s.isCompleted}
                           />
-                          <button
+                          <Button unstyled
                             onClick={() => {
                               if (s.isCompleted) {
                                 store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
@@ -1134,7 +1134,7 @@ function WorkoutContent({
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
-                          </button>
+                          </Button>
                         </div>
                         {pace && (
                           <p className="text-center text-xs text-primary mt-1">
@@ -1208,7 +1208,7 @@ function WorkoutContent({
                               isCompleted={s.isCompleted}
                             />
                           </div>
-                          <button
+                          <Button unstyled
                             onClick={() => {
                               if (s.isCompleted) {
                                 store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
@@ -1243,7 +1243,7 @@ function WorkoutContent({
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
-                          </button>
+                          </Button>
                         </div>
                       ) : (
                         <div
@@ -1282,7 +1282,7 @@ function WorkoutContent({
                             placeholder="0"
                             isCompleted={s.isCompleted}
                           />
-                          <button
+                          <Button unstyled
                             onClick={() => {
                               if (s.isCompleted) {
                                 store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
@@ -1317,7 +1317,7 @@ function WorkoutContent({
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </SwipeToDeleteRow>
@@ -1327,12 +1327,12 @@ function WorkoutContent({
 
               <div className="mt-2">
                 {ex.exerciseCategory !== 'cardio' && (
-                  <button
+                  <Button unstyled
                     onClick={() => store.addSet(exIdx)}
                     className="w-full py-2 text-sm text-primary hover:text-primary-light"
                   >
                     + Add Set
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -1354,12 +1354,12 @@ function WorkoutContent({
             <p className="text-sm text-text-secondary truncate pr-3">
               Set deleted from {pendingSetDelete.exerciseName}
             </p>
-            <button
+            <Button unstyled
               onClick={handleUndoDeleteSet}
               className="text-sm font-semibold text-primary hover:text-primary-light"
             >
               Undo
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -1372,12 +1372,12 @@ function WorkoutContent({
         <div className="fixed bottom-16 left-0 right-0 bg-surface border-t border-border px-4 py-3 z-50">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Rest Timer</span>
-            <button
+            <Button unstyled
               onClick={stopRestTimer}
               className="text-xs text-text-muted hover:text-text"
             >
               Skip
-            </button>
+            </Button>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex-1 h-2 bg-surface-light rounded-full overflow-hidden">
@@ -1454,7 +1454,7 @@ function WorkoutContent({
         ]}
       >
         <div className="space-y-2">
-          <button
+          <Button unstyled
             onClick={() => {
               if (trainingGuideMenu) {
                 openHistory(trainingGuideMenu.exerciseId, trainingGuideMenu.exerciseName);
@@ -1472,9 +1472,9 @@ function WorkoutContent({
               <p className="font-medium text-text">Exercise History</p>
               <p className="text-xs text-text-muted">Past sessions with sets, reps, and weight</p>
             </div>
-          </button>
+          </Button>
 
-          <button
+          <Button unstyled
             onClick={() => {
               if (trainingGuideMenu) {
                 openTrainerTips(trainingGuideMenu.exerciseId, trainingGuideMenu.exerciseName);
@@ -1494,9 +1494,9 @@ function WorkoutContent({
               <p className="font-medium text-text">Exercise Info</p>
               <p className="text-xs text-text-muted">Equipment, muscles, and form instructions</p>
             </div>
-          </button>
+          </Button>
 
-          <button
+          <Button unstyled
             onClick={() => {
               if (trainingGuideMenu && canToggleSplitMode && menuExercise) {
                 const nextMode = menuExercise.logMode === 'split_lr' ? 'combined' : 'split_lr';
@@ -1521,9 +1521,9 @@ function WorkoutContent({
               <p className="font-medium text-text">Split L/R</p>
               <p className="text-xs text-text-muted">{splitToggleDescription}</p>
             </div>
-          </button>
+          </Button>
 
-          <button
+          <Button unstyled
             onClick={() => {
               if (trainingGuideMenu) {
                 const searchQuery = encodeURIComponent(`${trainingGuideMenu.exerciseName} proper form`);
@@ -1541,9 +1541,9 @@ function WorkoutContent({
               <p className="font-medium text-text">Watch the Movement</p>
               <p className="text-xs text-text-muted">View exercise demos on YouTube</p>
             </div>
-          </button>
+          </Button>
 
-          <button
+          <Button unstyled
             onClick={() => {
               if (trainingGuideMenu) {
                 router.push(`/trainer?exerciseId=${trainingGuideMenu.exerciseId}&exerciseName=${encodeURIComponent(trainingGuideMenu.exerciseName)}`);
@@ -1559,7 +1559,7 @@ function WorkoutContent({
               <p className="font-medium text-text">Chat with Trainer</p>
               <p className="text-xs text-text-muted">Get personalized guidance and answers</p>
             </div>
-          </button>
+          </Button>
         </div>
       </Modal>
 

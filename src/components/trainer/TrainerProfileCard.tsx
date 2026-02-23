@@ -1,6 +1,7 @@
 'use client';
 
 import type { TrainerProfile } from '@/lib/types/user';
+import Button from '@/components/ui/Button';
 
 interface TrainerProfileCardProps {
   profile: TrainerProfile;
@@ -14,12 +15,12 @@ export default function TrainerProfileCard({ profile, onUpdate, onClose }: Train
       <div className="mx-4 mt-4 rounded-2xl bg-surface card-shadow overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="font-semibold text-text">Training Profile</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-text-secondary p-1">
+          <Button unstyled onClick={onClose} className="text-text-muted hover:text-text-secondary p-1">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-          </button>
+          </Button>
         </div>
 
         <div className="p-4 space-y-3">
@@ -51,12 +52,12 @@ export default function TrainerProfileCard({ profile, onUpdate, onClose }: Train
         </div>
 
         <div className="p-4 border-t border-border">
-          <button
+          <Button unstyled
             onClick={onUpdate}
             className="w-full py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
           >
             Update Profile
-          </button>
+          </Button>
         </div>
       </div>
     </div>

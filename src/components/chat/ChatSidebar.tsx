@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback } from 'react';
 import { useChatStore } from '@/stores/chatStore';
+import Button from '@/components/ui/Button';
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -97,7 +98,7 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-5 pb-3">
-          <button
+          <Button unstyled
             onClick={onClose}
             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-light transition-colors"
           >
@@ -105,8 +106,8 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-          </button>
-          <button
+          </Button>
+          <Button unstyled
             onClick={handleNewChat}
             className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white text-xs font-medium shadow-sm"
           >
@@ -115,7 +116,7 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
             New chat
-          </button>
+          </Button>
         </div>
 
         {/* Conversation list */}
@@ -148,7 +149,7 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
                         <p className="text-sm text-text truncate flex-1 min-w-0 pr-2">
                           {conv.title}
                         </p>
-                        <button
+                        <Button unstyled
                           onClick={(e) => handleDeleteConversation(e, conv.id)}
                           className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 hover:bg-border/50 transition-all"
                         >
@@ -156,7 +157,7 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
                             <polyline points="3 6 5 6 21 6" />
                             <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
                           </svg>
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </div>

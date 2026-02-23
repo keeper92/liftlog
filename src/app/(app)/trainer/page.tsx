@@ -8,6 +8,8 @@ import { useChatStore, type ImportData, type TemplateData } from '@/stores/chatS
 import { useTrainerProfileStore } from '@/stores/trainerProfileStore';
 import { toDisplayWeight } from '@/lib/utils/units';
 import { FileUploadButton, ChatSidebar } from '@/components/chat';
+import Button from '@/components/ui/Button';
+import { Input } from '@/components/ui/input-shadcn';
 import type { TrainerProfile } from '@/lib/types/user';
 
 export const dynamic = 'force-dynamic';
@@ -592,7 +594,7 @@ function TrainerContent() {
     <div className="flex flex-col h-[calc(100dvh-64px)] relative">
       {/* Header icons */}
       <div className="px-5 pt-4 pb-1 flex items-center justify-between">
-        <button
+        <Button unstyled
           onClick={() => setSidebarOpen(true)}
           className="ui-icon-pill w-10 h-10 -ml-2 flex items-center justify-center rounded-full"
         >
@@ -601,7 +603,7 @@ function TrainerContent() {
             <line x1="3" y1="12" x2="21" y2="12" />
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
-        </button>
+        </Button>
         <div className="text-right">
           {exerciseName && (
             <p className="text-xs text-text-muted">Helping with: {exerciseName}</p>
@@ -628,7 +630,7 @@ function TrainerContent() {
 
             {/* Profile setup banner — shown when no profile exists */}
             {!trainerProfile && (
-              <button
+              <Button unstyled
                 onClick={startProfileSetup}
                 className="w-full max-w-sm mb-6 p-4 rounded-2xl bg-primary/5 border border-primary/20 card-shadow card-shadow-interactive text-left hover:bg-primary/10 transition-colors"
               >
@@ -644,18 +646,18 @@ function TrainerContent() {
                     <p className="text-xs text-text-muted mt-0.5">Quick chat so I can personalize your experience</p>
                   </div>
                 </div>
-              </button>
+              </Button>
             )}
 
             <div className="flex flex-wrap justify-center gap-2">
               {suggestions.map((s) => (
-                <button
+                <Button unstyled
                   key={s}
                   onClick={() => handleSend(s)}
                   className="ui-icon-pill px-4 py-2.5 rounded-full text-text-secondary text-xs font-medium"
                 >
                   {s}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -734,20 +736,20 @@ function TrainerContent() {
                       )}
 
                       <div className="flex gap-2">
-                        <button
+                        <Button unstyled
                           onClick={() => handleConfirmImport(msg.id, msg.importData!)}
                           disabled={importingMessageId === msg.id}
                           className="flex-1 bg-primary text-white text-xs font-medium py-2 rounded-lg hover:bg-primary-light disabled:opacity-50 transition-colors"
                         >
                           {importingMessageId === msg.id ? 'Importing...' : 'Confirm Import'}
-                        </button>
-                        <button
+                        </Button>
+                        <Button unstyled
                           onClick={() => handleCancelImport(msg.id)}
                           disabled={importingMessageId === msg.id}
                           className="flex-1 bg-surface text-text-secondary text-xs font-medium py-2 rounded-lg hover:bg-surface-light disabled:opacity-50 transition-colors"
                         >
                           Cancel
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -801,20 +803,20 @@ function TrainerContent() {
                       </div>
 
                       <div className="flex gap-2">
-                        <button
+                        <Button unstyled
                           onClick={() => handleConfirmTemplate(msg.id, msg.templateData!)}
                           disabled={savingTemplateId === msg.id}
                           className="flex-1 bg-primary text-white text-xs font-medium py-2 rounded-lg hover:bg-primary-light disabled:opacity-50 transition-colors"
                         >
                           {savingTemplateId === msg.id ? 'Saving...' : 'Save Template'}
-                        </button>
-                        <button
+                        </Button>
+                        <Button unstyled
                           onClick={() => handleCancelTemplate(msg.id)}
                           disabled={savingTemplateId === msg.id}
                           className="flex-1 bg-surface text-text-secondary text-xs font-medium py-2 rounded-lg hover:bg-surface-light disabled:opacity-50 transition-colors"
                         >
                           Cancel
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -845,26 +847,26 @@ function TrainerContent() {
             {showExerciseSuggestions && exerciseSuggestions && (
               <div className="flex flex-wrap gap-2 mt-4">
                 {exerciseSuggestions.map((s) => (
-                  <button
+                  <Button unstyled
                     key={s}
                     onClick={() => handleSend(s)}
                     className="ui-icon-pill px-4 py-2.5 rounded-full text-text-secondary text-xs font-medium"
                   >
                     {s}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
             {lastMessageSuggestions.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {lastMessageSuggestions.map((s) => (
-                  <button
+                  <Button unstyled
                     key={s}
                     onClick={() => handleSend(s)}
                     className="ui-icon-pill px-4 py-2.5 rounded-full text-text-secondary text-xs font-medium"
                   >
                     {s}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -873,13 +875,13 @@ function TrainerContent() {
                 <p className="text-[11px] text-text-muted uppercase tracking-[0.08em] mb-2">Quick actions</p>
                 <div className="flex flex-wrap gap-2">
                   {contextualMainSuggestions.map((s) => (
-                    <button
+                    <Button unstyled
                       key={s}
                       onClick={() => handleSend(s)}
                       className="ui-icon-pill px-4 py-2.5 rounded-full text-text-secondary text-xs font-medium"
                     >
                       {s}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -904,7 +906,7 @@ function TrainerContent() {
               disabled={isLoading || !context}
             />
           )}
-          <input
+          <Input
             ref={inputRef}
             type="text"
             value={input}
@@ -913,7 +915,7 @@ function TrainerContent() {
             disabled={isLoading || !context}
             className="flex-1 min-h-[44px] rounded-full border border-border/70 bg-surface px-4 text-sm text-text placeholder:text-text-muted outline-none card-shadow focus:border-border-strong disabled:opacity-50"
           />
-          <button
+          <Button unstyled
             type="submit"
             disabled={!input.trim() || isLoading || !context}
             className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-30 transition-opacity button-soft-shadow"
@@ -922,7 +924,7 @@ function TrainerContent() {
               <line x1="12" y1="19" x2="12" y2="5" />
               <polyline points="5 12 12 5 19 12" />
             </svg>
-          </button>
+          </Button>
         </form>
       </div>
 

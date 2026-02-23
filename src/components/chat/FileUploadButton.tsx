@@ -1,6 +1,8 @@
 'use client';
 
 import { useRef } from 'react';
+import Button from '@/components/ui/Button';
+import { Input } from '@/components/ui/input-shadcn';
 
 interface FileUploadButtonProps {
   onFileContent: (content: string, filename: string) => void;
@@ -46,7 +48,7 @@ export default function FileUploadButton({
 
   return (
     <>
-      <input
+      <Input
         ref={inputRef}
         type="file"
         accept={accept}
@@ -54,7 +56,7 @@ export default function FileUploadButton({
         className="hidden"
         aria-hidden="true"
       />
-      <button
+      <Button unstyled
         type="button"
         onClick={handleClick}
         disabled={disabled}
@@ -74,7 +76,7 @@ export default function FileUploadButton({
         >
           <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
         </svg>
-      </button>
+      </Button>
     </>
   );
 }
