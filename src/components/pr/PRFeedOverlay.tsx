@@ -5,7 +5,8 @@ import { usePRStore, type PRRecord } from '@/stores/prStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { toDisplayWeight, weightUnit } from '@/lib/utils/units';
 import { createClient } from '@/lib/supabase/client';
-import Button from '@/components/ui/Button';
+import { Button } from '@/components/ui/button-shadcn';
+import { Card, CardContent } from '@/components/ui/card-shadcn';
 
 interface PRFeedOverlayProps {
   onClose: () => void;
@@ -264,67 +265,78 @@ export default function PRFeedOverlay({ onClose, onStartWorkout }: PRFeedOverlay
 
   return (
     <div className="fixed inset-0 z-[70] bg-background flex flex-col">
-      {/* Close button */}
-      <div className="px-5 pt-4 flex items-center justify-between">
-        <div>
-          <p className="ui-kicker">PR Feed</p>
+      <div className="mx-auto w-full max-w-3xl px-4 pt-4 sm:px-6">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">PR Feed</h1>
+            <p className="text-sm text-muted-foreground">Your latest personal record milestones.</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={onClose}
+            className="rounded-full"
+            aria-label="Close PR feed"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </Button>
         </div>
-        <Button unstyled
-          onClick={onClose}
-          className="ui-icon-pill w-10 h-10 flex items-center justify-center rounded-full"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </Button>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-5 pt-4 pb-8">
+      <div className="flex-1 overflow-y-auto pb-8">
+        <div className="mx-auto w-full max-w-3xl px-4 pt-4 sm:px-6">
         {displayRecords.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-12 h-12 rounded-full border border-border/80 bg-muted flex items-center justify-center mx-auto mb-3">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted-foreground">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-            </div>
-            <p className="text-muted-foreground">{historyLoading ? 'Loading records...' : 'No records yet'}</p>
-            <p className="text-muted-foreground text-sm mt-1">Log a few workouts, then beat your baseline to unlock PRs.</p>
-            {onStartWorkout && (
-              <Button onClick={onStartWorkout} size="sm" className="mt-4">
-                Start Workout
-              </Button>
-            )}
-          </div>
+          <Card>
+            <CardContent className="flex flex-col items-center py-10 text-center">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-full border bg-muted">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted-foreground">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">{historyLoading ? 'Loading records...' : 'No records yet'}</p>
+              <p className="text-sm text-muted-foreground">Log workouts and beat your baseline to unlock PRs.</p>
+              {onStartWorkout && (
+                <Button onClick={onStartWorkout} size="sm" className="mt-4">
+                  Start Workout
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-6">
             {grouped.map(({ dateLabel, items }) => (
               <div key={dateLabel}>
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                <h3 className="mb-3 text-sm font-medium text-muted-foreground">
                   {dateLabel}
                 </h3>
                 <div className="space-y-2">
                   {items.map((pr) => (
-                    <div key={pr.id} className="bg-card rounded-2xl border border-border/70 p-4 card-shadow flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Card key={pr.id}>
+                      <CardContent className="flex items-center gap-3 p-4">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-primary">
                           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                         </svg>
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="font-semibold text-sm text-foreground">{pr.exerciseName}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {formatPRImprovement(pr, unitSystem)}
                         </p>
                       </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               </div>
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );
