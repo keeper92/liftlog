@@ -54,8 +54,8 @@ export default function NumberPad({ restTimer, onStopRestTimer }: NumberPadProps
   );
 
   return (
-    <div className="fixed inset-x-0 bottom-[4.5rem] z-50 px-2 lg:absolute lg:inset-x-0 lg:bottom-[4.5rem]">
-      <div className="mx-auto flex w-full max-w-[430px] justify-end">
+    <div className="fixed inset-x-0 bottom-[6.5rem] z-50 px-2 lg:absolute lg:inset-x-0 lg:bottom-[6.5rem]">
+      <div className="mx-auto flex w-full max-w-[430px] justify-center">
         <Card
           className="w-[min(22rem,calc(100vw-1rem))] rounded-lg border-border/70 bg-card px-2.5 pb-2 pt-2 shadow-sm"
           onPointerDown={(e) => e.stopPropagation()}
