@@ -774,7 +774,7 @@ export default function HistoryOverlay({
   const editableGroups = getEditableExerciseGroups();
 
   return (
-    <div className="fixed inset-0 z-[70] flex flex-col bg-background lg:absolute">
+    <div className="fixed inset-x-0 top-0 bottom-[calc(env(safe-area-inset-bottom)+84px)] z-[70] flex flex-col bg-background lg:absolute lg:inset-x-0 lg:top-0 lg:bottom-[calc(env(safe-area-inset-bottom)+84px)]">
       <Modal isOpen={!!editingWorkout} onClose={closeEditOverlay} title="Edit Workout">
         {editingWorkout && (
           <div className="space-y-4 text-sm">
@@ -956,6 +956,7 @@ export default function HistoryOverlay({
             {/* Calendar Card */}
             <div className="rounded-xl border bg-card p-4 shadow-sm">
               <Calendar
+                className="mx-auto w-fit"
                 month={currentMonth}
                 mode="single"
                 onMonthChange={(month) => {
@@ -997,14 +998,14 @@ export default function HistoryOverlay({
                         variant="ghost"
                         key={w.id}
                         onClick={() => openEditOverlay(w)}
-                        className="h-auto w-full flex-col items-stretch rounded-xl border bg-card p-4 text-left hover:bg-accent"
+                        className="h-auto w-full flex-col items-stretch whitespace-normal rounded-xl border bg-card p-4 text-left hover:bg-accent"
                       >
                         <div className="flex justify-between items-start mb-2 gap-2">
-                          <div>
-                            <p className="font-semibold text-sm">{w.name || formatAutoWorkoutName(w.date)}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className="break-words font-semibold text-sm">{w.name || formatAutoWorkoutName(w.date)}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">{formatRelativeDate(w.date)}</p>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex shrink-0 items-center gap-2">
                             {duration > 0 && (
                               <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">{formatDuration(duration)}</span>
                             )}
@@ -1013,9 +1014,9 @@ export default function HistoryOverlay({
                         </div>
                         <div className="space-y-1.5">
                           {exercises.map((ex, i) => (
-                            <div key={i} className="text-xs flex items-baseline">
-                              <span className="text-foreground font-medium">{ex.name}</span>
-                              <span className="text-muted-foreground ml-2">
+                            <div key={i} className="text-xs">
+                              <span className="break-words text-foreground font-medium">{ex.name}</span>
+                              <span className="ml-2 break-words text-muted-foreground">
                                 {ex.setLabels.length} × ({ex.setLabels.join(', ')})
                               </span>
                             </div>
