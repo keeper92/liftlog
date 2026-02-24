@@ -12,10 +12,10 @@ interface TrainerProfileCardProps {
 export default function TrainerProfileCard({ profile, onUpdate, onClose }: TrainerProfileCardProps) {
   return (
     <div className="absolute inset-x-0 top-0 z-20 bg-background/80 backdrop-blur-sm min-h-full">
-      <div className="mx-4 mt-4 rounded-2xl bg-card card-shadow overflow-hidden">
+      <div className="mx-4 mt-4 overflow-hidden rounded-lg border bg-card shadow-sm">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="font-semibold text-foreground">Training Profile</h2>
-          <Button unstyled onClick={onClose} className="text-muted-foreground hover:text-muted-foreground p-1">
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -52,9 +52,9 @@ export default function TrainerProfileCard({ profile, onUpdate, onClose }: Train
         </div>
 
         <div className="p-4 border-t border-border">
-          <Button unstyled
+          <Button variant="outline"
             onClick={onUpdate}
-            className="w-full py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+            className="w-full"
           >
             Update Profile
           </Button>
@@ -67,7 +67,7 @@ export default function TrainerProfileCard({ profile, onUpdate, onClose }: Train
 function ProfileRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="text-sm text-foreground mt-0.5">{value}</p>
     </div>
   );

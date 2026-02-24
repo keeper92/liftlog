@@ -1,10 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --font-inter: "Avenir Next", "Avenir", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-outfit: "Avenir Next Condensed", "Avenir Next", "Futura", "Trebuchet MS", sans-serif;
-
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 
   /* shadcn token values */
   --background: #ffffff;
@@ -32,17 +29,12 @@
   --success: #16a34a;
   --warning: #d97706;
 
-  --shadow-card: 0 1px 1px rgba(15, 23, 42, 0.03), 0 8px 24px -16px rgba(15, 23, 42, 0.18);
-  --shadow-card-hover: 0 3px 6px rgba(15, 23, 42, 0.04), 0 18px 36px -20px rgba(15, 23, 42, 0.2);
-  --shadow-pill: 0 1px 1px rgba(15, 23, 42, 0.03), 0 8px 18px -14px rgba(15, 23, 42, 0.18);
-  --shadow-pill-hover: 0 2px 4px rgba(15, 23, 42, 0.05), 0 12px 24px -16px rgba(15, 23, 42, 0.2);
-  --shadow-pill-press: 0 1px 2px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  --shadow-modal: 0 12px 34px rgba(15, 23, 42, 0.24), 0 3px 10px rgba(15, 23, 42, 0.18);
 }
 
 @theme inline {
-  --font-sans: var(--font-inter);
-  --font-heading: var(--font-outfit);
+  --font-sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-body: var(--font-sans);
 
   --radius-sm: calc(var(--radius) - 6px);
   --radius-md: calc(var(--radius) - 2px);
@@ -90,7 +82,7 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -197,67 +189,4 @@ input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--foreground);
   -webkit-box-shadow: 0 0 0 1000px var(--card) inset;
   transition: background-color 5000s ease-in-out 0s;
-}
-
-.card-shadow {
-  box-shadow: var(--shadow-card);
-}
-
-.card-shadow-md {
-  box-shadow: var(--shadow-card-hover);
-}
-
-.card-shadow-interactive {
-  transition: box-shadow 160ms ease, transform 160ms ease;
-}
-
-.card-shadow-interactive:hover {
-  box-shadow: var(--shadow-card-hover);
-}
-
-.card-shadow-interactive:active {
-  transform: translateY(1px) scale(0.995);
-}
-
-.button-soft-shadow {
-  box-shadow: var(--shadow-pill);
-}
-
-.button-soft-shadow:hover {
-  box-shadow: var(--shadow-pill-hover);
-}
-
-.button-soft-shadow:active {
-  box-shadow: var(--shadow-pill-press);
-}
-
-.ui-icon-pill {
-  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
-  background: color-mix(in srgb, var(--card) 84%, var(--background) 16%);
-  box-shadow: var(--shadow-pill);
-  transition: box-shadow 160ms ease, background-color 160ms ease, transform 160ms ease;
-}
-
-.ui-icon-pill:hover {
-  background: color-mix(in srgb, var(--secondary) 82%, var(--background) 18%);
-  box-shadow: var(--shadow-pill-hover);
-}
-
-.ui-icon-pill:active {
-  transform: translateY(1px) scale(0.99);
-  box-shadow: var(--shadow-pill-press);
-}
-
-.ui-overlay-shell {
-  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
-  background: color-mix(in srgb, var(--card) 92%, var(--background) 8%);
-  box-shadow: var(--shadow-modal);
-}
-
-.ui-kicker {
-  color: var(--muted-foreground);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }

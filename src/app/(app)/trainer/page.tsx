@@ -677,8 +677,8 @@ function TrainerContent() {
                   <div
                     className={`max-w-[85%] px-4 py-2.5 text-sm leading-relaxed ${
                       msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-2xl rounded-br-md shadow-sm'
-                        : 'bg-card text-foreground rounded-2xl rounded-bl-md border border-border/70'
+                        ? 'rounded-lg rounded-br-sm bg-primary text-primary-foreground shadow-sm'
+                        : 'rounded-lg rounded-bl-sm border border-border/70 bg-card text-foreground'
                     }`}
                   >
                     {msg.content ? (
@@ -892,7 +892,7 @@ function TrainerContent() {
             )}
             {!profileMode && !showExerciseSuggestions && (
               <div className="mt-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Quick actions</p>
+                <p className="mb-2 text-sm font-medium text-muted-foreground">Quick actions</p>
                 <div className="flex flex-wrap gap-2">
                   {contextualMainSuggestions.map((s) => (
                     <Button

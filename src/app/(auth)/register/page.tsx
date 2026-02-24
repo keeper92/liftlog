@@ -75,9 +75,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <Card className="border-border/80 shadow-lg">
+    <Card className="border-border/80 shadow-sm">
       <CardHeader className="space-y-2 pb-5 text-center">
-        <CardTitle className="text-3xl font-black tracking-tight font-[family-name:var(--font-heading)]">
+        <CardTitle className="text-3xl font-bold tracking-tight">
           repsfit
         </CardTitle>
         <CardDescription>Create your account</CardDescription>

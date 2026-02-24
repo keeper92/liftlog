@@ -202,12 +202,12 @@ export default function WorkoutOutboxSync() {
       <div className="min-w-0">
         <p>{statusText}</p>
         {latestFailure && (
-          <p className="text-[11px] text-muted-foreground truncate">{latestFailure}</p>
+          <p className="text-xs text-muted-foreground truncate">{latestFailure}</p>
         )}
       </div>
-      <Button unstyled
+      <Button variant="ghost"
         onClick={() => { runSync(); }}
-        className="shrink-0 text-[11px] font-semibold text-primary hover:text-primary/80"
+        className="shrink-0 text-xs font-medium text-primary hover:text-primary/80"
       >
         Retry
       </Button>

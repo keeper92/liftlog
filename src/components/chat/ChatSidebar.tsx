@@ -137,7 +137,7 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
               if (!items || items.length === 0) return null;
               return (
                 <div key={group} className="mb-4">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-2 mb-1.5">
+                  <p className="mb-1.5 px-2 text-xs font-medium text-muted-foreground">
                     {group}
                   </p>
                   <div className="space-y-0.5">
