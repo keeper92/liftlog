@@ -23,13 +23,17 @@
   --border: #e4e4e7;
   --input: #e4e4e7;
   --ring: #0f172a;
+  --tour-overlay-strong: color-mix(in srgb, var(--foreground) 52%, transparent);
+  --tour-overlay-soft: color-mix(in srgb, var(--foreground) 46%, transparent);
+  --tour-inset: color-mix(in srgb, var(--background) 34%, transparent);
+  --tour-inset-strong: color-mix(in srgb, var(--background) 42%, transparent);
+  --tour-glow: color-mix(in srgb, var(--primary) 24%, transparent);
+  --tour-glow-strong: color-mix(in srgb, var(--primary) 32%, transparent);
 
 }
 
 @theme inline {
   --font-sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --font-heading: var(--font-sans);
-  --font-body: var(--font-sans);
 
   --radius-sm: calc(var(--radius) - 6px);
   --radius-md: calc(var(--radius) - 2px);
@@ -149,15 +153,15 @@
 @keyframes tour-highlight-pulse {
   0%, 100% {
     box-shadow:
-      0 0 0 9999px rgba(18, 18, 18, 0.52),
-      0 0 0 1px rgba(255, 255, 255, 0.34) inset,
-      0 8px 20px rgba(123, 150, 169, 0.16);
+      0 0 0 9999px var(--tour-overlay-strong),
+      0 0 0 1px var(--tour-inset) inset,
+      0 8px 20px var(--tour-glow);
   }
   50% {
     box-shadow:
-      0 0 0 9999px rgba(18, 18, 18, 0.46),
-      0 0 0 1px rgba(255, 255, 255, 0.42) inset,
-      0 14px 32px rgba(123, 150, 169, 0.24);
+      0 0 0 9999px var(--tour-overlay-soft),
+      0 0 0 1px var(--tour-inset-strong) inset,
+      0 14px 32px var(--tour-glow-strong);
   }
 }
 

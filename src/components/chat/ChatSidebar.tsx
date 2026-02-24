@@ -87,12 +87,12 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
     <div className={`fixed inset-0 z-[60] ${isOpen ? '' : 'pointer-events-none'}`}>
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black/30 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 bg-foreground/30 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
         onClick={onClose}
       />
       {/* Panel */}
       <div
-        className={`absolute inset-y-0 left-0 w-[72%] max-w-[320px] bg-background flex flex-col transition-transform duration-300 ease-out shadow-xl ${
+        className={`absolute inset-y-0 left-0 w-[72%] max-w-[320px] border-r bg-background flex flex-col transition-transform duration-300 ease-out shadow-lg ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

@@ -67,7 +67,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
     return createPortal(
       <div
         className={cn(
-          'fixed inset-0 z-[120] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[1px]'
+          'fixed inset-0 z-[120] flex items-center justify-center bg-foreground/40 p-4 backdrop-blur-[1px]'
         )}
         onMouseDown={(event) => {
           if (event.target === event.currentTarget) {
@@ -80,7 +80,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
           role="dialog"
           aria-modal="true"
           className={cn(
-            'relative w-full max-w-lg rounded-xl border border-border bg-card p-6 text-card-foreground shadow-xl',
+            'relative w-full max-w-lg rounded-xl border border-border bg-card p-6 text-card-foreground shadow-lg',
             className
           )}
           {...props}
