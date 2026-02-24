@@ -644,14 +644,10 @@ export default function DashboardPage() {
           {stats && (
             <Card>
               <CardContent className="pt-6">
-                <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="grid grid-cols-2 gap-3 text-center">
                   <div className="space-y-1">
                     <p className="text-xl font-semibold tabular-nums">{stats.weekWorkouts}</p>
                     <p className="text-xs text-muted-foreground">This Week</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xl font-semibold tabular-nums">{stats.currentStreak}</p>
-                    <p className="text-xs text-muted-foreground">Current Streak</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-xl font-semibold tabular-nums">{stats.totalWorkouts}</p>
