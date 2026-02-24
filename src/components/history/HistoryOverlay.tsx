@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { isMissingSplitSetColumnsError } from '@/lib/supabase/schemaCompat';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { formatRelativeDate, formatDuration, toDisplayWeight, weightUnit } from '@/lib/utils/units';
+import { formatAutoWorkoutName } from '@/lib/utils/workoutName';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { Calendar } from '@/components/ui/calendar';
@@ -77,6 +78,7 @@ interface HistoryOverlayProps {
   longestStreak: number;
   currentStreak: number;
   totalWorkouts: number;
+  initialDateKey?: string | null;
 }
 
 function normalizeWorkoutSet(row: WorkoutSetRow): WorkoutSet {
@@ -110,7 +112,14 @@ function normalizeWorkoutRows(rows: HistoryWorkoutRow[]): HistoryWorkout[] {
   }));
 }
 
-export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak, currentStreak, totalWorkouts }: HistoryOverlayProps) {
+export default function HistoryOverlay({
+  onClose,
+  onStartWorkout,
+  longestStreak,
+  currentStreak,
+  totalWorkouts,
+  initialDateKey = null,
+}: HistoryOverlayProps) {
   const supabase = useMemo(() => createClient(), []);
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const unit = weightUnit(unitSystem);
@@ -242,6 +251,17 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
     };
   }, [loadWorkouts, supabase.auth]);
 
+  useEffect(() => {
+    if (!initialDateKey) return;
+
+    const selectedDateValue = new Date(`${initialDateKey}T12:00:00`);
+    if (Number.isNaN(selectedDateValue.getTime())) return;
+
+    setSelectedDate(initialDateKey);
+    setCurrentMonth(new Date(selectedDateValue.getFullYear(), selectedDateValue.getMonth(), 1));
+    monthInitializedRef.current = true;
+  }, [initialDateKey]);
+
   function formatSetLabel(set: WorkoutSet): string {
     if (set.is_split_lr) {
       const leftWeight = set.left_weight ? `${toDisplayWeight(set.left_weight, unitSystem)} ${unit}` : 'BW';
@@ -331,7 +351,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
 
   function openEditOverlay(workout: HistoryWorkout) {
     setEditingWorkoutId(workout.id);
-    setEditName(workout.name || 'Workout');
+    setEditName(workout.name || formatAutoWorkoutName(workout.date));
     setEditDate(workout.date.split('T')[0]);
 
     const order: string[] = [];
@@ -457,7 +477,8 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
     setSavingEdits(true);
     try {
       const trimmedName = editName.trim();
-      const nextName = trimmedName || 'Workout';
+      const autoNameDateInput = editDate ? `${editDate}T12:00:00.000Z` : editingWorkout.date;
+      const nextName = trimmedName || formatAutoWorkoutName(autoNameDateInput);
 
       const workoutUpdates: {
         name?: string;
@@ -466,7 +487,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
         end_time?: string | null;
       } = {};
 
-      if (nextName !== (editingWorkout.name || 'Workout')) {
+      if (nextName !== (editingWorkout.name || formatAutoWorkoutName(editingWorkout.date))) {
         workoutUpdates.name = nextName;
       }
 
@@ -718,7 +739,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
         .from('workouts')
         .insert({
           user_id: user.id,
-          name: 'Workout',
+          name: formatAutoWorkoutName(startIso),
           date: startIso,
           start_time: startIso,
           end_time: endIso,
@@ -980,7 +1001,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                       >
                         <div className="flex justify-between items-start mb-2 gap-2">
                           <div>
-                            <p className="font-semibold text-sm">{w.name || 'Workout'}</p>
+                            <p className="font-semibold text-sm">{w.name || formatAutoWorkoutName(w.date)}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">{formatRelativeDate(w.date)}</p>
                           </div>
                           <div className="flex items-center gap-2">
