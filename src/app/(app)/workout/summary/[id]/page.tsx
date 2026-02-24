@@ -399,8 +399,8 @@ function WorkoutSummaryContent() {
   return (
     <div className="px-4 pt-8 pb-20">
       <div className="text-center mb-8">
-        <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-4">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-success" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-primary" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
@@ -434,9 +434,9 @@ function WorkoutSummaryContent() {
           {loadingNotes ? (
             <div className="flex items-center gap-2 text-muted-foreground">
               <span className="inline-flex gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-text-muted animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-text-muted animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-text-muted animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '300ms' }} />
               </span>
               <span className="text-sm">Analyzing your workout...</span>
             </div>
@@ -490,7 +490,7 @@ function WorkoutSummaryContent() {
       )}
 
       {savedTemplateName ? (
-        <div className="mb-3 flex items-center justify-center gap-2 py-3 rounded-xl bg-success/10 text-success text-sm font-medium">
+        <div className="mb-3 flex items-center justify-center gap-2 rounded-xl bg-primary/10 py-3 text-sm font-medium text-primary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>

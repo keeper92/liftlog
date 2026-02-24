@@ -24,11 +24,6 @@
   --input: #e4e4e7;
   --ring: #0f172a;
 
-  /* legacy token compatibility */
-  --background-elevated: #fafafa;
-  --success: #16a34a;
-  --warning: #d97706;
-
 }
 
 @theme inline {
@@ -60,18 +55,6 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-
-  --color-text: var(--foreground);
-  --color-text-primary: var(--foreground);
-  --color-text-secondary: var(--secondary-foreground);
-  --color-text-muted: var(--muted-foreground);
-  --color-surface: var(--card);
-  --color-surface-light: var(--secondary);
-  --color-background-elevated: var(--background-elevated);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-error: var(--destructive);
-  --color-border-strong: var(--input);
 }
 
 @layer base {

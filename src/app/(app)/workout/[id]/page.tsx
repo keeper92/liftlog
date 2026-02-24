@@ -198,7 +198,7 @@ function WarmupToggle({ isWarmup, setNumber, onToggle }: { isWarmup: boolean; se
   return (
     <Button variant="ghost"
       className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium select-none touch-none ${
-        isWarmup ? 'text-warning bg-warning/10' : 'text-muted-foreground'
+        isWarmup ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
       }`}
       onPointerDown={startPress}
       onPointerUp={cancelPress}
@@ -313,7 +313,7 @@ function SwipeToDeleteRow({
     <div className="relative mb-2 overflow-hidden rounded-lg">
       {enabled && (
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-end gap-1 px-3 rounded-lg bg-destructive/10 border border-error/20 text-destructive transition-opacity duration-150"
+          className="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-end gap-1 px-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive transition-opacity duration-150"
           style={{ opacity: actionOpacity }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -959,7 +959,7 @@ function WorkoutContent({
         </Button>
       </div>
       {finishError && (
-        <div className="px-4 py-2 text-xs text-warning bg-warning/10 border-b border-warning/20">
+        <div className="border-b border-destructive/20 bg-destructive/10 px-4 py-2 text-xs text-destructive">
           {finishError}
         </div>
       )}
@@ -1026,7 +1026,7 @@ function WorkoutContent({
                     <h3 className="font-semibold text-foreground">{ex.exerciseName}</h3>
                     {isAssistanceExercise && (
                       <div className="mt-1">
-                        <span className="rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs text-warning">
+                        <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs text-primary">
                           Assistance (lower = harder)
                         </span>
                       </div>
@@ -1128,7 +1128,7 @@ function WorkoutContent({
                               }
                             }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-success text-primary-foreground' : 'bg-muted text-muted-foreground'
+                              s.isCompleted ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                             }`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -1237,7 +1237,7 @@ function WorkoutContent({
                               }
                             }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-success text-primary-foreground' : 'bg-muted text-muted-foreground'
+                              s.isCompleted ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                             }`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -1311,7 +1311,7 @@ function WorkoutContent({
                               }
                             }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-success text-primary-foreground' : 'bg-muted text-muted-foreground'
+                              s.isCompleted ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                             }`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -1533,7 +1533,7 @@ function WorkoutContent({
             }}
             className="w-full py-3 px-4 text-left bg-muted hover:bg-muted/80 rounded-lg flex items-center gap-3 transition-colors"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
               <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
               <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" />
             </svg>
