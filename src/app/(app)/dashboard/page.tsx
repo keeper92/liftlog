@@ -8,7 +8,7 @@ import { DEMO_TOUR_PENDING_KEY } from '@/lib/constants/onboarding';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { formatAutoWorkoutName } from '@/lib/utils/workoutName';
-import { toDisplayWeight, weightUnit } from '@/lib/utils/units';
+import { buildExerciseSetSummaries } from '@/lib/utils/workoutSetSummary';
 import { Button } from '@/components/ui/button-shadcn';
 import {
   Card,
@@ -33,6 +33,7 @@ import HistoryOverlay from '@/components/history/HistoryOverlay';
 import PRFeedOverlay from '@/components/pr/PRFeedOverlay';
 import { usePRStore } from '@/stores/prStore';
 import ExercisePickerOverlay from '@/components/workout/ExercisePickerOverlay';
+import ExerciseSetSummaryList from '@/components/workout/ExerciseSetSummaryList';
 
 interface TemplateSummary {
   id: string;
@@ -82,7 +83,6 @@ export default function DashboardPage() {
   const supabase = useMemo(() => createClient(), []);
   const { isActive, workoutId, startWorkout, addExerciseWithSets, hydrateWorkoutSession } = useActiveWorkoutStore();
   const unitSystem = useSettingsStore((s) => s.unitSystem);
-  const unit = weightUnit(unitSystem);
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [stats, setStats] = useState<ProgressSummary | null>(null);
   const [recentWorkouts, setRecentWorkouts] = useState<RecentWorkout[]>([]);
@@ -229,34 +229,24 @@ export default function DashboardPage() {
   }
 
   function getExerciseSummaries(workout: RecentWorkout) {
-    const grouped = new Map<string, { name: string; sets: Array<{ setNumber: number | null; detail: string }> }>();
-    const orderedSets = [...(workout.sets || [])].sort(
-      (a, b) => (a.set_number ?? 0) - (b.set_number ?? 0),
+    return buildExerciseSetSummaries(
+      (workout.sets || []).map((set) => {
+        const exercise = Array.isArray(set.exercises) ? set.exercises[0] : set.exercises;
+        return {
+          exerciseId: set.exercise_id,
+          exerciseName: exercise?.name || 'Exercise',
+          setNumber: set.set_number,
+          weight: set.weight,
+          reps: set.reps,
+          isSplitLR: set.is_split_lr,
+          leftWeight: set.left_weight,
+          leftReps: set.left_reps,
+          rightWeight: set.right_weight,
+          rightReps: set.right_reps,
+        };
+      }),
+      unitSystem,
     );
-
-    for (const set of orderedSets) {
-      const exercise = Array.isArray(set.exercises) ? set.exercises[0] : set.exercises;
-      const name = exercise?.name?.trim() || 'Exercise';
-      const key = set.exercise_id;
-      if (!grouped.has(key)) grouped.set(key, { name, sets: [] });
-
-      const setDetail = set.is_split_lr
-        ? `L ${set.left_weight !== null && set.left_weight !== undefined ? `${toDisplayWeight(set.left_weight, unitSystem)} ${unit}` : 'BW'} × ${set.left_reps ?? '-'} / R ${set.right_weight !== null && set.right_weight !== undefined ? `${toDisplayWeight(set.right_weight, unitSystem)} ${unit}` : 'BW'} × ${set.right_reps ?? '-'}`
-        : `${set.weight !== null ? `${toDisplayWeight(set.weight, unitSystem)} ${unit}` : 'BW'}${set.reps !== null ? ` × ${set.reps}` : ''}`;
-      grouped.get(key)!.sets.push({ setNumber: set.set_number, detail: setDetail });
-    }
-
-    return Array.from(grouped.values()).map((group) => {
-      const visibleSets = group.sets.slice(0, 8);
-      const hiddenCount = Math.max(group.sets.length - visibleSets.length, 0);
-
-      return {
-        name: group.name,
-        setCount: group.sets.length,
-        sets: visibleSets,
-        hiddenCount,
-      };
-    });
   }
 
   function handleCreateTemplateWithAI() {
@@ -799,35 +789,10 @@ export default function DashboardPage() {
                         </p>
                       </div>
 
-                      {activeWorkoutExerciseSummaries.length === 0 ? (
-                        <p className="rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-                          No exercises logged.
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {activeWorkoutExerciseSummaries.map((exercise, index) => (
-                            <div key={`${exercise.name}-${index}`} className="rounded-md border bg-muted/30 px-3 py-2">
-                              <p className="break-words text-sm font-medium text-foreground">{exercise.name}</p>
-                              <p className="mt-0.5 text-xs text-muted-foreground">
-                                {exercise.setCount} set{exercise.setCount === 1 ? '' : 's'}
-                              </p>
-                              <div className="mt-1.5 space-y-1">
-                                {exercise.sets.map((set, setIndex) => (
-                                  <div key={`${exercise.name}-${index}-set-${setIndex}`} className="grid grid-cols-[2.25rem_1fr] items-start gap-2 text-xs">
-                                    <span className="font-medium tabular-nums text-muted-foreground">
-                                      S{set.setNumber ?? setIndex + 1}
-                                    </span>
-                                    <span className="break-words tabular-nums text-foreground">{set.detail}</span>
-                                  </div>
-                                ))}
-                                {exercise.hiddenCount > 0 && (
-                                  <p className="text-xs text-muted-foreground">+{exercise.hiddenCount} more set{exercise.hiddenCount === 1 ? '' : 's'}</p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <ExerciseSetSummaryList
+                        summaries={activeWorkoutExerciseSummaries}
+                        emptyText="No exercises logged."
+                      />
                     </>
                   )}
                 </CardContent>
