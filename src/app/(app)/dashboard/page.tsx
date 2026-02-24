@@ -641,23 +641,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {stats && (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div className="space-y-1">
-                    <p className="text-xl font-semibold tabular-nums">{stats.weekWorkouts}</p>
-                    <p className="text-xs text-muted-foreground">This Week</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xl font-semibold tabular-nums">{stats.totalWorkouts}</p>
-                    <p className="text-xs text-muted-foreground">Sessions Logged</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           <section className="space-y-2" data-tour-anchor="saved-templates">
             <div className="flex items-start justify-between gap-3">
               <div>
