@@ -55,6 +55,11 @@ interface RecentWorkout {
   date: string;
   sets?: Array<{
     exercise_id: string;
+    set_number: number | null;
+    reps: number | null;
+    is_split_lr?: boolean | null;
+    left_reps?: number | null;
+    right_reps?: number | null;
     exercises: { name: string } | Array<{ name: string }> | null;
   }> | null;
 }
@@ -73,6 +78,7 @@ export default function DashboardPage() {
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [stats, setStats] = useState<ProgressSummary | null>(null);
   const [recentWorkouts, setRecentWorkouts] = useState<RecentWorkout[]>([]);
+  const [recentWorkoutIndex, setRecentWorkoutIndex] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
   const [historyInitialDateKey, setHistoryInitialDateKey] = useState<string | null>(null);
   const [showPRFeed, setShowPRFeed] = useState(false);
@@ -114,12 +120,13 @@ export default function DashboardPage() {
 
       const { data: workoutData } = await supabase
         .from('workouts')
-        .select('id, name, date, sets(exercise_id, exercises(name))')
+        .select('id, name, date, sets(exercise_id, set_number, reps, is_split_lr, left_reps, right_reps, exercises(name))')
         .eq('user_id', user.id)
         .order('date', { ascending: false })
-        .limit(3);
+        .limit(12);
       if (workoutData) {
         setRecentWorkouts(workoutData as unknown as RecentWorkout[]);
+        setRecentWorkoutIndex(0);
       }
     }
     void load();
@@ -183,17 +190,39 @@ export default function DashboardPage() {
     setShowHistory(true);
   }
 
-  function getExerciseNames(workout: RecentWorkout): string {
-    const names = Array.from(new Set(
-      (workout.sets || [])
-        .map((set) => {
-          const exercise = Array.isArray(set.exercises) ? set.exercises[0] : set.exercises;
-          return exercise?.name?.trim() || null;
-        })
-        .filter((name): name is string => !!name),
-    ));
+  function getExerciseSummaries(workout: RecentWorkout) {
+    const grouped = new Map<string, { name: string; reps: string[] }>();
+    const orderedSets = [...(workout.sets || [])].sort(
+      (a, b) => (a.set_number ?? 0) - (b.set_number ?? 0),
+    );
 
-    return names.length > 0 ? names.join(' • ') : 'No exercises logged';
+    for (const set of orderedSets) {
+      const exercise = Array.isArray(set.exercises) ? set.exercises[0] : set.exercises;
+      const name = exercise?.name?.trim() || 'Exercise';
+      const key = set.exercise_id;
+      if (!grouped.has(key)) grouped.set(key, { name, reps: [] });
+
+      const repsLabel = set.is_split_lr
+        ? `L${set.left_reps ?? '-'} / R${set.right_reps ?? '-'}`
+        : set.reps !== null
+          ? `${set.reps}`
+          : '-';
+      grouped.get(key)!.reps.push(repsLabel);
+    }
+
+    return Array.from(grouped.values()).map((group) => {
+      const visibleReps = group.reps.slice(0, 6);
+      const hiddenCount = Math.max(group.reps.length - visibleReps.length, 0);
+      const repsText = hiddenCount > 0
+        ? `${visibleReps.join(' / ')} / +${hiddenCount}`
+        : visibleReps.join(' / ');
+
+      return {
+        name: group.name,
+        setCount: group.reps.length,
+        repsText,
+      };
+    });
   }
 
   function handleCreateTemplateWithAI() {
@@ -339,6 +368,16 @@ export default function DashboardPage() {
     const state = useActiveWorkoutStore.getState();
     router.push(`/workout/${state.workoutId}`);
   }
+
+  const safeRecentWorkoutIndex = recentWorkouts.length === 0
+    ? 0
+    : Math.min(recentWorkoutIndex, recentWorkouts.length - 1);
+  const activeRecentWorkout = recentWorkouts[safeRecentWorkoutIndex] ?? null;
+  const canShowOlderWorkout = safeRecentWorkoutIndex < recentWorkouts.length - 1;
+  const canShowNewerWorkout = safeRecentWorkoutIndex > 0;
+  const activeWorkoutExerciseSummaries = activeRecentWorkout
+    ? getExerciseSummaries(activeRecentWorkout)
+    : [];
 
   return (
     <>
@@ -670,28 +709,78 @@ export default function DashboardPage() {
                   </Button>
                 </CardContent>
               ) : (
-                <CardContent className="p-0">
-                  <ul className="divide-y divide-border">
-                    {recentWorkouts.map((workout) => {
-                      const exerciseNames = getExerciseNames(workout);
-                      return (
-                        <li key={workout.id}>
+                <CardContent className="space-y-4 p-4">
+                  {activeRecentWorkout && (
+                    <>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="break-words text-sm font-semibold">
+                            {activeRecentWorkout.name || formatAutoWorkoutName(activeRecentWorkout.date)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatWorkoutDate(activeRecentWorkout.date)} · {safeRecentWorkoutIndex + 1} of {recentWorkouts.length}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
                           <Button
                             type="button"
-                            variant="ghost"
-                            onClick={() => openHistory(toDateKey(workout.date))}
-                            className="h-auto w-full justify-between gap-3 rounded-none px-4 py-3 text-left hover:bg-accent"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setRecentWorkoutIndex((idx) => Math.min(idx + 1, recentWorkouts.length - 1))}
+                            disabled={!canShowOlderWorkout}
+                            className="h-8 w-8"
+                            aria-label="Show older workout"
                           >
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-medium">{workout.name || formatAutoWorkoutName(workout.date)}</p>
-                              <p className="truncate text-xs text-muted-foreground">{exerciseNames}</p>
-                            </div>
-                            <p className="shrink-0 text-xs text-muted-foreground">{formatWorkoutDate(workout.date)}</p>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <polyline points="15 18 9 12 15 6" />
+                            </svg>
                           </Button>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setRecentWorkoutIndex((idx) => Math.max(idx - 1, 0))}
+                            disabled={!canShowNewerWorkout}
+                            className="h-8 w-8"
+                            aria-label="Show newer workout"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <polyline points="9 18 15 12 9 6" />
+                            </svg>
+                          </Button>
+                        </div>
+                      </div>
+
+                      {activeWorkoutExerciseSummaries.length === 0 ? (
+                        <p className="rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                          No exercises logged.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {activeWorkoutExerciseSummaries.map((exercise, index) => (
+                            <div key={`${exercise.name}-${index}`} className="rounded-md border bg-muted/30 px-3 py-2">
+                              <p className="break-words text-sm font-medium text-foreground">{exercise.name}</p>
+                              <p className="break-words text-xs text-muted-foreground">
+                                {exercise.setCount} set{exercise.setCount === 1 ? '' : 's'} · Reps: {exercise.repsText}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openHistory(toDateKey(activeRecentWorkout.date))}
+                          className="h-8 px-2 text-xs"
+                        >
+                          Open in calendar
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               )}
             </Card>
