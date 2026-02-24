@@ -691,9 +691,9 @@ function TrainerContent() {
                       />
                     ) : (
                       <span className="inline-flex gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-text-muted animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-text-muted animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-text-muted animate-bounce" style={{ animationDelay: '300ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '300ms' }} />
                       </span>
                     )}
                   </div>
@@ -735,8 +735,8 @@ function TrainerContent() {
                       </div>
 
                       {msg.importData.questions && msg.importData.questions.length > 0 && (
-                        <div className="bg-warning/10 border border-warning/30 rounded-lg p-2 mb-4">
-                          <div className="text-xs text-warning font-medium mb-1">Questions:</div>
+                        <div className="mb-4 rounded-lg border border-border bg-muted/40 p-2">
+                          <div className="mb-1 text-xs font-medium text-foreground">Questions:</div>
                           {msg.importData.questions.map((q, i) => (
                             <div key={i} className="text-xs text-muted-foreground">• {q}</div>
                           ))}
@@ -769,7 +769,7 @@ function TrainerContent() {
                 {/* Import Status */}
                 {msg.importData && msg.importData.status === 'imported' && (
                   <div className="mt-2 ml-0">
-                    <span className="inline-flex items-center gap-1 text-xs text-success bg-success/10 px-2 py-1 rounded-full">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
@@ -839,7 +839,7 @@ function TrainerContent() {
                 {/* Template Saved Status */}
                 {msg.templateData && msg.templateData.status === 'saved' && (
                   <div className="mt-2 ml-0">
-                    <span className="inline-flex items-center gap-1 text-xs text-success bg-success/10 px-2 py-1 rounded-full">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
