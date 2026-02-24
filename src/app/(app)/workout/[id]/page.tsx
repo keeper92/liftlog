@@ -891,13 +891,20 @@ function WorkoutContent({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const exerciseRefs = useRef<(HTMLDivElement | null)[]>([]);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-  const dragStartY = useRef(0);
+  const touchStartY = useRef(0);
+  const mouseDragCleanupRef = useRef<(() => void) | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const clearMouseDragListeners = useCallback(() => {
+    if (!mouseDragCleanupRef.current) return;
+    mouseDragCleanupRef.current();
+    mouseDragCleanupRef.current = null;
+  }, []);
 
   function handleDragStart(index: number, clientY: number) {
     setDragIndex(index);
     setDragOverIndex(index);
-    dragStartY.current = clientY;
+    touchStartY.current = clientY;
     // Haptic feedback if available
     if (navigator.vibrate) navigator.vibrate(30);
   }
@@ -920,6 +927,7 @@ function WorkoutContent({
     if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
       store.moveExercise(dragIndex, dragOverIndex);
     }
+    clearMouseDragListeners();
     setDragIndex(null);
     setDragOverIndex(null);
     if (longPressTimer.current) {
@@ -929,6 +937,7 @@ function WorkoutContent({
   }
 
   function cancelDrag() {
+    clearMouseDragListeners();
     setDragIndex(null);
     setDragOverIndex(null);
     if (longPressTimer.current) {
@@ -1002,7 +1011,12 @@ function WorkoutContent({
       clearTimeout(undoTimerRef.current);
       undoTimerRef.current = null;
     }
-  }, []);
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    clearMouseDragListeners();
+  }, [clearMouseDragListeners]);
 
   const unit = weightUnit(unitSystem);
   const menuExerciseIndex = trainingGuideMenu
@@ -1083,15 +1097,22 @@ function WorkoutContent({
                     className="flex items-center justify-center w-8 h-10 -ml-1 cursor-grab active:cursor-grabbing touch-none"
                     onTouchStart={(e) => {
                       const touch = e.touches[0];
+                      touchStartY.current = touch.clientY;
+                      if (longPressTimer.current) {
+                        clearTimeout(longPressTimer.current);
+                        longPressTimer.current = null;
+                      }
                       longPressTimer.current = setTimeout(() => {
-                        handleDragStart(exIdx, touch.clientY);
+                        handleDragStart(exIdx, touchStartY.current);
                       }, 300);
                     }}
                     onTouchMove={(e) => {
                       if (dragIndex === null && longPressTimer.current) {
-                        // Cancel long press if finger moves before timer fires
-                        clearTimeout(longPressTimer.current);
-                        longPressTimer.current = null;
+                        // Cancel long press only after meaningful movement so jitter doesn't break drag.
+                        if (Math.abs(e.touches[0].clientY - touchStartY.current) > 8) {
+                          clearTimeout(longPressTimer.current);
+                          longPressTimer.current = null;
+                        }
                       }
                       if (dragIndex !== null) {
                         e.preventDefault();
@@ -1105,9 +1126,26 @@ function WorkoutContent({
                       }
                       if (dragIndex !== null) handleDragEnd();
                     }}
-                    onMouseDown={() => {
-                      // Desktop fallback: single click reorder not needed,
-                      // but show visual hint on hover
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      clearMouseDragListeners();
+                      handleDragStart(exIdx, e.clientY);
+
+                      const handleMouseMove = (moveEvent: MouseEvent) => {
+                        moveEvent.preventDefault();
+                        handleDragMove(moveEvent.clientY);
+                      };
+
+                      const handleMouseUp = () => {
+                        handleDragEnd();
+                      };
+
+                      window.addEventListener('mousemove', handleMouseMove);
+                      window.addEventListener('mouseup', handleMouseUp, { once: true });
+                      mouseDragCleanupRef.current = () => {
+                        window.removeEventListener('mousemove', handleMouseMove);
+                        window.removeEventListener('mouseup', handleMouseUp);
+                      };
                     }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-muted-foreground">
@@ -1138,19 +1176,23 @@ function WorkoutContent({
                       exerciseIndex: exIdx,
                     })}
                     aria-label={`Open options for ${ex.exerciseName}`}
-                    className="w-8 h-8 rounded-full border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 flex items-center justify-center"
+                    className="h-8 w-8 rounded-full border border-border bg-muted p-0 text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <circle cx="5" cy="12" r="1.8" />
-                      <circle cx="12" cy="12" r="1.8" />
-                      <circle cx="19" cy="12" r="1.8" />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="5" cy="12" r="1" />
+                      <circle cx="12" cy="12" r="1" />
+                      <circle cx="19" cy="12" r="1" />
                     </svg>
                   </Button>
                   <Button variant="ghost"
                     onClick={() => store.removeExercise(ex.exerciseId)}
-                    className="text-muted-foreground text-xs hover:text-destructive"
+                    aria-label={`Remove ${ex.exerciseName}`}
+                    className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                   >
-                    Remove
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                   </Button>
                 </div>
               </div>
@@ -1558,14 +1600,14 @@ function WorkoutContent({
               }
               setTrainingGuideMenu(null);
             }}
-            className="w-full py-3 px-4 text-left bg-muted hover:bg-muted/80 rounded-lg flex items-center gap-3 transition-colors"
+            className="w-full justify-start rounded-lg bg-muted px-4 py-3 text-left transition-colors hover:bg-muted/80"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
               <path d="M3 12a9 9 0 1 0 3-6.7" />
               <polyline points="3 3 3 9 9 9" />
               <path d="M12 7v5l3 3" />
             </svg>
-            <div>
+            <div className="text-left">
               <p className="font-medium text-foreground">Exercise History</p>
               <p className="text-xs text-muted-foreground">Past sessions with sets, reps, and weight</p>
             </div>
@@ -1578,7 +1620,7 @@ function WorkoutContent({
               }
               setTrainingGuideMenu(null);
             }}
-            className="w-full py-3 px-4 text-left bg-muted hover:bg-muted/80 rounded-lg flex items-center gap-3 transition-colors"
+            className="w-full justify-start rounded-lg bg-muted px-4 py-3 text-left transition-colors hover:bg-muted/80"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -1587,7 +1629,7 @@ function WorkoutContent({
               <line x1="16" y1="17" x2="8" y2="17" />
               <polyline points="10 9 9 9 8 9" />
             </svg>
-            <div>
+            <div className="text-left">
               <p className="font-medium text-foreground">Exercise Info</p>
               <p className="text-xs text-muted-foreground">Equipment, muscles, and form instructions</p>
             </div>
@@ -1602,7 +1644,7 @@ function WorkoutContent({
               setTrainingGuideMenu(null);
             }}
             disabled={!canToggleSplitMode}
-            className={`w-full py-3 px-4 text-left rounded-lg flex items-center gap-3 transition-colors ${
+            className={`w-full justify-start rounded-lg px-4 py-3 text-left transition-colors ${
               canToggleSplitMode
                 ? 'bg-muted hover:bg-muted/80'
                 : 'bg-muted/60 text-muted-foreground cursor-not-allowed'
@@ -1614,7 +1656,7 @@ function WorkoutContent({
               <polyline points="7 23 3 19 7 15" />
               <path d="M21 13v2a4 4 0 0 1-4 4H3" />
             </svg>
-            <div>
+            <div className="text-left">
               <p className="font-medium text-foreground">Split L/R</p>
               <p className="text-xs text-muted-foreground">{splitToggleDescription}</p>
             </div>
@@ -1628,13 +1670,13 @@ function WorkoutContent({
               }
               setTrainingGuideMenu(null);
             }}
-            className="w-full py-3 px-4 text-left bg-muted hover:bg-muted/80 rounded-lg flex items-center gap-3 transition-colors"
+            className="w-full justify-start rounded-lg bg-muted px-4 py-3 text-left transition-colors hover:bg-muted/80"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
               <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
               <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" />
             </svg>
-            <div>
+            <div className="text-left">
               <p className="font-medium text-foreground">Watch the Movement</p>
               <p className="text-xs text-muted-foreground">View exercise demos on YouTube</p>
             </div>
@@ -1647,12 +1689,12 @@ function WorkoutContent({
               }
               setTrainingGuideMenu(null);
             }}
-            className="w-full py-3 px-4 text-left bg-muted hover:bg-muted/80 rounded-lg flex items-center gap-3 transition-colors"
+            className="w-full justify-start rounded-lg bg-muted px-4 py-3 text-left transition-colors hover:bg-muted/80"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
-            <div>
+            <div className="text-left">
               <p className="font-medium text-foreground">Chat with Trainer</p>
               <p className="text-xs text-muted-foreground">Get personalized guidance and answers</p>
             </div>
