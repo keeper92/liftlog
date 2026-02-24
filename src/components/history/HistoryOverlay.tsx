@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { isMissingSplitSetColumnsError } from '@/lib/supabase/schemaCompat';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useActiveWorkoutStore, type HydratedExerciseInput } from '@/stores/activeWorkoutStore';
 import { formatRelativeDate, formatDuration, toDisplayWeight, weightUnit } from '@/lib/utils/units';
 import { formatAutoWorkoutName } from '@/lib/utils/workoutName';
 import Modal from '@/components/ui/Modal';
@@ -18,6 +20,9 @@ interface WorkoutSet {
   weight: number | null;
   reps: number | null;
   time: number | null;
+  distance: number | null;
+  is_warmup: boolean;
+  is_completed: boolean;
   is_split_lr: boolean;
   left_weight: number | null;
   left_reps: number | null;
@@ -44,6 +49,9 @@ interface WorkoutSetRow {
   weight: number | null;
   reps: number | null;
   time: number | null;
+  distance?: number | null;
+  is_warmup?: boolean | null;
+  is_completed?: boolean | null;
   is_split_lr?: boolean | null;
   left_weight?: number | null;
   left_reps?: number | null;
@@ -90,6 +98,9 @@ function normalizeWorkoutSet(row: WorkoutSetRow): WorkoutSet {
     weight: row.weight,
     reps: row.reps,
     time: row.time,
+    distance: row.distance ?? null,
+    is_warmup: !!row.is_warmup,
+    is_completed: row.is_completed !== false,
     is_split_lr: !!row.is_split_lr,
     left_weight: row.left_weight ?? null,
     left_reps: row.left_reps ?? null,
@@ -120,6 +131,7 @@ export default function HistoryOverlay({
   totalWorkouts,
   initialDateKey = null,
 }: HistoryOverlayProps) {
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const unit = weightUnit(unitSystem);
@@ -178,7 +190,7 @@ export default function HistoryOverlay({
     const { data, error } = await supabase
       .from('workouts')
       .select(
-        'id, name, date, start_time, end_time, sets(id, exercise_id, set_number, weight, reps, time, is_split_lr, left_weight, left_reps, right_weight, right_reps, exercises(name))',
+        'id, name, date, start_time, end_time, sets(id, exercise_id, set_number, weight, reps, time, distance, is_warmup, is_completed, is_split_lr, left_weight, left_reps, right_weight, right_reps, exercises(name))',
       )
       .eq('user_id', userId)
       .order('date', { ascending: false })
@@ -195,7 +207,7 @@ export default function HistoryOverlay({
       const { data: legacyData, error: legacyError } = await supabase
         .from('workouts')
         .select(
-          'id, name, date, start_time, end_time, sets(id, exercise_id, set_number, weight, reps, time, exercises(name))',
+          'id, name, date, start_time, end_time, sets(id, exercise_id, set_number, weight, reps, time, distance, is_warmup, is_completed, exercises(name))',
         )
         .eq('user_id', userId)
         .order('date', { ascending: false })
@@ -347,40 +359,6 @@ export default function HistoryOverlay({
       ...prev,
       [exerciseId]: [newDraft],
     }));
-  }
-
-  function openEditOverlay(workout: HistoryWorkout) {
-    setEditingWorkoutId(workout.id);
-    setEditName(workout.name || formatAutoWorkoutName(workout.date));
-    setEditDate(workout.date.split('T')[0]);
-
-    const order: string[] = [];
-    const names: Record<string, string> = {};
-    const grouped: Record<string, EditSetDraft[]> = {};
-
-    const sortedSets = [...workout.sets].sort((a, b) => a.set_number - b.set_number);
-    for (const set of sortedSets) {
-      if (!grouped[set.exercise_id]) {
-        grouped[set.exercise_id] = [];
-        order.push(set.exercise_id);
-        names[set.exercise_id] = set.exercises.name;
-      }
-
-      grouped[set.exercise_id].push({
-        localId: set.id,
-        setId: set.id,
-        exerciseId: set.exercise_id,
-        exerciseName: set.exercises.name,
-        weight: set.weight !== null ? String(set.weight) : '',
-        reps: set.reps !== null ? String(set.reps) : '',
-        isSplit: set.is_split_lr,
-        time: set.time,
-      });
-    }
-
-    setEditExerciseOrder(order);
-    setEditExerciseNames(names);
-    setEditSetDraftsByExercise(grouped);
   }
 
   function closeEditOverlay() {
@@ -724,43 +702,102 @@ export default function HistoryOverlay({
     return `${dateKey}T12:00:00.000Z`;
   }
 
+  async function resolveExerciseCategories(exerciseIds: string[]): Promise<Record<string, string>> {
+    if (exerciseIds.length === 0) return {};
+    const { data } = await supabase
+      .from('exercises')
+      .select('id, category')
+      .in('id', exerciseIds);
+
+    const map: Record<string, string> = {};
+    for (const row of (data || []) as Array<{ id: string; category: string | null }>) {
+      map[row.id] = row.category || 'other';
+    }
+    return map;
+  }
+
+  function buildHydratedExercisesForWorkout(
+    workout: HistoryWorkout,
+    categoriesByExerciseId: Record<string, string>,
+  ): HydratedExerciseInput[] {
+    const grouped = new Map<string, { name: string; sets: WorkoutSet[] }>();
+    for (const set of workout.sets) {
+      if (!grouped.has(set.exercise_id)) {
+        grouped.set(set.exercise_id, { name: set.exercises.name, sets: [] });
+      }
+      grouped.get(set.exercise_id)!.sets.push(set);
+    }
+
+    return Array.from(grouped.entries()).map(([exerciseId, group]) => {
+      const sortedSets = [...group.sets].sort((a, b) => a.set_number - b.set_number);
+      const logMode = sortedSets.some((set) => set.is_split_lr) ? 'split_lr' : 'combined';
+
+      return {
+        exerciseId,
+        exerciseName: group.name,
+        exerciseCategory: categoriesByExerciseId[exerciseId] || 'other',
+        logMode,
+        sets: sortedSets.map((set, index) => ({
+          id: set.id,
+          setNumber: index + 1,
+          weight: set.weight,
+          reps: set.reps,
+          leftWeight: set.left_weight,
+          leftReps: set.left_reps,
+          rightWeight: set.right_weight,
+          rightReps: set.right_reps,
+          time: set.time,
+          distance: set.distance,
+          isWarmup: set.is_warmup,
+          isCompleted: set.is_completed,
+          timestamp: set.is_completed ? workout.end_time || workout.start_time : null,
+        })),
+      };
+    });
+  }
+
+  async function launchWorkoutEditor(workout: HistoryWorkout) {
+    const exerciseIds = Array.from(new Set(workout.sets.map((set) => set.exercise_id)));
+    const categoriesByExerciseId = await resolveExerciseCategories(exerciseIds);
+    const hydratedExercises = buildHydratedExercisesForWorkout(workout, categoriesByExerciseId);
+    const fallbackEndTime = workout.end_time || new Date(new Date(workout.start_time).getTime() + 45 * 60 * 1000).toISOString();
+
+    useActiveWorkoutStore.getState().hydrateWorkoutSession({
+      workoutName: workout.name || formatAutoWorkoutName(workout.date),
+      startTime: new Date().toISOString(),
+      exercises: hydratedExercises,
+      builderMode: 'calendar_edit',
+      saveTargetWorkoutId: workout.id,
+      saveTargetStartTime: workout.start_time,
+      saveTargetEndTime: fallbackEndTime,
+    });
+
+    const state = useActiveWorkoutStore.getState();
+    if (!state.workoutId) return;
+    onClose();
+    router.push(`/workout/${state.workoutId}`);
+  }
+
   async function handleAddWorkoutForDate(dateKey: string) {
     if (creatingWorkoutDate) return;
 
     setCreatingWorkoutDate(dateKey);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const startIso = toDateAtNoonUtc(dateKey);
       const endIso = new Date(new Date(startIso).getTime() + 45 * 60 * 1000).toISOString();
+      useActiveWorkoutStore.getState().hydrateWorkoutSession({
+        workoutName: formatAutoWorkoutName(startIso),
+        startTime: new Date().toISOString(),
+        exercises: [],
+        builderMode: 'calendar_add',
+        saveTargetStartTime: startIso,
+        saveTargetEndTime: endIso,
+      });
 
-      const { data: workoutData, error } = await supabase
-        .from('workouts')
-        .insert({
-          user_id: user.id,
-          name: formatAutoWorkoutName(startIso),
-          date: startIso,
-          start_time: startIso,
-          end_time: endIso,
-        })
-        .select('id, name, date, start_time, end_time')
-        .single();
-
-      if (error || !workoutData) return;
-
-      const createdWorkout: HistoryWorkout = {
-        ...(workoutData as Omit<HistoryWorkout, 'sets'>),
-        sets: [],
-      };
-
-      setWorkouts((prev) =>
-        [...prev, createdWorkout].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-        ),
-      );
-      setSelectedDate(dateKey);
-      openEditOverlay(createdWorkout);
+      const state = useActiveWorkoutStore.getState();
+      if (!state.workoutId) return;
+      onClose();
+      router.push(`/workout/${state.workoutId}`);
     } finally {
       setCreatingWorkoutDate(null);
     }
@@ -997,7 +1034,7 @@ export default function HistoryOverlay({
                       <Button
                         variant="ghost"
                         key={w.id}
-                        onClick={() => openEditOverlay(w)}
+                        onClick={() => void launchWorkoutEditor(w)}
                         className="h-auto w-full flex-col items-stretch whitespace-normal rounded-xl border bg-card p-4 text-left hover:bg-accent"
                       >
                         <div className="flex justify-between items-start mb-2 gap-2">

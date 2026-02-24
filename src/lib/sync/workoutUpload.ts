@@ -25,6 +25,7 @@ export interface WorkoutUploadSnapshot {
   workoutId: string;
   workoutName: string;
   startTime: string;
+  endTime?: string | null;
   templateId: string | null;
   exercises: WorkoutUploadExercise[];
 }
@@ -56,7 +57,7 @@ export async function uploadWorkoutSnapshot(
           name: snapshot.workoutName,
           date: snapshot.startTime,
           start_time: snapshot.startTime,
-          end_time: new Date().toISOString(),
+          end_time: snapshot.endTime ?? new Date().toISOString(),
         },
         { onConflict: 'id' },
       ),

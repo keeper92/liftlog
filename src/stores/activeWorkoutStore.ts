@@ -23,6 +23,7 @@ export interface ActiveSet {
 }
 
 export type ExerciseLogMode = 'combined' | 'split_lr';
+export type WorkoutBuilderMode = 'standard' | 'calendar_edit' | 'calendar_add' | 'template_builder';
 
 export interface WorkoutExercise {
   exerciseId: string;
@@ -32,6 +33,44 @@ export interface WorkoutExercise {
   sets: ActiveSet[];
   restTimerSeconds: number;
   notes: string;
+}
+
+export interface HydratedSetInput {
+  id?: string;
+  setNumber?: number;
+  weight?: number | null;
+  reps?: number | null;
+  leftWeight?: number | null;
+  leftReps?: number | null;
+  rightWeight?: number | null;
+  rightReps?: number | null;
+  time?: number | null;
+  distance?: number | null;
+  isWarmup?: boolean;
+  isCompleted?: boolean;
+  timestamp?: string | null;
+}
+
+export interface HydratedExerciseInput {
+  exerciseId: string;
+  exerciseName: string;
+  exerciseCategory: string;
+  logMode?: ExerciseLogMode;
+  sets?: HydratedSetInput[];
+  restTimerSeconds?: number;
+  notes?: string;
+}
+
+interface HydratedWorkoutPayload {
+  workoutId?: string;
+  workoutName?: string;
+  startTime?: string;
+  templateId?: string | null;
+  exercises?: HydratedExerciseInput[];
+  builderMode?: WorkoutBuilderMode;
+  saveTargetWorkoutId?: string | null;
+  saveTargetStartTime?: string | null;
+  saveTargetEndTime?: string | null;
 }
 
 export interface PerformanceSet {
@@ -48,8 +87,13 @@ export interface ActiveWorkoutState {
   isActive: boolean;
   previousPerformance: Record<string, PerformanceSet[]>;
   templateId: string | null;
+  builderMode: WorkoutBuilderMode;
+  saveTargetWorkoutId: string | null;
+  saveTargetStartTime: string | null;
+  saveTargetEndTime: string | null;
 
   startWorkout: (name?: string, templateId?: string) => void;
+  hydrateWorkoutSession: (payload: HydratedWorkoutPayload) => void;
   addExercise: (exercise: { id: string; name: string; category: string }) => void;
   addExerciseWithSets: (exercise: { id: string; name: string; category: string }, setCount: number) => void;
   removeExercise: (exerciseId: string) => void;
@@ -125,6 +169,10 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
       isActive: false,
       previousPerformance: {},
       templateId: null,
+      builderMode: 'standard',
+      saveTargetWorkoutId: null,
+      saveTargetStartTime: null,
+      saveTargetEndTime: null,
 
       startWorkout: (name?: string, templateId?: string) => {
         set({
@@ -135,6 +183,80 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
           isActive: true,
           previousPerformance: {},
           templateId: templateId || null,
+          builderMode: 'standard',
+          saveTargetWorkoutId: null,
+          saveTargetStartTime: null,
+          saveTargetEndTime: null,
+        });
+      },
+
+      hydrateWorkoutSession: (payload) => {
+        const startTime = payload.startTime || new Date().toISOString();
+        const workoutId = payload.workoutId || uuidv4();
+        const normalizedExercises: WorkoutExercise[] = (payload.exercises || []).map((exercise) => {
+          const logMode: ExerciseLogMode = exercise.logMode || 'combined';
+          const rawSets = exercise.sets || [];
+          const fallbackSet =
+            rawSets.length === 0
+              ? [{
+                  setNumber: 1,
+                  weight: null,
+                  reps: null,
+                  leftWeight: null,
+                  leftReps: null,
+                  rightWeight: null,
+                  rightReps: null,
+                  time: null,
+                  distance: null,
+                  isWarmup: false,
+                  isCompleted: false,
+                  timestamp: null,
+                }]
+              : rawSets;
+
+          const sets = fallbackSet.map((set, index) => {
+            const baseSet: ActiveSet = {
+              id: set.id || uuidv4(),
+              exerciseId: exercise.exerciseId,
+              setNumber: set.setNumber || index + 1,
+              weight: set.weight ?? null,
+              reps: set.reps ?? null,
+              leftWeight: set.leftWeight ?? null,
+              leftReps: set.leftReps ?? null,
+              rightWeight: set.rightWeight ?? null,
+              rightReps: set.rightReps ?? null,
+              time: set.time ?? null,
+              distance: set.distance ?? null,
+              isWarmup: set.isWarmup ?? false,
+              isCompleted: set.isCompleted ?? false,
+              timestamp: set.timestamp ?? null,
+            };
+            return logMode === 'split_lr' ? withSplitDefaults(baseSet) : baseSet;
+          });
+
+          return {
+            exerciseId: exercise.exerciseId,
+            exerciseName: exercise.exerciseName,
+            exerciseCategory: exercise.exerciseCategory,
+            logMode,
+            sets,
+            restTimerSeconds: exercise.restTimerSeconds ?? 90,
+            notes: exercise.notes ?? '',
+          };
+        });
+
+        set({
+          workoutId,
+          workoutName: payload.workoutName || formatAutoWorkoutName(new Date(startTime)),
+          startTime,
+          exercises: normalizedExercises,
+          isActive: true,
+          previousPerformance: {},
+          templateId: payload.templateId ?? null,
+          builderMode: payload.builderMode || 'standard',
+          saveTargetWorkoutId: payload.saveTargetWorkoutId ?? null,
+          saveTargetStartTime: payload.saveTargetStartTime ?? null,
+          saveTargetEndTime: payload.saveTargetEndTime ?? null,
         });
       },
 
@@ -364,6 +486,10 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
           isActive: false,
           previousPerformance: {},
           templateId: null,
+          builderMode: 'standard',
+          saveTargetWorkoutId: null,
+          saveTargetStartTime: null,
+          saveTargetEndTime: null,
         });
 
         return result;
@@ -378,6 +504,10 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
           isActive: false,
           previousPerformance: {},
           templateId: null,
+          builderMode: 'standard',
+          saveTargetWorkoutId: null,
+          saveTargetStartTime: null,
+          saveTargetEndTime: null,
         });
       },
     }),

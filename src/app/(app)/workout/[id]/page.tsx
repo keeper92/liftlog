@@ -547,6 +547,60 @@ export default function ActiveWorkoutPage() {
     };
   }, [exercises, previousPerformance, setPreviousPerformance, supabase]);
 
+  const saveTemplateFromSnapshot = useCallback(async (userId: string, snapshot: WorkoutUploadSnapshot) => {
+    if (snapshot.exercises.length === 0) {
+      throw new Error('Add at least one exercise to save a template.');
+    }
+
+    const templateName = snapshot.workoutName.trim() || 'My Template';
+    const exerciseOrder: string[] = [];
+    const defaultSetsByExercise = new Map<string, number>();
+
+    for (const exercise of snapshot.exercises) {
+      if (!exerciseOrder.includes(exercise.exerciseId)) {
+        exerciseOrder.push(exercise.exerciseId);
+      }
+      const nonWarmupSetCount = exercise.sets.filter((set) => !set.isWarmup).length;
+      const fallbackSetCount = exercise.sets.length || 3;
+      defaultSetsByExercise.set(
+        exercise.exerciseId,
+        Math.max(defaultSetsByExercise.get(exercise.exerciseId) ?? 0, nonWarmupSetCount || fallbackSetCount),
+      );
+    }
+
+    const { data: template, error: templateError } = await withTimeout(
+      supabase
+        .from('workout_templates')
+        .insert({ user_id: userId, name: templateName })
+        .select('id')
+        .single(),
+      FINISH_TIMEOUT_MS,
+      'Template save',
+    );
+
+    if (templateError || !template) {
+      throw templateError ?? new Error('Could not create template.');
+    }
+
+    const templateExercises = exerciseOrder.map((exerciseId, index) => ({
+      template_id: template.id,
+      exercise_id: exerciseId,
+      order_index: index,
+      default_sets: Math.max(1, defaultSetsByExercise.get(exerciseId) || 3),
+    }));
+
+    const { error: exerciseError } = await withTimeout(
+      supabase.from('template_exercises').insert(templateExercises),
+      FINISH_TIMEOUT_MS,
+      'Template exercise save',
+    );
+
+    if (exerciseError) {
+      await supabase.from('workout_templates').delete().eq('id', template.id);
+      throw exerciseError;
+    }
+  }, [supabase]);
+
   const handleFinish = useCallback(async () => {
     if (saving) return;
     setFinishError(null);
@@ -557,6 +611,19 @@ export default function ActiveWorkoutPage() {
       setSaving(false);
       return;
     }
+
+    const mode = store.builderMode;
+    const isCalendarMode = mode === 'calendar_add' || mode === 'calendar_edit';
+    const effectiveSnapshot: WorkoutUploadSnapshot = isCalendarMode
+      ? {
+          ...snapshot,
+          workoutId: store.saveTargetWorkoutId || snapshot.workoutId,
+          startTime: store.saveTargetStartTime || snapshot.startTime,
+          endTime:
+            store.saveTargetEndTime ||
+            new Date((store.saveTargetStartTime || snapshot.startTime)).toISOString(),
+        }
+      : snapshot;
 
     let currentUserId: string | null = null;
 
@@ -570,17 +637,35 @@ export default function ActiveWorkoutPage() {
       }
       currentUserId = user.id;
 
-      await uploadWorkoutSnapshot(supabase, user.id, snapshot, FINISH_TIMEOUT_MS);
+      if (mode === 'template_builder') {
+        await saveTemplateFromSnapshot(user.id, snapshot);
+        usePRStore.getState().clearFiredNotifications();
+        store.discardWorkout();
+        router.push('/dashboard');
+        return;
+      }
+
+      await uploadWorkoutSnapshot(supabase, user.id, effectiveSnapshot, FINISH_TIMEOUT_MS);
 
       usePRStore.getState().clearFiredNotifications();
       store.discardWorkout();
 
-      const summaryUrl = snapshot.templateId
-        ? `/workout/summary/${snapshot.workoutId}?templateId=${snapshot.templateId}`
-        : `/workout/summary/${snapshot.workoutId}`;
+      if (isCalendarMode) {
+        router.push('/dashboard');
+        return;
+      }
+
+      const summaryUrl = effectiveSnapshot.templateId
+        ? `/workout/summary/${effectiveSnapshot.workoutId}?templateId=${effectiveSnapshot.templateId}`
+        : `/workout/summary/${effectiveSnapshot.workoutId}`;
       router.push(summaryUrl);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unable to save workout right now.';
+      if (mode === 'template_builder') {
+        setFinishError(errorMessage);
+        setSaving(false);
+        return;
+      }
       if (!currentUserId) {
         try {
           const {
@@ -592,7 +677,7 @@ export default function ActiveWorkoutPage() {
         }
       }
       try {
-        useWorkoutOutboxStore.getState().enqueue(snapshot, errorMessage, currentUserId);
+        useWorkoutOutboxStore.getState().enqueue(effectiveSnapshot, errorMessage, currentUserId);
         usePRStore.getState().clearFiredNotifications();
         store.discardWorkout();
         setSaving(false);
@@ -607,10 +692,13 @@ export default function ActiveWorkoutPage() {
         setSaving(false);
       }
     }
-  }, [saving, stopRestTimer, store, supabase, router]);
+  }, [saving, stopRestTimer, store, supabase, router, saveTemplateFromSnapshot]);
 
   const handleDiscard = useCallback(() => {
-    if (window.confirm('Discard this workout? All progress will be lost.')) {
+    const confirmMessage = store.builderMode === 'template_builder'
+      ? 'Discard this template draft? Your template changes will be lost.'
+      : 'Discard this workout? All progress will be lost.';
+    if (window.confirm(confirmMessage)) {
       stopRestTimer();
       setFinishError(null);
       usePRStore.getState().clearFiredNotifications();
@@ -618,6 +706,12 @@ export default function ActiveWorkoutPage() {
       router.push('/dashboard');
     }
   }, [store, router, stopRestTimer]);
+
+  const finishLabel = store.builderMode === 'template_builder'
+    ? 'Save Template'
+    : store.builderMode === 'standard'
+      ? 'Finish'
+      : 'Save';
 
   async function openTrainerTips(exerciseId: string, exerciseName: string) {
     setTipsModal({ exerciseId, exerciseName });
@@ -722,6 +816,7 @@ export default function ActiveWorkoutPage() {
         dismissToast={dismissToast}
         finishError={finishError}
         onPRDetected={handlePRDetected}
+        finishLabel={finishLabel}
       />
     </NumberPadProvider>
   );
@@ -754,6 +849,7 @@ function WorkoutContent({
   dismissToast,
   finishError,
   onPRDetected,
+  finishLabel,
 }: {
   store: ActiveWorkoutState;
   unitSystem: 'imperial' | 'metric';
@@ -781,6 +877,7 @@ function WorkoutContent({
   dismissToast: () => void;
   finishError: string | null;
   onPRDetected: (exerciseName: string, pr: PRDetectionResult) => void;
+  finishLabel: string;
 }) {
   const { activeFocus, deactivate } = useNumberPad();
   const numberPadVisible = activeFocus !== null;
@@ -955,7 +1052,7 @@ function WorkoutContent({
           <p className="text-xs text-muted-foreground">{formatDuration(elapsed)}</p>
         </div>
         <Button variant="primary" size="sm" onClick={handleFinish} loading={saving}>
-          Finish
+          {finishLabel}
         </Button>
       </div>
       {finishError && (

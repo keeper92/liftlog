@@ -80,7 +80,7 @@ interface ManualTemplateExercise {
 export default function DashboardPage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
-  const { isActive, workoutId, startWorkout, addExerciseWithSets } = useActiveWorkoutStore();
+  const { isActive, workoutId, startWorkout, addExerciseWithSets, hydrateWorkoutSession } = useActiveWorkoutStore();
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const unit = weightUnit(unitSystem);
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
@@ -268,10 +268,22 @@ export default function DashboardPage() {
   function openManualTemplateBuilder() {
     setShowHistory(false);
     setShowPRFeed(false);
-    setManualTemplateName('');
-    setManualTemplateExercises([]);
-    setManualTemplateError(null);
-    setShowManualTemplateModal(true);
+    const suggestedName = `Template ${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+    const enteredName = window.prompt('Template name', suggestedName);
+    if (enteredName === null) return;
+    const templateName = enteredName.trim() || suggestedName;
+
+    hydrateWorkoutSession({
+      workoutName: templateName,
+      startTime: new Date().toISOString(),
+      exercises: [],
+      builderMode: 'template_builder',
+    });
+
+    const state = useActiveWorkoutStore.getState();
+    if (state.workoutId) {
+      router.push(`/workout/${state.workoutId}`);
+    }
   }
 
   function closeManualTemplateBuilder() {
