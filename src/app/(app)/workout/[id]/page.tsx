@@ -356,6 +356,7 @@ export default function ActiveWorkoutPage() {
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const [elapsed, setElapsed] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [deletingWorkout, setDeletingWorkout] = useState(false);
   const [historyModal, setHistoryModal] = useState<{ exerciseId: string; exerciseName: string } | null>(null);
   const [historyData, setHistoryData] = useState<HistoryEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -698,7 +699,9 @@ export default function ActiveWorkoutPage() {
   const handleDiscard = useCallback(() => {
     const confirmMessage = store.builderMode === 'template_builder'
       ? 'Discard this template draft? Your template changes will be lost.'
-      : 'Discard this workout? All progress will be lost.';
+      : store.builderMode === 'calendar_edit'
+        ? 'Close without saving changes to this workout?'
+        : 'Discard this workout? All progress will be lost.';
     if (window.confirm(confirmMessage)) {
       stopRestTimer();
       setFinishError(null);
@@ -707,6 +710,49 @@ export default function ActiveWorkoutPage() {
       router.push('/dashboard');
     }
   }, [store, router, stopRestTimer]);
+
+  const handleDeleteSavedWorkout = useCallback(async () => {
+    if (store.builderMode !== 'calendar_edit') return;
+    const targetWorkoutId = store.saveTargetWorkoutId;
+    if (!targetWorkoutId) {
+      setFinishError('Missing saved workout reference. Please return to calendar and try again.');
+      return;
+    }
+
+    if (!window.confirm('Delete this workout? This cannot be undone.')) return;
+
+    stopRestTimer();
+    setFinishError(null);
+    setDeletingWorkout(true);
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('Unable to verify your account. Please try again.');
+      }
+
+      const { error: deleteError } = await supabase
+        .from('workouts')
+        .delete()
+        .eq('id', targetWorkoutId)
+        .eq('user_id', user.id);
+
+      if (deleteError) {
+        throw new Error(deleteError.message || 'Unable to delete workout.');
+      }
+
+      usePRStore.getState().clearFiredNotifications();
+      store.discardWorkout();
+      router.push('/dashboard');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to delete workout.';
+      setFinishError(message);
+    } finally {
+      setDeletingWorkout(false);
+    }
+  }, [router, stopRestTimer, store, supabase]);
 
   const finishLabel = store.builderMode === 'template_builder'
     ? 'Save Template'
@@ -795,11 +841,13 @@ export default function ActiveWorkoutPage() {
         unitSystem={unitSystem}
         elapsed={elapsed}
         saving={saving}
+        deletingWorkout={deletingWorkout}
         restTimer={restTimer}
         stopRestTimer={stopRestTimer}
         startRestTimer={startRestTimer}
         handleFinish={handleFinish}
         handleDiscard={handleDiscard}
+        handleDeleteSavedWorkout={handleDeleteSavedWorkout}
         openTrainerTips={openTrainerTips}
         openHistory={openHistory}
         historyModal={historyModal}
@@ -828,11 +876,13 @@ function WorkoutContent({
   unitSystem,
   elapsed,
   saving,
+  deletingWorkout,
   restTimer,
   stopRestTimer,
   startRestTimer,
   handleFinish,
   handleDiscard,
+  handleDeleteSavedWorkout,
   openTrainerTips,
   openHistory,
   historyModal,
@@ -856,11 +906,13 @@ function WorkoutContent({
   unitSystem: 'imperial' | 'metric';
   elapsed: number;
   saving: boolean;
+  deletingWorkout: boolean;
   restTimer: RestTimerState;
   stopRestTimer: () => void;
   startRestTimer: (seconds: number) => void;
   handleFinish: () => void;
   handleDiscard: () => void;
+  handleDeleteSavedWorkout: () => void;
   openTrainerTips: (exerciseId: string, exerciseName: string) => void;
   openHistory: (exerciseId: string, exerciseName: string) => void;
   historyModal: { exerciseId: string; exerciseName: string } | null;
@@ -1032,6 +1084,8 @@ function WorkoutContent({
     : -1;
   const menuExercise = menuExerciseIndex >= 0 ? store.exercises[menuExerciseIndex] : null;
   const canToggleSplitMode = !!menuExercise && menuExercise.exerciseCategory !== 'cardio';
+  const isCalendarEditMode = store.builderMode === 'calendar_edit';
+  const dismissLabel = isCalendarEditMode ? 'Close' : 'Discard';
 
   useEffect(() => {
     if (!trainingGuideMenu) return;
@@ -1084,14 +1138,41 @@ function WorkoutContent({
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
-        <Button variant="ghost" onClick={handleDiscard} className="text-destructive text-sm font-medium min-h-[44px] px-2 flex items-center">
-          Discard
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            onClick={handleDiscard}
+            disabled={saving || deletingWorkout}
+            className={`min-h-[44px] px-2 text-sm font-medium ${
+              isCalendarEditMode ? 'text-foreground' : 'text-destructive'
+            }`}
+          >
+            {dismissLabel}
+          </Button>
+          {isCalendarEditMode && (
+            <Button
+              variant="ghost"
+              onClick={handleDeleteSavedWorkout}
+              loading={deletingWorkout}
+              disabled={saving}
+              aria-label="Delete workout"
+              className="h-9 w-9 rounded-md p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6" />
+                <path d="M14 11v6" />
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+              </svg>
+            </Button>
+          )}
+        </div>
         <div className="text-center">
           <p className="font-semibold text-sm">{store.workoutName}</p>
           <p className="text-xs text-muted-foreground">{formatDuration(elapsed)}</p>
         </div>
-        <Button variant="primary" size="sm" onClick={handleFinish} loading={saving}>
+        <Button variant="primary" size="sm" onClick={handleFinish} loading={saving} disabled={deletingWorkout}>
           {finishLabel}
         </Button>
       </div>
