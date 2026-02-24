@@ -1118,7 +1118,7 @@ function WorkoutContent({
 
   return (
     <div
-      className="flex flex-col min-h-dvh bg-background"
+      className="relative flex min-h-dvh flex-col bg-background"
       onTouchEnd={() => { if (dragIndex !== null) handleDragEnd(); }}
       onTouchCancel={cancelDrag}
     >
