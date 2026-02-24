@@ -118,6 +118,7 @@ interface PendingSetDelete {
 }
 
 interface ExerciseMenuState {
+  exerciseKey: string;
   exerciseId: string;
   exerciseName: string;
   exerciseIndex: number;
@@ -890,6 +891,7 @@ function WorkoutContent({
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const exerciseRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const exerciseMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const touchStartY = useRef(0);
   const mouseDragCleanupRef = useRef<(() => void) | null>(null);
@@ -1030,11 +1032,35 @@ function WorkoutContent({
     : -1;
   const menuExercise = menuExerciseIndex >= 0 ? store.exercises[menuExerciseIndex] : null;
   const canToggleSplitMode = !!menuExercise && menuExercise.exerciseCategory !== 'cardio';
-  const splitToggleDescription = canToggleSplitMode
-    ? menuExercise.logMode === 'split_lr'
-      ? 'Currently split mode. Tap to switch to combined.'
-      : 'Currently combined mode. Tap to enable left/right logging.'
-    : 'Cardio exercises do not support split logging.';
+
+  useEffect(() => {
+    if (!trainingGuideMenu) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const activeContainer = exerciseMenuRefs.current[trainingGuideMenu.exerciseKey];
+      const target = event.target as Node | null;
+      if (!activeContainer || !target) return;
+      if (!activeContainer.contains(target)) {
+        setTrainingGuideMenu(null);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setTrainingGuideMenu(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown, { passive: true });
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [trainingGuideMenu, setTrainingGuideMenu]);
 
   return (
     <div
@@ -1082,9 +1108,11 @@ function WorkoutContent({
           const isAssistanceExercise = isAssistanceExerciseName(ex.exerciseName);
           const isDragging = dragIndex === exIdx;
           const isDragOver = dragOverIndex === exIdx && dragIndex !== null && dragIndex !== exIdx;
+          const exerciseKey = `${ex.exerciseId}-${exIdx}`;
+          const isMenuOpen = trainingGuideMenu?.exerciseKey === exerciseKey;
           return (
             <div
-              key={ex.exerciseId + exIdx}
+              key={exerciseKey}
               ref={(el) => { exerciseRefs.current[exIdx] = el; }}
               className={`bg-card rounded-xl p-4 transition-all duration-150 ${
                 isDragging ? 'opacity-50 scale-[0.98]' : ''
@@ -1168,32 +1196,104 @@ function WorkoutContent({
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Button variant="ghost"
-                    onClick={() => setTrainingGuideMenu({
-                      exerciseId: ex.exerciseId,
-                      exerciseName: ex.exerciseName,
-                      exerciseIndex: exIdx,
-                    })}
+                <div
+                  ref={(el) => {
+                    exerciseMenuRefs.current[exerciseKey] = el;
+                  }}
+                  className="relative flex items-center shrink-0"
+                >
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setTrainingGuideMenu(
+                        isMenuOpen
+                          ? null
+                          : {
+                              exerciseKey,
+                              exerciseId: ex.exerciseId,
+                              exerciseName: ex.exerciseName,
+                              exerciseIndex: exIdx,
+                            },
+                      );
+                    }}
                     aria-label={`Open options for ${ex.exerciseName}`}
-                    className="h-8 w-8 rounded-full border border-border bg-muted p-0 text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                    className="h-8 w-8 rounded-md border border-border bg-muted p-0 text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <circle cx="5" cy="12" r="1" />
-                      <circle cx="12" cy="12" r="1" />
-                      <circle cx="19" cy="12" r="1" />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <circle cx="5" cy="12" r="1.8" />
+                      <circle cx="12" cy="12" r="1.8" />
+                      <circle cx="19" cy="12" r="1.8" />
                     </svg>
                   </Button>
-                  <Button variant="ghost"
-                    onClick={() => store.removeExercise(ex.exerciseId)}
-                    aria-label={`Remove ${ex.exerciseName}`}
-                    className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </Button>
+                  {isMenuOpen && (
+                    <div className="absolute right-0 top-10 z-40 min-w-[220px] rounded-md border border-border bg-card p-1 shadow-md">
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          openHistory(ex.exerciseId, ex.exerciseName);
+                          setTrainingGuideMenu(null);
+                        }}
+                        className="h-auto w-full justify-start rounded-sm px-3 py-2 text-left text-sm"
+                      >
+                        Exercise History
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          openTrainerTips(ex.exerciseId, ex.exerciseName);
+                          setTrainingGuideMenu(null);
+                        }}
+                        className="h-auto w-full justify-start rounded-sm px-3 py-2 text-left text-sm"
+                      >
+                        Exercise Info
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          if (canToggleSplitMode && menuExercise) {
+                            const nextMode = menuExercise.logMode === 'split_lr' ? 'combined' : 'split_lr';
+                            store.setExerciseLogMode(menuExerciseIndex, nextMode);
+                          }
+                          setTrainingGuideMenu(null);
+                        }}
+                        disabled={!canToggleSplitMode}
+                        className="h-auto w-full justify-start rounded-sm px-3 py-2 text-left text-sm"
+                      >
+                        Split L/R
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          const searchQuery = encodeURIComponent(`${ex.exerciseName} proper form`);
+                          window.open(`https://www.youtube.com/results?search_query=${searchQuery}`, '_blank');
+                          setTrainingGuideMenu(null);
+                        }}
+                        className="h-auto w-full justify-start rounded-sm px-3 py-2 text-left text-sm"
+                      >
+                        Watch the Movement
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          router.push(`/trainer?exerciseId=${ex.exerciseId}&exerciseName=${encodeURIComponent(ex.exerciseName)}`);
+                          setTrainingGuideMenu(null);
+                        }}
+                        className="h-auto w-full justify-start rounded-sm px-3 py-2 text-left text-sm"
+                      >
+                        Chat with Trainer
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          store.removeExercise(ex.exerciseId);
+                          setTrainingGuideMenu(null);
+                        }}
+                        className="h-auto w-full justify-start rounded-sm px-3 py-2 text-left text-sm text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        Remove Exercise
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1581,125 +1681,6 @@ function WorkoutContent({
             ))}
           </div>
         )}
-      </Modal>
-
-      {/* Exercise Options Menu */}
-      <Modal
-        isOpen={!!trainingGuideMenu}
-        onClose={() => setTrainingGuideMenu(null)}
-        title={trainingGuideMenu?.exerciseName ? `${trainingGuideMenu.exerciseName} Options` : 'Exercise Options'}
-        actions={[
-          { label: 'Close', onClick: () => setTrainingGuideMenu(null), variant: 'ghost' },
-        ]}
-      >
-        <div className="space-y-2">
-          <Button variant="ghost"
-            onClick={() => {
-              if (trainingGuideMenu) {
-                openHistory(trainingGuideMenu.exerciseId, trainingGuideMenu.exerciseName);
-              }
-              setTrainingGuideMenu(null);
-            }}
-            className="w-full justify-start rounded-lg bg-muted px-4 py-3 text-left transition-colors hover:bg-muted/80"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-              <path d="M3 12a9 9 0 1 0 3-6.7" />
-              <polyline points="3 3 3 9 9 9" />
-              <path d="M12 7v5l3 3" />
-            </svg>
-            <div className="text-left">
-              <p className="font-medium text-foreground">Exercise History</p>
-              <p className="text-xs text-muted-foreground">Past sessions with sets, reps, and weight</p>
-            </div>
-          </Button>
-
-          <Button variant="ghost"
-            onClick={() => {
-              if (trainingGuideMenu) {
-                openTrainerTips(trainingGuideMenu.exerciseId, trainingGuideMenu.exerciseName);
-              }
-              setTrainingGuideMenu(null);
-            }}
-            className="w-full justify-start rounded-lg bg-muted px-4 py-3 text-left transition-colors hover:bg-muted/80"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10 9 9 9 8 9" />
-            </svg>
-            <div className="text-left">
-              <p className="font-medium text-foreground">Exercise Info</p>
-              <p className="text-xs text-muted-foreground">Equipment, muscles, and form instructions</p>
-            </div>
-          </Button>
-
-          <Button variant="ghost"
-            onClick={() => {
-              if (trainingGuideMenu && canToggleSplitMode && menuExercise) {
-                const nextMode = menuExercise.logMode === 'split_lr' ? 'combined' : 'split_lr';
-                store.setExerciseLogMode(menuExerciseIndex, nextMode);
-              }
-              setTrainingGuideMenu(null);
-            }}
-            disabled={!canToggleSplitMode}
-            className={`w-full justify-start rounded-lg px-4 py-3 text-left transition-colors ${
-              canToggleSplitMode
-                ? 'bg-muted hover:bg-muted/80'
-                : 'bg-muted/60 text-muted-foreground cursor-not-allowed'
-            }`}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={canToggleSplitMode ? 'text-primary' : 'text-muted-foreground'}>
-              <polyline points="17 1 21 5 17 9" />
-              <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-              <polyline points="7 23 3 19 7 15" />
-              <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-            </svg>
-            <div className="text-left">
-              <p className="font-medium text-foreground">Split L/R</p>
-              <p className="text-xs text-muted-foreground">{splitToggleDescription}</p>
-            </div>
-          </Button>
-
-          <Button variant="ghost"
-            onClick={() => {
-              if (trainingGuideMenu) {
-                const searchQuery = encodeURIComponent(`${trainingGuideMenu.exerciseName} proper form`);
-                window.open(`https://www.youtube.com/results?search_query=${searchQuery}`, '_blank');
-              }
-              setTrainingGuideMenu(null);
-            }}
-            className="w-full justify-start rounded-lg bg-muted px-4 py-3 text-left transition-colors hover:bg-muted/80"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-              <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
-              <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" />
-            </svg>
-            <div className="text-left">
-              <p className="font-medium text-foreground">Watch the Movement</p>
-              <p className="text-xs text-muted-foreground">View exercise demos on YouTube</p>
-            </div>
-          </Button>
-
-          <Button variant="ghost"
-            onClick={() => {
-              if (trainingGuideMenu) {
-                router.push(`/trainer?exerciseId=${trainingGuideMenu.exerciseId}&exerciseName=${encodeURIComponent(trainingGuideMenu.exerciseName)}`);
-              }
-              setTrainingGuideMenu(null);
-            }}
-            className="w-full justify-start rounded-lg bg-muted px-4 py-3 text-left transition-colors hover:bg-muted/80"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            <div className="text-left">
-              <p className="font-medium text-foreground">Chat with Trainer</p>
-              <p className="text-xs text-muted-foreground">Get personalized guidance and answers</p>
-            </div>
-          </Button>
-        </div>
       </Modal>
 
       {/* Trainer Tips Modal */}
