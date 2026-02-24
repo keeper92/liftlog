@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
+import { formatAutoWorkoutName } from '@/lib/utils/workoutName';
 
 export interface ActiveSet {
   id: string;
@@ -128,7 +129,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
       startWorkout: (name?: string, templateId?: string) => {
         set({
           workoutId: uuidv4(),
-          workoutName: name || `Workout ${new Date().toLocaleDateString()}`,
+          workoutName: name || formatAutoWorkoutName(new Date()),
           startTime: new Date().toISOString(),
           exercises: [],
           isActive: true,

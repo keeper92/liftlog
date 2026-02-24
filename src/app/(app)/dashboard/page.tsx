@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { DEMO_TOUR_PENDING_KEY } from '@/lib/constants/onboarding';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
+import { formatAutoWorkoutName } from '@/lib/utils/workoutName';
 import { Button } from '@/components/ui/button-shadcn';
 import {
   Card,
@@ -52,7 +53,10 @@ interface RecentWorkout {
   id: string;
   name: string | null;
   date: string;
-  sets: { exercise_id: string }[];
+  sets?: Array<{
+    exercise_id: string;
+    exercises: { name: string } | Array<{ name: string }> | null;
+  }> | null;
 }
 
 interface ManualTemplateExercise {
@@ -70,6 +74,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<ProgressSummary | null>(null);
   const [recentWorkouts, setRecentWorkouts] = useState<RecentWorkout[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [historyInitialDateKey, setHistoryInitialDateKey] = useState<string | null>(null);
   const [showPRFeed, setShowPRFeed] = useState(false);
   const [tourStage, setTourStage] = useState<'idle' | 'intro' | 'active'>('idle');
   const [showManualTemplateModal, setShowManualTemplateModal] = useState(false);
@@ -109,7 +114,7 @@ export default function DashboardPage() {
 
       const { data: workoutData } = await supabase
         .from('workouts')
-        .select('id, name, date, sets(exercise_id)')
+        .select('id, name, date, sets(exercise_id, exercises(name))')
         .eq('user_id', user.id)
         .order('date', { ascending: false })
         .limit(3);
@@ -151,12 +156,44 @@ export default function DashboardPage() {
 
   function handleStartWorkoutFromOverlay() {
     setShowHistory(false);
+    setHistoryInitialDateKey(null);
     setShowPRFeed(false);
     handleStartWorkout();
   }
 
   function formatWorkoutDate(date: string) {
     return new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  function toDateKey(value: string): string {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      const year = parsed.getFullYear();
+      const month = String(parsed.getMonth() + 1).padStart(2, '0');
+      const day = String(parsed.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    const [dateKey] = value.split('T');
+    return dateKey;
+  }
+
+  function openHistory(dateKey: string | null = null) {
+    setShowPRFeed(false);
+    setHistoryInitialDateKey(dateKey);
+    setShowHistory(true);
+  }
+
+  function getExerciseNames(workout: RecentWorkout): string {
+    const names = Array.from(new Set(
+      (workout.sets || [])
+        .map((set) => {
+          const exercise = Array.isArray(set.exercises) ? set.exercises[0] : set.exercises;
+          return exercise?.name?.trim() || null;
+        })
+        .filter((name): name is string => !!name),
+    ));
+
+    return names.length > 0 ? names.join(' • ') : 'No exercises logged';
   }
 
   function handleCreateTemplateWithAI() {
@@ -329,11 +366,15 @@ export default function DashboardPage() {
 
       {showHistory && stats && (
         <HistoryOverlay
-          onClose={() => setShowHistory(false)}
+          onClose={() => {
+            setShowHistory(false);
+            setHistoryInitialDateKey(null);
+          }}
           onStartWorkout={handleStartWorkoutFromOverlay}
           longestStreak={stats.longestStreak}
           currentStreak={stats.currentStreak}
           totalWorkouts={stats.totalWorkouts}
+          initialDateKey={historyInitialDateKey}
         />
       )}
 
@@ -491,7 +532,7 @@ export default function DashboardPage() {
                 type="button"
                 variant="outline"
                 size="icon"
-                onClick={() => setShowHistory(true)}
+                onClick={() => openHistory()}
                 data-tour-anchor="history"
                 aria-label="Open consistency calendar"
               >
@@ -616,7 +657,7 @@ export default function DashboardPage() {
           <section className="space-y-2">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold tracking-tight">Recent Activity</h2>
-              <Button variant="ghost" size="sm" onClick={() => setShowHistory(true)} className="h-8 px-2.5 text-xs">
+              <Button variant="ghost" size="sm" onClick={() => openHistory()} className="h-8 px-2.5 text-xs">
                 View all
               </Button>
             </div>
@@ -632,16 +673,21 @@ export default function DashboardPage() {
                 <CardContent className="p-0">
                   <ul className="divide-y divide-border">
                     {recentWorkouts.map((workout) => {
-                      const exerciseCount = new Set(workout.sets.map((set) => set.exercise_id)).size;
+                      const exerciseNames = getExerciseNames(workout);
                       return (
-                        <li key={workout.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">{workout.name || 'Workout'}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {exerciseCount} exercise{exerciseCount === 1 ? '' : 's'} • {workout.sets.length} set{workout.sets.length === 1 ? '' : 's'}
-                            </p>
-                          </div>
-                          <p className="shrink-0 text-xs text-muted-foreground">{formatWorkoutDate(workout.date)}</p>
+                        <li key={workout.id}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => openHistory(toDateKey(workout.date))}
+                            className="h-auto w-full justify-between gap-3 rounded-none px-4 py-3 text-left hover:bg-accent"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">{workout.name || formatAutoWorkoutName(workout.date)}</p>
+                              <p className="truncate text-xs text-muted-foreground">{exerciseNames}</p>
+                            </div>
+                            <p className="shrink-0 text-xs text-muted-foreground">{formatWorkoutDate(workout.date)}</p>
+                          </Button>
                         </li>
                       );
                     })}
