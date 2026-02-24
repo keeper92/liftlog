@@ -229,7 +229,7 @@ export default function DashboardPage() {
   }
 
   function getExerciseSummaries(workout: RecentWorkout) {
-    const grouped = new Map<string, { name: string; reps: string[]; weights: string[] }>();
+    const grouped = new Map<string, { name: string; sets: Array<{ setNumber: number | null; detail: string }> }>();
     const orderedSets = [...(workout.sets || [])].sort(
       (a, b) => (a.set_number ?? 0) - (b.set_number ?? 0),
     );
@@ -238,38 +238,23 @@ export default function DashboardPage() {
       const exercise = Array.isArray(set.exercises) ? set.exercises[0] : set.exercises;
       const name = exercise?.name?.trim() || 'Exercise';
       const key = set.exercise_id;
-      if (!grouped.has(key)) grouped.set(key, { name, reps: [], weights: [] });
+      if (!grouped.has(key)) grouped.set(key, { name, sets: [] });
 
-      const repsLabel = set.is_split_lr
-        ? `L${set.left_reps ?? '-'} / R${set.right_reps ?? '-'}`
-        : set.reps !== null
-          ? `${set.reps}`
-          : '-';
-      const weightLabel = set.is_split_lr
-        ? `L ${set.left_weight !== null && set.left_weight !== undefined ? `${toDisplayWeight(set.left_weight, unitSystem)} ${unit}` : 'BW'} / R ${set.right_weight !== null && set.right_weight !== undefined ? `${toDisplayWeight(set.right_weight, unitSystem)} ${unit}` : 'BW'}`
-        : set.weight !== null
-          ? `${toDisplayWeight(set.weight, unitSystem)} ${unit}`
-          : 'BW';
-      grouped.get(key)!.reps.push(repsLabel);
-      grouped.get(key)!.weights.push(weightLabel);
+      const setDetail = set.is_split_lr
+        ? `L ${set.left_weight !== null && set.left_weight !== undefined ? `${toDisplayWeight(set.left_weight, unitSystem)} ${unit}` : 'BW'} × ${set.left_reps ?? '-'} / R ${set.right_weight !== null && set.right_weight !== undefined ? `${toDisplayWeight(set.right_weight, unitSystem)} ${unit}` : 'BW'} × ${set.right_reps ?? '-'}`
+        : `${set.weight !== null ? `${toDisplayWeight(set.weight, unitSystem)} ${unit}` : 'BW'}${set.reps !== null ? ` × ${set.reps}` : ''}`;
+      grouped.get(key)!.sets.push({ setNumber: set.set_number, detail: setDetail });
     }
 
     return Array.from(grouped.values()).map((group) => {
-      const visibleReps = group.reps.slice(0, 6);
-      const visibleWeights = group.weights.slice(0, 6);
-      const hiddenCount = Math.max(group.reps.length - visibleReps.length, 0);
-      const repsText = hiddenCount > 0
-        ? `${visibleReps.join(' / ')} / +${hiddenCount}`
-        : visibleReps.join(' / ');
-      const weightsText = hiddenCount > 0
-        ? `${visibleWeights.join(' / ')} / +${hiddenCount}`
-        : visibleWeights.join(' / ');
+      const visibleSets = group.sets.slice(0, 8);
+      const hiddenCount = Math.max(group.sets.length - visibleSets.length, 0);
 
       return {
         name: group.name,
-        setCount: group.reps.length,
-        repsText,
-        weightsText,
+        setCount: group.sets.length,
+        sets: visibleSets,
+        hiddenCount,
       };
     });
   }
@@ -811,9 +796,22 @@ export default function DashboardPage() {
                           {activeWorkoutExerciseSummaries.map((exercise, index) => (
                             <div key={`${exercise.name}-${index}`} className="rounded-md border bg-muted/30 px-3 py-2">
                               <p className="break-words text-sm font-medium text-foreground">{exercise.name}</p>
-                              <p className="break-words text-xs text-muted-foreground">
-                                {exercise.setCount} set{exercise.setCount === 1 ? '' : 's'} · Reps: {exercise.repsText} · Weight: {exercise.weightsText}
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                {exercise.setCount} set{exercise.setCount === 1 ? '' : 's'}
                               </p>
+                              <div className="mt-1.5 space-y-1">
+                                {exercise.sets.map((set, setIndex) => (
+                                  <div key={`${exercise.name}-${index}-set-${setIndex}`} className="grid grid-cols-[2.25rem_1fr] items-start gap-2 text-xs">
+                                    <span className="font-medium tabular-nums text-muted-foreground">
+                                      S{set.setNumber ?? setIndex + 1}
+                                    </span>
+                                    <span className="break-words tabular-nums text-foreground">{set.detail}</span>
+                                  </div>
+                                ))}
+                                {exercise.hiddenCount > 0 && (
+                                  <p className="text-xs text-muted-foreground">+{exercise.hiddenCount} more set{exercise.hiddenCount === 1 ? '' : 's'}</p>
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>
