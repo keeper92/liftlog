@@ -48,6 +48,13 @@ interface ProgressSummary {
   weekWorkouts: number;
 }
 
+interface RecentWorkout {
+  id: string;
+  name: string | null;
+  date: string;
+  sets: { exercise_id: string }[];
+}
+
 interface ManualTemplateExercise {
   exerciseId: string;
   name: string;
@@ -61,6 +68,7 @@ export default function DashboardPage() {
   const { isActive, workoutId, startWorkout, addExerciseWithSets } = useActiveWorkoutStore();
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [stats, setStats] = useState<ProgressSummary | null>(null);
+  const [recentWorkouts, setRecentWorkouts] = useState<RecentWorkout[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showPRFeed, setShowPRFeed] = useState(false);
   const [tourStage, setTourStage] = useState<'idle' | 'intro' | 'active'>('idle');
@@ -97,6 +105,16 @@ export default function DashboardPage() {
           totalWorkouts: s.totalWorkouts,
           weekWorkouts: s.weekWorkouts,
         });
+      }
+
+      const { data: workoutData } = await supabase
+        .from('workouts')
+        .select('id, name, date, sets(exercise_id)')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false })
+        .limit(3);
+      if (workoutData) {
+        setRecentWorkouts(workoutData as unknown as RecentWorkout[]);
       }
     }
     void load();
@@ -135,6 +153,10 @@ export default function DashboardPage() {
     setShowHistory(false);
     setShowPRFeed(false);
     handleStartWorkout();
+  }
+
+  function formatWorkoutDate(date: string) {
+    return new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
   function handleCreateTemplateWithAI() {
@@ -440,8 +462,7 @@ export default function DashboardPage() {
         }}
       />
 
-      <div className="pb-24">
-        <div className="mx-auto w-full max-w-3xl space-y-4 px-4 pt-4 sm:px-6">
+      <div className="mx-auto w-full max-w-3xl space-y-3 px-4 pt-4 sm:px-6">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
@@ -525,7 +546,7 @@ export default function DashboardPage() {
             </Card>
           )}
 
-          <section className="space-y-3" data-tour-anchor="saved-templates">
+          <section className="space-y-2" data-tour-anchor="saved-templates">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-semibold tracking-tight">Saved Templates</h2>
@@ -537,7 +558,7 @@ export default function DashboardPage() {
 
             {templates.length === 0 ? (
               <Card>
-                <CardContent className="flex flex-col items-center py-10 text-center">
+                <CardContent className="flex flex-col items-center py-6 text-center">
                   <p className="text-sm text-muted-foreground">No templates yet.</p>
                   <p className="text-sm text-muted-foreground">Build one yourself in seconds.</p>
                   <Button onClick={openManualTemplateBuilder} size="sm" className="mt-4">
@@ -591,8 +612,45 @@ export default function DashboardPage() {
               </div>
             )}
           </section>
+
+          <section className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold tracking-tight">Recent Activity</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowHistory(true)} className="h-8 px-2.5 text-xs">
+                View all
+              </Button>
+            </div>
+            <Card>
+              {recentWorkouts.length === 0 ? (
+                <CardContent className="py-6 text-center">
+                  <p className="text-sm text-muted-foreground">No workouts logged yet.</p>
+                  <Button onClick={handleStartWorkout} size="sm" className="mt-4">
+                    Start First Workout
+                  </Button>
+                </CardContent>
+              ) : (
+                <CardContent className="p-0">
+                  <ul className="divide-y divide-border">
+                    {recentWorkouts.map((workout) => {
+                      const exerciseCount = new Set(workout.sets.map((set) => set.exercise_id)).size;
+                      return (
+                        <li key={workout.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">{workout.name || 'Workout'}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {exerciseCount} exercise{exerciseCount === 1 ? '' : 's'} • {workout.sets.length} set{workout.sets.length === 1 ? '' : 's'}
+                            </p>
+                          </div>
+                          <p className="shrink-0 text-xs text-muted-foreground">{formatWorkoutDate(workout.date)}</p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </CardContent>
+              )}
+            </Card>
+          </section>
         </div>
-      </div>
     </>
   );
 }
