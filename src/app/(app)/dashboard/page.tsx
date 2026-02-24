@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { isMissingSplitSetColumnsError } from '@/lib/supabase/schemaCompat';
 import { DEMO_TOUR_PENDING_KEY } from '@/lib/constants/onboarding';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import { formatAutoWorkoutName } from '@/lib/utils/workoutName';
@@ -118,14 +119,42 @@ export default function DashboardPage() {
         });
       }
 
-      const { data: workoutData } = await supabase
+      const { data: workoutData, error: workoutError } = await supabase
         .from('workouts')
         .select('id, name, date, sets(exercise_id, set_number, reps, is_split_lr, left_reps, right_reps, exercises(name))')
         .eq('user_id', user.id)
         .order('date', { ascending: false })
         .limit(12);
-      if (workoutData) {
+
+      if (workoutData && !workoutError) {
         setRecentWorkouts(workoutData as unknown as RecentWorkout[]);
+        setRecentWorkoutIndex(0);
+      } else if (isMissingSplitSetColumnsError(workoutError)) {
+        const { data: legacyWorkoutData, error: legacyWorkoutError } = await supabase
+          .from('workouts')
+          .select('id, name, date, sets(exercise_id, set_number, reps, exercises(name))')
+          .eq('user_id', user.id)
+          .order('date', { ascending: false })
+          .limit(12);
+
+        if (legacyWorkoutData && !legacyWorkoutError) {
+          const normalized = (legacyWorkoutData as unknown as RecentWorkout[]).map((workout) => ({
+            ...workout,
+            sets: (workout.sets ?? []).map((set) => ({
+              ...set,
+              is_split_lr: false,
+              left_reps: null,
+              right_reps: null,
+            })),
+          }));
+          setRecentWorkouts(normalized);
+          setRecentWorkoutIndex(0);
+        } else {
+          setRecentWorkouts([]);
+          setRecentWorkoutIndex(0);
+        }
+      } else if (workoutError) {
+        setRecentWorkouts([]);
         setRecentWorkoutIndex(0);
       }
     }
