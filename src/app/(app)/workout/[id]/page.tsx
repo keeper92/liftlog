@@ -1298,24 +1298,39 @@ function WorkoutContent({
                       );
                     }}
                     aria-label={`Open options for ${ex.exerciseName}`}
-                    className="h-8 w-8 rounded-md border border-border bg-muted p-0 text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                    aria-expanded={isMenuOpen}
+                    className="h-8 w-8 rounded-md border border-border bg-background p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <circle cx="5" cy="12" r="1.8" />
-                      <circle cx="12" cy="12" r="1.8" />
-                      <circle cx="19" cy="12" r="1.8" />
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className={isMenuOpen ? 'rotate-180 transition-transform' : 'transition-transform'}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
                     </svg>
                   </Button>
                   {isMenuOpen && (
-                    <div className="absolute right-0 top-10 z-40 min-w-[220px] rounded-md border border-border bg-card p-1 shadow-md">
+                    <div className="absolute right-0 top-10 z-40 w-56 rounded-md border border-border bg-card p-1 shadow-md">
                       <Button
                         variant="ghost"
                         onClick={() => {
                           openHistory(ex.exerciseId, ex.exerciseName);
                           setTrainingGuideMenu(null);
                         }}
-                        className="h-auto w-full justify-start rounded-sm px-3 py-2 text-left text-sm"
+                        className="h-9 w-full justify-start gap-2 rounded-sm px-2.5 text-left text-sm font-normal"
                       >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M3 12a9 9 0 1 0 3-6.7" />
+                          <polyline points="3 3 3 9 9 9" />
+                          <path d="M12 7v5l3 3" />
+                        </svg>
                         Exercise History
                       </Button>
                       <Button
@@ -1324,8 +1339,13 @@ function WorkoutContent({
                           openTrainerTips(ex.exerciseId, ex.exerciseName);
                           setTrainingGuideMenu(null);
                         }}
-                        className="h-auto w-full justify-start rounded-sm px-3 py-2 text-left text-sm"
+                        className="h-9 w-full justify-start gap-2 rounded-sm px-2.5 text-left text-sm font-normal"
                       >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M12 16v-4" />
+                          <path d="M12 8h.01" />
+                        </svg>
                         Exercise Info
                       </Button>
                       <Button
@@ -1338,8 +1358,14 @@ function WorkoutContent({
                           setTrainingGuideMenu(null);
                         }}
                         disabled={!canToggleSplitMode}
-                        className="h-auto w-full justify-start rounded-sm px-3 py-2 text-left text-sm"
+                        className="h-9 w-full justify-start gap-2 rounded-sm px-2.5 text-left text-sm font-normal"
                       >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <polyline points="17 1 21 5 17 9" />
+                          <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                          <polyline points="7 23 3 19 7 15" />
+                          <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                        </svg>
                         Split L/R
                       </Button>
                       <Button
@@ -1349,8 +1375,12 @@ function WorkoutContent({
                           window.open(`https://www.youtube.com/results?search_query=${searchQuery}`, '_blank');
                           setTrainingGuideMenu(null);
                         }}
-                        className="h-auto w-full justify-start rounded-sm px-3 py-2 text-left text-sm"
+                        className="h-9 w-full justify-start gap-2 rounded-sm px-2.5 text-left text-sm font-normal"
                       >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
+                          <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" />
+                        </svg>
                         Watch the Movement
                       </Button>
                       <Button
@@ -1359,18 +1389,29 @@ function WorkoutContent({
                           router.push(`/trainer?exerciseId=${ex.exerciseId}&exerciseName=${encodeURIComponent(ex.exerciseName)}`);
                           setTrainingGuideMenu(null);
                         }}
-                        className="h-auto w-full justify-start rounded-sm px-3 py-2 text-left text-sm"
+                        className="h-9 w-full justify-start gap-2 rounded-sm px-2.5 text-left text-sm font-normal"
                       >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
                         Chat with Trainer
                       </Button>
+                      <div className="my-1 h-px bg-border" />
                       <Button
                         variant="ghost"
                         onClick={() => {
                           store.removeExercise(ex.exerciseId);
                           setTrainingGuideMenu(null);
                         }}
-                        className="h-auto w-full justify-start rounded-sm px-3 py-2 text-left text-sm text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        className="h-9 w-full justify-start gap-2 rounded-sm px-2.5 text-left text-sm font-normal text-destructive hover:bg-destructive/10 hover:text-destructive"
                       >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
+                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                        </svg>
                         Remove Exercise
                       </Button>
                     </div>
