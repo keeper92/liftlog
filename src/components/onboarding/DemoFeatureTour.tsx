@@ -194,7 +194,7 @@ export default function DemoFeatureTour({ onFinish }: DemoFeatureTourProps) {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,color-mix(in_srgb,var(--primary-foreground)_14%,transparent),transparent_46%)]" />
 
       <div
-        className="animate-tour-highlight pointer-events-none absolute rounded-3xl border-2 border-primary/90 bg-primary/10 transition-all duration-200"
+        className="animate-tour-highlight pointer-events-none absolute rounded-xl border-2 border-primary/90 bg-primary/10 transition-all duration-200"
         style={{
           ...highlightStyle,
         }}
@@ -202,7 +202,7 @@ export default function DemoFeatureTour({ onFinish }: DemoFeatureTourProps) {
 
       <div
         ref={tooltipRef}
-        className="ui-overlay-shell absolute z-10 rounded-2xl p-3 animate-fade-in"
+        className="absolute z-10 rounded-lg border bg-card p-3 shadow-md animate-fade-in"
         style={{
           top: tooltipPosition.top,
           left: tooltipPosition.left,
@@ -210,7 +210,7 @@ export default function DemoFeatureTour({ onFinish }: DemoFeatureTourProps) {
         }}
       >
         <h3 className="text-base font-semibold tracking-tight text-foreground">{currentStep.title}</h3>
-        <p className="mt-1 text-[13px] leading-snug text-muted-foreground">{currentStep.description}</p>
+        <p className="mt-1 text-sm leading-snug text-muted-foreground">{currentStep.description}</p>
 
         <div className="mt-2.5 h-1 rounded-full bg-muted">
           <div
@@ -220,7 +220,7 @@ export default function DemoFeatureTour({ onFinish }: DemoFeatureTourProps) {
         </div>
 
         <div className="mt-2.5 flex items-center justify-between">
-          <Button unstyled
+          <Button variant="ghost"
             type="button"
             onClick={onFinish}
             className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"

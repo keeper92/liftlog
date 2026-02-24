@@ -38,17 +38,17 @@ export default function Modal({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="max-w-md rounded-2xl p-5 sm:p-6">
+      <DialogContent className="max-w-md">
         {title && (
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
         )}
 
-        <div className="mt-3 text-sm text-muted-foreground">{children}</div>
+        <div className="text-sm text-muted-foreground">{children}</div>
 
         {actions && actions.length > 0 && (
-          <DialogFooter className="mt-6">
+          <DialogFooter className="pt-2">
             {actions.map((action) => (
               <Button
                 key={action.label}

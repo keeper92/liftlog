@@ -520,7 +520,7 @@ function ExercisesContent() {
       <div className="px-4 pt-4 pb-2">
         {isSelecting && (
           <div className="mb-4">
-            <Button unstyled onClick={() => router.back()} className="text-muted-foreground min-h-[44px] flex items-center">
+            <Button variant="ghost" onClick={() => router.back()} className="text-muted-foreground min-h-[44px] flex items-center">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6" />
               </svg>
@@ -545,7 +545,7 @@ function ExercisesContent() {
 
         {/* Library View */}
         <div className="flex overflow-x-auto gap-2 pb-2 -mx-4 px-4 scrollbar-hide">
-          <Button unstyled
+          <Button variant="ghost"
             onClick={() => setLibraryView('favorites')}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               libraryView === 'favorites' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
@@ -553,7 +553,7 @@ function ExercisesContent() {
           >
             Favorites ({favoriteExerciseIds.length})
           </Button>
-          <Button unstyled
+          <Button variant="ghost"
             onClick={() => setLibraryView('all')}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               libraryView === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
@@ -582,7 +582,7 @@ function ExercisesContent() {
         ) : (
           <div className="space-y-1">
             {/* Create custom button at top */}
-            <Button unstyled
+            <Button variant="ghost"
               onClick={startCreateFlow}
               className="w-full text-left px-3 py-3 rounded-xl hover:bg-muted transition-colors min-h-[44px] border border-dashed border-border mb-2"
             >
@@ -599,14 +599,14 @@ function ExercisesContent() {
               const isOwnCustom = ex.is_custom && ex.user_id === currentUserId;
               return (
                 <div key={ex.id} className="flex items-center gap-2">
-                  <Button unstyled
+                  <Button variant="ghost"
                     onClick={() => handleSelectExercise(ex)}
                     className="flex-1 text-left px-3 py-3 rounded-xl hover:bg-muted transition-colors min-h-[44px]"
                   >
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-sm">{CARDIO_DISPLAY_NAMES[ex.name] || ex.name}</p>
                       {ex.is_custom && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
                           Custom
                         </span>
                       )}
@@ -622,7 +622,7 @@ function ExercisesContent() {
                       ))}
                     </div>
                   </Button>
-                  <Button unstyled
+                  <Button variant="ghost"
                     onClick={() => { void toggleFavorite(ex.id); }}
                     className={`p-2 transition-colors rounded-lg hover:bg-muted ${
                       isFavorite(ex.id) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
@@ -634,7 +634,7 @@ function ExercisesContent() {
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                     </svg>
                   </Button>
-                  <Button unstyled
+                  <Button variant="ghost"
                     onClick={() => openEditModal(ex)}
                     className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
                     aria-label={isOwnCustom ? 'Manage exercise' : 'Rename exercise'}
@@ -675,7 +675,7 @@ function ExercisesContent() {
               <p className="text-xs text-muted-foreground py-2 text-center">No close matches found.</p>
             ) : (
               duplicateResults.map((exercise) => (
-                <Button unstyled
+                <Button variant="ghost"
                   key={exercise.id}
                   onClick={() => handleUsePotentialDuplicate(exercise)}
                   className="w-full text-left rounded-lg border border-border px-3 py-2 hover:bg-muted transition-colors"
@@ -859,7 +859,7 @@ function ExercisesContent() {
                 const selected = mergeTarget?.id === exercise.id;
                 const isOwnCustom = exercise.is_custom && exercise.user_id === currentUserId;
                 return (
-                  <Button unstyled
+                  <Button variant="ghost"
                     key={exercise.id}
                     onClick={() => setMergeTarget(exercise)}
                     className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors ${
@@ -869,7 +869,7 @@ function ExercisesContent() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-foreground">{CARDIO_DISPLAY_NAMES[exercise.name] || exercise.name}</p>
                       {isOwnCustom && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">Custom</span>
+                        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">Custom</span>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground capitalize mt-0.5">{exercise.category.replace('_', ' ')}</p>

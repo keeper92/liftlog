@@ -758,7 +758,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
         {editingWorkout && (
           <div className="space-y-4 text-sm">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Workout Name</label>
+              <label className="mb-1 block text-sm font-medium text-muted-foreground">Workout Name</label>
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
@@ -768,7 +768,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Date</label>
+              <label className="mb-1 block text-sm font-medium text-muted-foreground">Date</label>
               <Input
                 type="date"
                 value={editDate}
@@ -779,16 +779,16 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sets</p>
-                <Button unstyled
+                <p className="text-sm font-medium text-muted-foreground">Sets</p>
+                <Button variant="ghost"
                   type="button"
                   onClick={() => addExerciseGroup()}
-                  className="text-[11px] font-semibold text-primary hover:text-primary/80"
+                  className="text-xs font-medium text-primary hover:text-primary/80"
                 >
                   + Add Exercise
                 </Button>
               </div>
-              <div className="max-h-[42vh] overflow-y-auto rounded-2xl border border-border bg-background px-3 py-2 space-y-3">
+              <div className="max-h-[42vh] space-y-3 overflow-y-auto rounded-lg border border-border bg-background px-3 py-2">
                 {editableGroups.length === 0 && (
                   <p className="text-xs text-muted-foreground py-3">
                     No exercises yet. Add an exercise to log this workout.
@@ -798,10 +798,10 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                   <div key={group.exerciseId}>
                     <div className="flex items-center justify-between mb-1.5 gap-2">
                       <p className="text-xs font-semibold text-foreground">{group.name}</p>
-                      <Button unstyled
+                      <Button variant="ghost"
                         type="button"
                         onClick={() => addSetDraft(group.exerciseId, group.name)}
-                        className="text-[11px] font-semibold text-primary hover:text-primary/80"
+                        className="text-xs font-medium text-primary hover:text-primary/80"
                       >
                         + Add Set
                       </Button>
@@ -825,7 +825,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                             disabled={set.isSplit || set.time !== null}
                           />
                           <div className="flex items-center justify-end gap-1">
-                            <Button unstyled
+                            <Button variant="ghost"
                               type="button"
                               onClick={() => moveSetDraft(group.exerciseId, set.localId, 'up')}
                               className="w-6 h-6 rounded-md border border-border text-muted-foreground hover:text-foreground"
@@ -833,7 +833,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                             >
                               ↑
                             </Button>
-                            <Button unstyled
+                            <Button variant="ghost"
                               type="button"
                               onClick={() => moveSetDraft(group.exerciseId, set.localId, 'down')}
                               className="w-6 h-6 rounded-md border border-border text-muted-foreground hover:text-foreground"
@@ -841,7 +841,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                             >
                               ↓
                             </Button>
-                            <Button unstyled
+                            <Button variant="ghost"
                               type="button"
                               onClick={() => removeSetDraft(group.exerciseId, set.localId)}
                               className="w-6 h-6 rounded-md border border-border text-muted-foreground hover:text-destructive"
@@ -854,7 +854,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                       ))}
                     </div>
                     {group.sets.some((set) => set.isSplit || set.time !== null) && (
-                      <p className="mt-1 text-[11px] text-muted-foreground">Split/timed sets are read-only for weight/reps but can be reordered or removed.</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Split/timed sets are read-only for weight/reps but can be reordered or removed.</p>
                     )}
                   </div>
                 ))}
@@ -886,13 +886,17 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
       {/* Close button */}
       <div className="px-5 pt-4 flex items-center justify-between">
         <div>
-          <p className="ui-kicker">Calendar</p>
+          <h1 className="text-xl font-semibold tracking-tight">Calendar</h1>
+          <p className="text-sm text-muted-foreground">View and edit past workout sessions.</p>
         </div>
-        <Button unstyled
+        <Button
+          variant="outline"
+          size="sm"
           onClick={onClose}
-          className="ui-icon-pill w-10 h-10 flex items-center justify-center rounded-full"
+          className="h-10 w-10 rounded-full p-0"
+          aria-label="Close calendar overlay"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -901,17 +905,17 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
 
       {/* Streak Stats */}
       <div className="px-5 py-4">
-        <div className="ui-overlay-shell rounded-2xl px-4 py-4 flex items-center justify-around">
+        <div className="rounded-xl border bg-card px-4 py-4 shadow-sm flex items-center justify-around">
           <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">{longestStreak}</p>
+            <p className="text-2xl font-semibold text-foreground">{longestStreak}</p>
             <p className="text-xs text-muted-foreground mt-0.5">Best Streak</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">{currentStreak}</p>
+            <p className="text-2xl font-semibold text-foreground">{currentStreak}</p>
             <p className="text-xs text-muted-foreground mt-0.5">Current Streak</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">{totalWorkouts}</p>
+            <p className="text-2xl font-semibold text-foreground">{totalWorkouts}</p>
             <p className="text-xs text-muted-foreground mt-0.5">Total Sessions</p>
           </div>
         </div>
@@ -929,7 +933,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
         ) : (
           <div>
             {/* Calendar Card */}
-            <div className="bg-card rounded-2xl border border-border/70 p-4 card-shadow">
+            <div className="rounded-xl border bg-card p-4 shadow-sm">
               <Calendar
                 month={currentMonth}
                 mode="single"
@@ -953,7 +957,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
             {/* Selected date details */}
             {selectedDate && selectedWorkouts.length > 0 && (
               <div className="mt-4">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                <h3 className="mb-3 text-sm font-medium text-muted-foreground">
                   {new Date(selectedDate + 'T12:00:00').toLocaleDateString(undefined, {
                     weekday: 'long',
                     month: 'long',
@@ -968,10 +972,11 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
                       : 0;
 
                     return (
-                      <Button unstyled
+                      <Button
+                        variant="ghost"
                         key={w.id}
                         onClick={() => openEditOverlay(w)}
-                        className="w-full text-left bg-card rounded-2xl border border-border/70 p-4 card-shadow hover:bg-muted transition-colors"
+                        className="h-auto w-full flex-col items-stretch rounded-xl border bg-card p-4 text-left hover:bg-accent"
                       >
                         <div className="flex justify-between items-start mb-2 gap-2">
                           <div>
@@ -1012,7 +1017,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
             )}
 
             {selectedDate && selectedWorkouts.length === 0 && (
-              <div className="mt-4 text-center bg-card rounded-2xl border border-border/70 p-5 card-shadow">
+              <div className="mt-4 rounded-xl border bg-card p-5 text-center shadow-sm">
                 <p className="text-sm text-foreground mb-2">
                   No workouts logged for this date.
                 </p>

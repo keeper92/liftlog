@@ -73,7 +73,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       <div className="flex-1 flex flex-col items-center justify-center text-center overflow-hidden">
         {/* Screenshot, Icon Fallback, or Logo for welcome slide */}
         {slide.image ? (
-          <div className="relative w-48 h-80 mb-6 rounded-2xl overflow-hidden border border-border shadow-lg bg-card flex items-center justify-center">
+          <div className="relative mb-6 flex h-80 w-48 items-center justify-center overflow-hidden rounded-lg border border-border bg-card shadow-sm">
             {imageError[currentSlide] ? (
               <div className="text-primary">{slide.icon}</div>
             ) : (
@@ -87,7 +87,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             )}
           </div>
         ) : (
-          <p className="text-6xl font-black text-primary mb-8 font-[family-name:var(--font-outfit)]">reps</p>
+          <p className="mb-8 text-6xl font-bold text-primary">reps</p>
         )}
 
         <h1 className="text-2xl font-bold text-foreground mb-3">{slide.title}</h1>
@@ -110,7 +110,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           {isLast ? 'Get Started' : 'Next'}
         </Button>
         {!isLast && (
-          <Button unstyled
+          <Button variant="ghost"
             onClick={handleSkip}
             className="w-full text-center text-sm text-muted-foreground py-2"
           >

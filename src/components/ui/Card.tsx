@@ -9,7 +9,7 @@ interface CardProps {
 }
 
 const baseClassName =
-  'rounded-xl border border-border bg-card text-card-foreground shadow-sm';
+  'rounded-lg border bg-card text-card-foreground shadow-sm';
 
 export default function Card({ children, className, onClick, noPadding = false }: CardProps) {
   if (onClick) {
@@ -20,7 +20,8 @@ export default function Card({ children, className, onClick, noPadding = false }
         className={cn(
           baseClassName,
           noPadding ? '' : 'p-4',
-          'w-full cursor-pointer text-left transition-shadow hover:shadow-md',
+          'w-full cursor-pointer text-left transition-colors hover:bg-accent/30',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30',
           className
         )}
       >

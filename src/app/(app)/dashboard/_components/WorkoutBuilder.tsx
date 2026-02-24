@@ -275,7 +275,7 @@ export default function WorkoutBuilder() {
         </p>
         <div className="flex flex-wrap gap-2">
           {BODY_PARTS.map((part) => (
-            <Button unstyled
+            <Button variant="ghost"
               key={part.id}
               onClick={() => toggleBodyPart(part.id)}
               className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
@@ -310,7 +310,7 @@ export default function WorkoutBuilder() {
         </p>
         <div className="flex flex-wrap gap-2">
           {EQUIPMENT_OPTIONS.map((option) => (
-            <Button unstyled
+            <Button variant="ghost"
               key={option.id}
               onClick={() => toggleEquipment(option.id)}
               className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
@@ -355,7 +355,7 @@ export default function WorkoutBuilder() {
                   <p className="text-sm font-medium truncate">{ex.name}</p>
                   <p className="text-xs text-muted-foreground">3 sets</p>
                 </div>
-                <Button unstyled
+                <Button variant="ghost"
                   onClick={() => handleReplaceExercise(idx)}
                   disabled={replacingIndex === idx}
                   className="ml-2 p-2 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"

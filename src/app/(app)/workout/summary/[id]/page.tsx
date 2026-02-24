@@ -429,7 +429,7 @@ function WorkoutSummaryContent() {
 
       {/* Training Notes */}
       <div className="mb-8">
-        <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Training Notes</h2>
+        <h2 className="mb-4 text-sm font-medium text-muted-foreground">Training Notes</h2>
         <Card>
           {loadingNotes ? (
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -448,7 +448,7 @@ function WorkoutSummaryContent() {
         </Card>
       </div>
 
-      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Exercises</h2>
+      <h2 className="mb-4 text-sm font-medium text-muted-foreground">Exercises</h2>
       <div className="space-y-3 mb-8">
         {Array.from(exerciseMap.entries()).map(([exId, { name, sets }]) => (
           <Card key={exId}>
@@ -512,7 +512,7 @@ function WorkoutSummaryContent() {
         Done
       </Button>
 
-      <Button unstyled
+      <Button variant="ghost"
         onClick={handleDiscardWorkout}
         disabled={discarding}
         className="w-full mt-4 mb-2 text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"

@@ -153,7 +153,7 @@ export default function StarterTemplates() {
 
   return (
     <div className="mt-6">
-      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
+      <h2 className="mb-4 text-sm font-medium text-muted-foreground">
         Starter Templates
       </h2>
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5 scrollbar-hide">
