@@ -753,7 +753,7 @@ export default function HistoryOverlay({ onClose, onStartWorkout, longestStreak,
   const editableGroups = getEditableExerciseGroups();
 
   return (
-    <div className="fixed inset-0 z-[70] bg-background flex flex-col">
+    <div className="fixed inset-0 z-[70] flex flex-col bg-background lg:absolute">
       <Modal isOpen={!!editingWorkout} onClose={closeEditOverlay} title="Edit Workout">
         {editingWorkout && (
           <div className="space-y-4 text-sm">
