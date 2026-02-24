@@ -490,7 +490,7 @@ function PickerContent({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background flex flex-col">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-background lg:absolute lg:inset-0">
       {/* Close button */}
       <div className="px-4 pt-3 flex justify-end">
         <Button variant="ghost"
