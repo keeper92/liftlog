@@ -529,24 +529,16 @@ export default function DashboardPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-semibold tracking-tight">Saved Templates</h2>
-                <p className="text-sm text-muted-foreground">
-                  {templates.length > 0 ? `${templates.length} saved` : 'No templates saved yet.'}
-                </p>
+                {templates.length > 0 ? (
+                  <p className="text-sm text-muted-foreground">{templates.length} saved</p>
+                ) : null}
               </div>
             </div>
 
             {templates.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center py-10 text-center">
-                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full border bg-muted">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted-foreground">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="12" y1="18" x2="12" y2="12" />
-                      <line x1="9" y1="15" x2="15" y2="15" />
-                    </svg>
-                  </div>
-                  <p className="mt-3 text-sm text-muted-foreground">No templates yet.</p>
+                  <p className="text-sm text-muted-foreground">No templates yet.</p>
                   <p className="text-sm text-muted-foreground">Build one yourself in seconds.</p>
                   <Button onClick={openManualTemplateBuilder} size="sm" className="mt-4">
                     + Build Template
