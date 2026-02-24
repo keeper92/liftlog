@@ -997,26 +997,28 @@ export default function HistoryOverlay({
                       : 0;
 
                     return (
-                      <Button
-                        variant="ghost"
+                      <div
                         key={w.id}
-                        onClick={() => void launchWorkoutEditor(w)}
-                        className="h-auto w-full flex-col items-stretch whitespace-normal rounded-xl border bg-card p-4 text-left hover:bg-accent"
+                        className="rounded-xl border bg-card p-4 text-left"
                       >
-                        <div className="flex justify-between items-start mb-2 gap-2">
+                        <div className="mb-2 flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
-                            <p className="break-words font-semibold text-sm">{w.name || formatAutoWorkoutName(w.date)}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{formatRelativeDate(w.date)}</p>
+                            <button
+                              type="button"
+                              onClick={() => void launchWorkoutEditor(w)}
+                              className="block max-w-full break-words text-left text-sm font-semibold text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                              aria-label={`Edit ${w.name || formatAutoWorkoutName(w.date)}`}
+                            >
+                              {w.name || formatAutoWorkoutName(w.date)}
+                            </button>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{formatRelativeDate(w.date)}</p>
                           </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            {duration > 0 && (
-                              <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">{formatDuration(duration)}</span>
-                            )}
-                            <span className="text-xs font-semibold text-primary">Edit</span>
-                          </div>
+                          {duration > 0 && (
+                            <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">{formatDuration(duration)}</span>
+                          )}
                         </div>
                         <ExerciseSetSummaryList summaries={exerciseSummaries} emptyText="No exercises logged." />
-                      </Button>
+                      </div>
                     );
                   })}
                 </div>
