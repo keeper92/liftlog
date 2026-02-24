@@ -6,12 +6,14 @@ import { createClient } from '@/lib/supabase/client';
 import { isMissingSplitSetColumnsError } from '@/lib/supabase/schemaCompat';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useActiveWorkoutStore, type HydratedExerciseInput } from '@/stores/activeWorkoutStore';
-import { formatRelativeDate, formatDuration, toDisplayWeight, weightUnit } from '@/lib/utils/units';
+import { formatRelativeDate, formatDuration, weightUnit } from '@/lib/utils/units';
 import { formatAutoWorkoutName } from '@/lib/utils/workoutName';
+import { buildExerciseSetSummaries } from '@/lib/utils/workoutSetSummary';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input-shadcn';
+import ExerciseSetSummaryList from '@/components/workout/ExerciseSetSummaryList';
 
 interface WorkoutSet {
   id: string;
@@ -63,11 +65,6 @@ interface WorkoutSetRow {
 type HistoryWorkoutRow = Omit<HistoryWorkout, 'sets'> & {
   sets?: WorkoutSetRow[] | null;
 };
-
-interface GroupedExercise {
-  name: string;
-  setLabels: string[];
-}
 
 interface EditSetDraft {
   localId: string;
@@ -273,52 +270,6 @@ export default function HistoryOverlay({
     setCurrentMonth(new Date(selectedDateValue.getFullYear(), selectedDateValue.getMonth(), 1));
     monthInitializedRef.current = true;
   }, [initialDateKey]);
-
-  function formatSetLabel(set: WorkoutSet): string {
-    if (set.is_split_lr) {
-      const leftWeight = set.left_weight ? `${toDisplayWeight(set.left_weight, unitSystem)} ${unit}` : 'BW';
-      const rightWeight = set.right_weight ? `${toDisplayWeight(set.right_weight, unitSystem)} ${unit}` : 'BW';
-      const leftReps = set.left_reps ?? '-';
-      const rightReps = set.right_reps ?? '-';
-      return `L ${leftWeight} x ${leftReps} / R ${rightWeight} x ${rightReps}`;
-    }
-
-    if (set.time && !set.weight && !set.reps) {
-      return formatDuration(set.time);
-    }
-
-    if (set.weight !== null && set.reps !== null) {
-      return `${toDisplayWeight(set.weight, unitSystem)} ${unit} x ${set.reps}`;
-    }
-
-    if (set.weight !== null && set.reps === null) {
-      return `${toDisplayWeight(set.weight, unitSystem)} ${unit}`;
-    }
-
-    if (set.weight === null && set.reps !== null) {
-      return `BW x ${set.reps}`;
-    }
-
-    return '-';
-  }
-
-  function groupByExercise(sets: WorkoutSet[]): GroupedExercise[] {
-    const exerciseMap = new Map<string, { name: string; setLabels: { num: number; label: string }[] }>();
-    for (const set of sets) {
-      const key = set.exercise_id;
-      if (!exerciseMap.has(key)) {
-        exerciseMap.set(key, { name: set.exercises.name, setLabels: [] });
-      }
-      exerciseMap.get(key)!.setLabels.push({ num: set.set_number, label: formatSetLabel(set) });
-    }
-
-    return Array.from(exerciseMap.values()).map((ex) => ({
-      name: ex.name,
-      setLabels: ex.setLabels
-        .sort((a, b) => a.num - b.num)
-        .map((s) => s.label),
-    }));
-  }
 
   function getEditableExerciseGroups(): Array<{ exerciseId: string; name: string; sets: EditSetDraft[] }> {
     return editExerciseOrder.map((exerciseId) => {
@@ -1025,7 +976,22 @@ export default function HistoryOverlay({
                 </h3>
                 <div className="space-y-3">
                   {selectedWorkouts.map((w) => {
-                    const exercises = groupByExercise(w.sets);
+                    const exerciseSummaries = buildExerciseSetSummaries(
+                      w.sets.map((set) => ({
+                        exerciseId: set.exercise_id,
+                        exerciseName: set.exercises.name,
+                        setNumber: set.set_number,
+                        weight: set.weight,
+                        reps: set.reps,
+                        isSplitLR: set.is_split_lr,
+                        leftWeight: set.left_weight,
+                        leftReps: set.left_reps,
+                        rightWeight: set.right_weight,
+                        rightReps: set.right_reps,
+                        time: set.time,
+                      })),
+                      unitSystem,
+                    );
                     const duration = w.end_time
                       ? Math.floor((new Date(w.end_time).getTime() - new Date(w.start_time).getTime()) / 1000)
                       : 0;
@@ -1049,16 +1015,7 @@ export default function HistoryOverlay({
                             <span className="text-xs font-semibold text-primary">Edit</span>
                           </div>
                         </div>
-                        <div className="space-y-1.5">
-                          {exercises.map((ex, i) => (
-                            <div key={i} className="text-xs">
-                              <span className="break-words text-foreground font-medium">{ex.name}</span>
-                              <span className="ml-2 break-words text-muted-foreground">
-                                {ex.setLabels.length} × ({ex.setLabels.join(', ')})
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                        <ExerciseSetSummaryList summaries={exerciseSummaries} emptyText="No exercises logged." />
                       </Button>
                     );
                   })}
