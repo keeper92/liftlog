@@ -1302,18 +1302,14 @@ function WorkoutContent({
                     className="h-8 w-8 rounded-md border border-border bg-background p-0 text-foreground hover:bg-accent"
                   >
                     <svg
-                      width="18"
-                      height="18"
+                      width="16"
+                      height="16"
                       viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.75"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                      fill="currentColor"
                       aria-hidden="true"
                       className={isMenuOpen ? 'rotate-180 text-foreground transition-transform' : 'text-foreground transition-transform'}
                     >
-                      <polyline points="6 9 12 15 18 9" />
+                      <path d="M7 10l5 5 5-5H7z" />
                     </svg>
                   </Button>
                   {isMenuOpen && (
