@@ -1156,7 +1156,8 @@ function WorkoutContent({
               loading={deletingWorkout}
               disabled={saving}
               aria-label="Delete workout"
-              className="h-9 w-9 rounded-md p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              size="icon"
+              className="h-9 w-9 rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <polyline points="3 6 5 6 21 6" />
@@ -1285,6 +1286,7 @@ function WorkoutContent({
                 >
                   <Button
                     variant="ghost"
+                    size="icon"
                     onClick={() => {
                       setTrainingGuideMenu(
                         isMenuOpen
@@ -1299,7 +1301,7 @@ function WorkoutContent({
                     }}
                     aria-label={`Open options for ${ex.exerciseName}`}
                     aria-expanded={isMenuOpen}
-                    className="h-8 w-8 rounded-md border border-border bg-background p-0 text-foreground hover:bg-accent"
+                    className="h-8 w-8 rounded-md border border-border bg-background text-foreground hover:bg-accent"
                   >
                     <svg
                       width="18"

@@ -7,7 +7,7 @@ import {
 import { cn } from '@/lib/utils';
 
 type LegacyButtonVariant = 'primary' | 'outline' | 'ghost' | 'danger';
-type LegacyButtonSize = 'sm' | 'md' | 'lg';
+type LegacyButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: LegacyButtonVariant;
@@ -27,6 +27,7 @@ const sizeMap: Record<LegacyButtonSize, ButtonSize> = {
   sm: 'sm',
   md: 'default',
   lg: 'lg',
+  icon: 'icon',
 };
 
 export default function Button({
