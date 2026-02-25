@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useActiveWorkoutStore, type ActiveSet, type ActiveWorkoutState, type PerformanceSet } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { ChevronDown } from 'lucide-react';
 import {
   formatDuration,
   toDisplayWeight,
@@ -1301,16 +1302,11 @@ function WorkoutContent({
                     aria-expanded={isMenuOpen}
                     className="h-8 w-8 rounded-md border border-border bg-background p-0 text-foreground hover:bg-accent"
                   >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
+                    <ChevronDown
+                      size={18}
                       aria-hidden="true"
                       className={isMenuOpen ? 'rotate-180 text-foreground transition-transform' : 'text-foreground transition-transform'}
-                    >
-                      <path d="M7 10l5 5 5-5H7z" />
-                    </svg>
+                    />
                   </Button>
                   {isMenuOpen && (
                     <div className="absolute right-0 top-10 z-40 w-56 rounded-md border border-border bg-card p-1 shadow-md">
