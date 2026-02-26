@@ -699,7 +699,10 @@ export default function DashboardPage() {
                     </Card>
                   );
                 })}
-                <div className="text-center">
+                <div className="flex flex-col items-center gap-1 pt-1">
+                  <Button onClick={openManualTemplateBuilder} size="sm" variant="outline">
+                    + Build Template
+                  </Button>
                   <Button variant="link" size="sm" onClick={handleCreateTemplateWithAI} className="px-0">
                     Or chat with AI trainer to build
                   </Button>
