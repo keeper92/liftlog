@@ -44,6 +44,8 @@ function ExercisesContent() {
     favoriteExerciseIds,
     isFavorite,
     toggleFavorite,
+    isHidden,
+    toggleHidden,
     currentUserId,
   } = useExerciseSearch();
 
@@ -60,6 +62,17 @@ function ExercisesContent() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // AI auto-fill state
+  const [aiDetails, setAiDetails] = useState<{
+    instructions: string[];
+    secondaryMuscles: string[];
+    force: string | null;
+    level: string | null;
+    mechanic: string | null;
+    equipment: string | null;
+  } | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   // Merge modal state
   const [showMergeModal, setShowMergeModal] = useState(false);
@@ -111,6 +124,7 @@ function ExercisesContent() {
     setCategoryManuallyChanged(false);
     setPrimaryMuscleManuallyChanged(false);
     setActionError(null);
+    setAiDetails(null);
     setShowCreateModal(true);
   }
 
@@ -166,6 +180,7 @@ function ExercisesContent() {
     setCategoryManuallyChanged(true);
     setPrimaryMuscleManuallyChanged(true);
     setActionError(null);
+    setAiDetails(null);
     setShowCreateModal(true);
   }
 
@@ -235,6 +250,44 @@ function ExercisesContent() {
     };
   }, [mergeSearch, mergeSourceExercise, mergeTarget?.id, showMergeModal, supabase]);
 
+  async function handleAiFill() {
+    const trimmedName = exerciseForm.name.trim();
+    if (!trimmedName) {
+      setActionError('Enter an exercise name first.');
+      return;
+    }
+    setAiLoading(true);
+    setActionError(null);
+    try {
+      const res = await fetch('/api/exercise-details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmedName, category: exerciseForm.category }),
+      });
+      if (!res.ok) throw new Error('Failed to generate details');
+      const details = await res.json();
+      setAiDetails({
+        instructions: details.instructions || [],
+        secondaryMuscles: details.secondaryMuscles || [],
+        force: details.force || null,
+        level: details.level || null,
+        mechanic: details.mechanic || null,
+        equipment: details.equipment || null,
+      });
+      // Update form fields from AI if user hasn't manually changed them
+      if (!categoryManuallyChanged && details.category) {
+        setExerciseForm((f) => ({ ...f, category: details.category }));
+      }
+      if (!primaryMuscleManuallyChanged && details.primaryMuscle) {
+        setExerciseForm((f) => ({ ...f, primaryMuscle: details.primaryMuscle }));
+      }
+    } catch {
+      setActionError('Could not auto-fill. Try again or fill manually.');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   async function handleSaveExercise() {
     const trimmedName = exerciseForm.name.trim();
     if (!trimmedName) {
@@ -256,7 +309,14 @@ function ExercisesContent() {
           name: trimmedName,
           category: exerciseForm.category,
           primary_muscles: [exerciseForm.primaryMuscle],
-          equipment: inferredEquipment,
+          equipment: aiDetails?.equipment || inferredEquipment,
+          ...(aiDetails && {
+            secondary_muscles: aiDetails.secondaryMuscles,
+            instructions: aiDetails.instructions,
+            force: aiDetails.force,
+            level: aiDetails.level,
+            mechanic: aiDetails.mechanic,
+          }),
         })
         .eq('id', editingExercise.id);
 
@@ -283,10 +343,16 @@ function ExercisesContent() {
           name: trimmedName,
           category: exerciseForm.category,
           primary_muscles: [exerciseForm.primaryMuscle],
-          secondary_muscles: [],
-          equipment: inferredEquipment,
+          secondary_muscles: aiDetails?.secondaryMuscles || [],
+          equipment: aiDetails?.equipment || inferredEquipment,
           is_custom: true,
           user_id: currentUserId,
+          ...(aiDetails && {
+            instructions: aiDetails.instructions,
+            force: aiDetails.force,
+            level: aiDetails.level,
+            mechanic: aiDetails.mechanic,
+          }),
         })
         .select('id, name, category, primary_muscles, equipment, is_custom, user_id')
         .single();
@@ -298,6 +364,9 @@ function ExercisesContent() {
       }
 
       if (data) {
+        // Hide the original seeded exercise so user sees only their copy
+        await toggleHidden(editingExercise.id);
+
         // If selecting, add to workout immediately
         if (isSelecting) {
           addExercise({ id: data.id, name: data.name, category: data.category });
@@ -306,8 +375,8 @@ function ExercisesContent() {
           router.back();
           return;
         }
-        // Add to top of list
-        setExercises((prev) => [data, ...prev]);
+        // Add to top of list (original is already filtered out by hidden)
+        setExercises((prev) => [data, ...prev.filter((ex) => ex.id !== editingExercise.id)]);
       }
     } else {
       // Create new exercise
@@ -317,10 +386,16 @@ function ExercisesContent() {
           name: trimmedName,
           category: exerciseForm.category,
           primary_muscles: [exerciseForm.primaryMuscle],
-          secondary_muscles: [],
-          equipment: inferredEquipment,
+          secondary_muscles: aiDetails?.secondaryMuscles || [],
+          equipment: aiDetails?.equipment || inferredEquipment,
           is_custom: true,
           user_id: currentUserId,
+          ...(aiDetails && {
+            instructions: aiDetails.instructions,
+            force: aiDetails.force,
+            level: aiDetails.level,
+            mechanic: aiDetails.mechanic,
+          }),
         })
         .select('id, name, category, primary_muscles, equipment, is_custom, user_id')
         .single();
@@ -699,7 +774,7 @@ function ExercisesContent() {
           editingExercise
             ? editingExercise.is_custom && editingExercise.user_id === currentUserId
               ? 'Edit Custom Exercise'
-              : 'Create Renamed Copy'
+              : 'Edit Exercise'
             : 'Create Custom Exercise'
         }
         actions={[
@@ -712,9 +787,23 @@ function ExercisesContent() {
             <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">{actionError}</p>
           )}
           {editingExercise && !(editingExercise.is_custom && editingExercise.user_id === currentUserId) && (
-            <p className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
-              This will create a custom copy with your preferred name. The original exercise will remain unchanged.
-            </p>
+            <div className="bg-muted rounded-lg px-3 py-3 space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Saving will create a custom copy. The original stays unchanged.
+              </p>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={async () => {
+                  await toggleHidden(editingExercise.id);
+                  closeCreateModal();
+                }}
+                disabled={saving || deleting}
+                className="w-full"
+              >
+                Hide from Library
+              </Button>
+            </div>
           )}
           {editingExercise?.is_custom && editingExercise.user_id === currentUserId && (
             <div className="bg-muted rounded-lg px-3 py-3 space-y-2">
@@ -803,6 +892,22 @@ function ExercisesContent() {
               ))}
             </Select>
           </div>
+
+          {/* AI auto-fill button */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleAiFill}
+            disabled={aiLoading || !exerciseForm.name.trim()}
+            className="w-full"
+          >
+            {aiLoading ? 'Generating details...' : aiDetails ? 'Details filled' : 'Auto-fill details with AI'}
+          </Button>
+          {aiDetails && (
+            <p className="text-xs text-muted-foreground">
+              AI generated instructions, muscles, and metadata. These will be saved with the exercise.
+            </p>
+          )}
         </div>
       </Modal>
 

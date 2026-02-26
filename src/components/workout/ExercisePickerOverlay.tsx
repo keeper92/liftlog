@@ -87,6 +87,17 @@ function PickerContent({
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // AI auto-fill state
+  const [aiDetails, setAiDetails] = useState<{
+    instructions: string[];
+    secondaryMuscles: string[];
+    force: string | null;
+    level: string | null;
+    mechanic: string | null;
+    equipment: string | null;
+  } | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
   // Merge modal state
   const [showMergeModal, setShowMergeModal] = useState(false);
   const [mergeSourceExercise, setMergeSourceExercise] = useState<ExerciseRow | null>(null);
@@ -134,6 +145,7 @@ function PickerContent({
     setCategoryManuallyChanged(false);
     setPrimaryMuscleManuallyChanged(false);
     setActionError(null);
+    setAiDetails(null);
     setShowCreateModal(true);
   }
 
@@ -185,6 +197,7 @@ function PickerContent({
     setCategoryManuallyChanged(true);
     setPrimaryMuscleManuallyChanged(true);
     setActionError(null);
+    setAiDetails(null);
     setShowCreateModal(true);
   }
 
@@ -254,6 +267,43 @@ function PickerContent({
     };
   }, [mergeSearch, mergeSourceExercise, mergeTarget?.id, showMergeModal, supabase]);
 
+  async function handleAiFill() {
+    const trimmedName = exerciseForm.name.trim();
+    if (!trimmedName) {
+      setActionError('Enter an exercise name first.');
+      return;
+    }
+    setAiLoading(true);
+    setActionError(null);
+    try {
+      const res = await fetch('/api/exercise-details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmedName, category: exerciseForm.category }),
+      });
+      if (!res.ok) throw new Error('Failed to generate details');
+      const details = await res.json();
+      setAiDetails({
+        instructions: details.instructions || [],
+        secondaryMuscles: details.secondaryMuscles || [],
+        force: details.force || null,
+        level: details.level || null,
+        mechanic: details.mechanic || null,
+        equipment: details.equipment || null,
+      });
+      if (!categoryManuallyChanged && details.category) {
+        setExerciseForm((f) => ({ ...f, category: details.category }));
+      }
+      if (!primaryMuscleManuallyChanged && details.primaryMuscle) {
+        setExerciseForm((f) => ({ ...f, primaryMuscle: details.primaryMuscle }));
+      }
+    } catch {
+      setActionError('Could not auto-fill. Try again or fill manually.');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   async function handleSaveExercise() {
     const trimmedName = exerciseForm.name.trim();
     if (!trimmedName) {
@@ -273,7 +323,14 @@ function PickerContent({
           name: trimmedName,
           category: exerciseForm.category,
           primary_muscles: [exerciseForm.primaryMuscle],
-          equipment: inferredEquipment,
+          equipment: aiDetails?.equipment || inferredEquipment,
+          ...(aiDetails && {
+            secondary_muscles: aiDetails.secondaryMuscles,
+            instructions: aiDetails.instructions,
+            force: aiDetails.force,
+            level: aiDetails.level,
+            mechanic: aiDetails.mechanic,
+          }),
         })
         .eq('id', editingExercise.id);
 
@@ -297,10 +354,16 @@ function PickerContent({
           name: trimmedName,
           category: exerciseForm.category,
           primary_muscles: [exerciseForm.primaryMuscle],
-          secondary_muscles: [],
-          equipment: inferredEquipment,
+          secondary_muscles: aiDetails?.secondaryMuscles || [],
+          equipment: aiDetails?.equipment || inferredEquipment,
           is_custom: true,
           user_id: currentUserId,
+          ...(aiDetails && {
+            instructions: aiDetails.instructions,
+            force: aiDetails.force,
+            level: aiDetails.level,
+            mechanic: aiDetails.mechanic,
+          }),
         })
         .select('id, name, category, primary_muscles, equipment, is_custom, user_id')
         .single();
@@ -493,11 +556,12 @@ function PickerContent({
     <div className="fixed inset-0 z-[100] flex flex-col bg-background lg:absolute lg:inset-0">
       {/* Close button */}
       <div className="px-4 pt-3 flex justify-end">
-        <Button variant="ghost"
+        <Button variant="outline"
           onClick={onClose}
-          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+          className="h-10 w-10 rounded-full p-0"
+          aria-label="Close exercise picker"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -781,6 +845,22 @@ function PickerContent({
               ))}
             </Select>
           </div>
+
+          {/* AI auto-fill button */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleAiFill}
+            disabled={aiLoading || !exerciseForm.name.trim()}
+            className="w-full"
+          >
+            {aiLoading ? 'Generating details...' : aiDetails ? 'Details filled' : 'Auto-fill details with AI'}
+          </Button>
+          {aiDetails && (
+            <p className="text-xs text-muted-foreground">
+              AI generated instructions, muscles, and metadata. These will be saved with the exercise.
+            </p>
+          )}
         </div>
       </Modal>
 
