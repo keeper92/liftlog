@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useActiveWorkoutStore, type ActiveSet, type ActiveWorkoutState, type PerformanceSet } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { ChevronDown } from 'lucide-react';
 import {
   formatDuration,
   toDisplayWeight,
@@ -396,13 +397,14 @@ export default function ActiveWorkoutPage() {
       router.replace('/dashboard');
       return;
     }
+    if (store.builderMode !== 'standard') return;
     const interval = setInterval(() => {
       if (store.startTime) {
         setElapsed(Math.floor((Date.now() - new Date(store.startTime).getTime()) / 1000));
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [store.isActive, store.startTime, router]);
+  }, [store.isActive, store.startTime, store.builderMode, router]);
 
   // Rest timer countdown
   useEffect(() => {
@@ -952,6 +954,21 @@ function WorkoutContent({
   const mouseDragCleanupRef = useRef<(() => void) | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
+  // Tap guard: prevent accidental "Add Set" taps when numpad just closed
+  const numpadCloseTimeRef = useRef<number>(0);
+  const prevNumberPadVisibleRef = useRef(numberPadVisible);
+  useEffect(() => {
+    if (prevNumberPadVisibleRef.current && !numberPadVisible) {
+      numpadCloseTimeRef.current = Date.now();
+    }
+    prevNumberPadVisibleRef.current = numberPadVisible;
+  }, [numberPadVisible]);
+
+  const handleAddSet = useCallback((exIdx: number) => {
+    if (Date.now() - numpadCloseTimeRef.current < 400) return;
+    store.addSet(exIdx);
+  }, [store]);
+
   const clearMouseDragListeners = useCallback(() => {
     if (!mouseDragCleanupRef.current) return;
     mouseDragCleanupRef.current();
@@ -1159,7 +1176,8 @@ function WorkoutContent({
               loading={deletingWorkout}
               disabled={saving}
               aria-label="Delete workout"
-              className="h-9 w-9 rounded-md p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              size="icon"
+              className="h-9 w-9 rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <polyline points="3 6 5 6 21 6" />
@@ -1192,7 +1210,7 @@ function WorkoutContent({
       />
 
       {/* Exercise List */}
-      <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto px-4 py-4 space-y-6 ${numberPadVisible ? 'pb-64' : 'pb-20'}`}>
+      <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto px-4 py-4 space-y-6 ${numberPadVisible ? 'pb-64 scroll-pb-[22rem]' : 'pb-20'}`}>
         {store.exercises.map((ex, exIdx) => {
           const prev = store.previousPerformance[ex.exerciseId] || [];
           const isAssistanceExercise = isAssistanceExerciseName(ex.exerciseName);
@@ -1294,6 +1312,7 @@ function WorkoutContent({
                 >
                   <Button
                     variant="ghost"
+                    size="icon"
                     onClick={() => {
                       setTrainingGuideMenu(
                         isMenuOpen
@@ -1308,22 +1327,13 @@ function WorkoutContent({
                     }}
                     aria-label={`Open options for ${ex.exerciseName}`}
                     aria-expanded={isMenuOpen}
-                    className="h-8 w-8 rounded-md border border-border bg-background p-0 text-foreground hover:bg-accent"
+                    className="h-8 w-8 rounded-md border border-border bg-background text-foreground hover:bg-accent"
                   >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.75"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                    <ChevronDown
+                      size={18}
                       aria-hidden="true"
                       className={isMenuOpen ? 'rotate-180 text-foreground transition-transform' : 'text-foreground transition-transform'}
-                    >
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
+                    />
                   </Button>
                   {isMenuOpen && (
                     <div className="absolute right-0 top-10 z-40 w-56 rounded-md border border-border bg-card p-1 shadow-md">
@@ -1404,6 +1414,23 @@ function WorkoutContent({
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                         </svg>
                         Chat with Trainer
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          startRestTimer(ex.restTimerSeconds);
+                          setTrainingGuideMenu(null);
+                        }}
+                        disabled={restTimer.isActive}
+                        className="h-9 w-full justify-start gap-2 rounded-sm px-2.5 text-left text-sm font-normal"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <circle cx="12" cy="13" r="8" />
+                          <path d="M12 9v4l2 2" />
+                          <path d="M5 3L2 6" />
+                          <path d="M22 6l-3-3" />
+                        </svg>
+                        Start Rest Timer
                       </Button>
                       <div className="my-1 h-px bg-border" />
                       <Button
@@ -1698,7 +1725,7 @@ function WorkoutContent({
               <div className="mt-2">
                 {ex.exerciseCategory !== 'cardio' && (
                   <Button variant="ghost"
-                    onClick={() => store.addSet(exIdx)}
+                    onClick={() => handleAddSet(exIdx)}
                     className="w-full py-2 text-sm text-primary hover:text-primary/80"
                   >
                     + Add Set

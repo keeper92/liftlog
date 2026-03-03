@@ -18,6 +18,9 @@ interface UseExerciseSearchReturn {
   favoriteExerciseIds: string[];
   isFavorite: (exerciseId: string) => boolean;
   toggleFavorite: (exerciseId: string) => Promise<void>;
+  hiddenExerciseIds: string[];
+  isHidden: (exerciseId: string) => boolean;
+  toggleHidden: (exerciseId: string) => Promise<void>;
   currentUserId: string | null;
 }
 
@@ -28,11 +31,13 @@ export function useExerciseSearch(): UseExerciseSearchReturn {
   const [search, setSearch] = useState('');
   const [libraryView, setLibraryView] = useState<ExerciseLibraryView>('all');
   const [favoriteExerciseIds, setFavoriteExerciseIds] = useState<string[]>([]);
+  const [hiddenExerciseIds, setHiddenExerciseIds] = useState<string[]>([]);
   const [profilePreferences, setProfilePreferences] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const favoriteIdSet = useMemo(() => new Set(favoriteExerciseIds), [favoriteExerciseIds]);
+  const hiddenIdSet = useMemo(() => new Set(hiddenExerciseIds), [hiddenExerciseIds]);
 
   // Fetch current user + exercise favorites from profile preferences.
   useEffect(() => {
@@ -65,9 +70,14 @@ export function useExerciseSearch(): UseExerciseSearchReturn {
       const nextFavorites = Array.isArray(rawFavoriteIds)
         ? rawFavoriteIds.filter((id): id is string => typeof id === 'string')
         : [];
+      const rawHiddenIds = preferences.hiddenExerciseIds;
+      const nextHidden = Array.isArray(rawHiddenIds)
+        ? rawHiddenIds.filter((id): id is string => typeof id === 'string')
+        : [];
 
       setProfilePreferences(preferences);
       setFavoriteExerciseIds(nextFavorites);
+      setHiddenExerciseIds(nextHidden);
       if (nextFavorites.length === 0 && libraryView === 'favorites') {
         setLibraryView('all');
       }
@@ -108,10 +118,11 @@ export function useExerciseSearch(): UseExerciseSearchReturn {
       if (cancelled) return;
 
       if (data) {
+        const visible = (data as ExerciseRow[]).filter((ex) => !hiddenIdSet.has(ex.id));
         if (search.trim()) {
-          setExercises(rankExercisesBySearch(data as ExerciseRow[], search));
+          setExercises(rankExercisesBySearch(visible, search));
         } else {
-          setExercises(data as ExerciseRow[]);
+          setExercises(visible);
         }
       } else {
         setExercises([]);
@@ -124,7 +135,7 @@ export function useExerciseSearch(): UseExerciseSearchReturn {
       cancelled = true;
       clearTimeout(debounce);
     };
-  }, [search, libraryView, favoriteExerciseIds, supabase]);
+  }, [search, libraryView, favoriteExerciseIds, hiddenIdSet, supabase]);
 
   const isFavorite = useCallback((exerciseId: string) => {
     return favoriteIdSet.has(exerciseId);
@@ -167,6 +178,46 @@ export function useExerciseSearch(): UseExerciseSearchReturn {
     setProfilePreferences(nextPreferences);
   }, [currentUserId, favoriteExerciseIds, favoriteIdSet, profilePreferences, supabase]);
 
+  const isHidden = useCallback((exerciseId: string) => {
+    return hiddenIdSet.has(exerciseId);
+  }, [hiddenIdSet]);
+
+  const toggleHidden = useCallback(async (exerciseId: string) => {
+    if (!currentUserId) return;
+
+    const currentlyHidden = hiddenIdSet.has(exerciseId);
+    const optimisticHidden = currentlyHidden
+      ? hiddenExerciseIds.filter((id) => id !== exerciseId)
+      : [...hiddenExerciseIds, exerciseId];
+    setHiddenExerciseIds(optimisticHidden);
+
+    const profilePrefs = { ...profilePreferences };
+    const currentPrefHidden = Array.isArray(profilePrefs.hiddenExerciseIds)
+      ? (profilePrefs.hiddenExerciseIds as unknown[]).filter((id): id is string => typeof id === 'string')
+      : [];
+
+    const nextPrefHidden = currentlyHidden
+      ? currentPrefHidden.filter((id) => id !== exerciseId)
+      : Array.from(new Set([...currentPrefHidden, exerciseId]));
+
+    const nextPreferences = {
+      ...profilePrefs,
+      hiddenExerciseIds: nextPrefHidden,
+    };
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ preferences: nextPreferences })
+      .eq('id', currentUserId);
+
+    if (error) {
+      setHiddenExerciseIds(hiddenExerciseIds);
+      return;
+    }
+
+    setProfilePreferences(nextPreferences);
+  }, [currentUserId, hiddenExerciseIds, hiddenIdSet, profilePreferences, supabase]);
+
   return {
     exercises,
     setExercises,
@@ -178,6 +229,9 @@ export function useExerciseSearch(): UseExerciseSearchReturn {
     favoriteExerciseIds,
     isFavorite,
     toggleFavorite,
+    hiddenExerciseIds,
+    isHidden,
+    toggleHidden,
     currentUserId,
   };
 }
