@@ -132,7 +132,7 @@ function TrainerContent() {
   const suggestions = exerciseSuggestions || contextualMainSuggestions;
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-64px)] relative">
+    <div className="flex flex-col h-[calc(100dvh-64px-env(safe-area-inset-bottom,0px)-86px)] relative">
       {/* Header icons */}
       <div className="px-5 pt-4 pb-1 flex items-center justify-between">
         <Button
