@@ -60,9 +60,9 @@ const STEPS: TourStep[] = [
   },
   {
     id: 'trainer',
-    target: '[data-tour-anchor="nav-trainer"]',
-    title: 'Trainer',
-    description: 'Build templates and get personalized coaching.',
+    target: '[data-tour-anchor="chat-bar"]',
+    title: 'AI Trainer',
+    description: 'Chat with your AI trainer from any screen.',
     preferredPlacement: 'top',
   },
 ];

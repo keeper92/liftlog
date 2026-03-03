@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useActiveWorkoutStore, type ActiveSet, type ActiveWorkoutState, type PerformanceSet } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useChatBarStore } from '@/stores/chatBarStore';
 import {
   formatDuration,
   toDisplayWeight,
@@ -1386,7 +1387,7 @@ function WorkoutContent({
                       <Button
                         variant="ghost"
                         onClick={() => {
-                          router.push(`/trainer?exerciseId=${ex.exerciseId}&exerciseName=${encodeURIComponent(ex.exerciseName)}`);
+                          useChatBarStore.getState().openForExercise(ex.exerciseId, ex.exerciseName);
                           setTrainingGuideMenu(null);
                         }}
                         className="h-9 w-full justify-start gap-2 rounded-sm px-2.5 text-left text-sm font-normal"

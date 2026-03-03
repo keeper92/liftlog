@@ -7,6 +7,7 @@ import { isMissingSplitSetColumnsError } from '@/lib/supabase/schemaCompat';
 import { DEMO_TOUR_PENDING_KEY } from '@/lib/constants/onboarding';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useChatBarStore } from '@/stores/chatBarStore';
 import { formatAutoWorkoutName } from '@/lib/utils/workoutName';
 import { buildExerciseSetSummaries } from '@/lib/utils/workoutSetSummary';
 import { Button } from '@/components/ui/button-shadcn';
@@ -252,7 +253,7 @@ export default function DashboardPage() {
   function handleCreateTemplateWithAI() {
     setShowHistory(false);
     setShowPRFeed(false);
-    router.push('/trainer?intent=create-template');
+    useChatBarStore.getState().openWithMessage('Create a workout template');
   }
 
   function openManualTemplateBuilder() {

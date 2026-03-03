@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTrainerProfileStore } from '@/stores/trainerProfileStore';
+import { useChatBarStore } from '@/stores/chatBarStore';
 import type { UnitSystem } from '@/lib/types/user';
 import { Button } from '@/components/ui/button-shadcn';
 import {
@@ -116,7 +117,7 @@ export default function SettingsPage() {
               type="button"
               variant="outline"
               className="w-full justify-between"
-              onClick={() => router.push('/trainer')}
+              onClick={() => useChatBarStore.getState().expand()}
             >
               Open Trainer
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
