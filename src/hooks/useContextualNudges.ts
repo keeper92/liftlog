@@ -3,7 +3,6 @@
 import { useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { usePRStore } from '@/stores/prStore';
-import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import { useTrainerProfileStore } from '@/stores/trainerProfileStore';
 
 export interface Nudge {
@@ -19,7 +18,6 @@ export function useContextualNudges(): Nudge[] {
   const pathname = usePathname();
   const prRecords = usePRStore((s) => s.records);
   const unreadPRs = usePRStore((s) => s.unreadCount);
-  const isWorkoutActive = useActiveWorkoutStore((s) => s.isActive);
   const trainerProfile = useTrainerProfileStore((s) => s.profile);
 
   return useMemo(() => {
@@ -35,20 +33,6 @@ export function useContextualNudges(): Nudge[] {
           message: `Tell me about my recent PR on ${latestPR.exerciseName}`,
         });
       }
-
-      // Suggest starting a workout
-      if (!isWorkoutActive) {
-        nudges.push({
-          label: 'Start a workout',
-          message: 'Help me plan a workout for today',
-        });
-      }
-
-      // Suggest template creation
-      nudges.push({
-        label: 'Create a template',
-        message: 'Create a workout template',
-      });
 
       // Profile setup nudge
       if (!trainerProfile) {
@@ -76,5 +60,5 @@ export function useContextualNudges(): Nudge[] {
 
     // Limit to 3 nudges max
     return nudges.slice(0, 3);
-  }, [pathname, prRecords, unreadPRs, isWorkoutActive, trainerProfile]);
+  }, [pathname, prRecords, unreadPRs, trainerProfile]);
 }
