@@ -5,6 +5,7 @@ import ActiveWorkoutRibbon from '@/components/layout/ActiveWorkoutRibbon';
 import DesktopMobileFrame from '@/components/layout/DesktopMobileFrame';
 import MainContent from '@/components/layout/MainContent';
 import WorkoutOutboxSync from '@/components/sync/WorkoutOutboxSync';
+import { ChatBar } from '@/components/chat';
 
 export default function AppLayout({
   children,
@@ -17,6 +18,7 @@ export default function AppLayout({
         <WorkoutOutboxSync />
         <MainContent>{children}</MainContent>
         <ActiveWorkoutRibbon />
+        <ChatBar />
         <BottomNav />
       </div>
     </DesktopMobileFrame>

@@ -1,5 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Tool, MessageParam, ToolUseBlock, TextBlock } from '@anthropic-ai/sdk/resources/messages';
+import { createClient } from '@supabase/supabase-js';
+import { matchExercises } from '@/lib/utils/exerciseMatcher';
 
 const anthropic = new Anthropic();
 
@@ -184,6 +186,30 @@ const TEMPLATE_TOOL: Tool = {
     required: ['name', 'exercises'],
   },
 };
+
+const ADD_EXERCISE_TOOL: Tool = {
+  name: 'add_exercise',
+  description: 'Add an exercise to the user\'s current workout. Use this when the user asks to add a specific exercise, or when suggesting exercises during a workout session.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      exerciseName: {
+        type: 'string',
+        description: 'The name of the exercise to add (e.g., "Barbell Bench Press", "Dumbbell Curl"). Use full, standard exercise names.',
+      },
+    },
+    required: ['exerciseName'],
+  },
+};
+
+const WORKOUT_MODE_PROMPT_SECTION = `
+WORKOUT MODE:
+The user is currently in an active workout session. You can help them:
+- Add exercises: when they ask to add an exercise, use the add_exercise tool with the full exercise name.
+- Suggest exercises: based on what they've already done and their training history.
+- Give form tips and weight suggestions based on their previous performance data.
+- Keep responses very short (1 sentence max) since they're mid-workout.
+- Don't be chatty — be direct and action-oriented.`;
 
 interface TrainerProfileData {
   experienceLevel: string;
@@ -577,10 +603,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const { messages, context, mode } = (await request.json()) as {
+  const { messages, context, mode, workoutExercises } = (await request.json()) as {
     messages: ChatRequestMessage[];
     context: WorkoutContext;
-    mode?: 'profile-setup' | 'chat';
+    mode?: 'profile-setup' | 'workout' | 'chat';
+    workoutExercises?: string[];
   };
 
   // Profile setup mode — use profile-gathering system prompt + profile tool
@@ -686,7 +713,17 @@ export async function POST(request: Request) {
     contextParts.push('No workout data yet — this user is just getting started.');
   }
 
-  const systemWithContext = `${SYSTEM_PROMPT}\n\nUser's workout data:\n${contextParts.join('\n\n')}`;
+  // Add workout mode context
+  if (mode === 'workout' && workoutExercises) {
+    if (workoutExercises.length > 0) {
+      contextParts.push(`Current workout exercises: ${workoutExercises.join(', ')}`);
+    } else {
+      contextParts.push('The user just started a workout and has no exercises added yet.');
+    }
+  }
+
+  const workoutModeSection = mode === 'workout' ? WORKOUT_MODE_PROMPT_SECTION : '';
+  const systemWithContext = `${SYSTEM_PROMPT}${workoutModeSection}\n\nUser's workout data:\n${contextParts.join('\n\n')}`;
 
   // Check if the latest message might be import-related or template-related
   const lastMessage = messages[messages.length - 1]?.content || '';
@@ -722,12 +759,15 @@ export async function POST(request: Request) {
     pickedTemplateType ||
     (templateConversationInProgress && (templateModificationRequest || templateConfirmation));
 
-  // Use tool mode for potential imports or templates, streaming for regular chat
-  if (mightBeImport || mightBeTemplate) {
+  const isWorkoutMode = mode === 'workout';
+
+  // Use tool mode for potential imports, templates, or workout commands
+  if (mightBeImport || mightBeTemplate || isWorkoutMode) {
     // Build the tools array based on what's relevant
     const tools: Tool[] = [];
     if (mightBeImport) tools.push(IMPORT_TOOL);
     if (mightBeTemplate) tools.push(TEMPLATE_TOOL);
+    if (isWorkoutMode) tools.push(ADD_EXERCISE_TOOL);
 
     // Non-streaming with tool use
     const response = await anthropic.messages.create({
@@ -765,6 +805,54 @@ export async function POST(request: Request) {
         }),
         { headers: { 'Content-Type': 'application/json' } }
       );
+    }
+
+    if (toolUse && toolUse.name === 'add_exercise') {
+      // Workout mode: fuzzy match exercise name against DB
+      const input = toolUse.input as { exerciseName: string };
+      const exerciseName = input.exerciseName || '';
+
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseServiceKey) {
+          throw new Error('Supabase not configured');
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        const matches = await matchExercises(supabase, [exerciseName]);
+        const match = matches[0];
+
+        if (match?.matchedExercise) {
+          return new Response(
+            JSON.stringify({
+              type: 'add_exercise',
+              text: textBlock?.text || `Added ${match.matchedExercise.name}!\nsuggestions:Add another|What's next?|That's enough`,
+              exerciseData: match.matchedExercise,
+            }),
+            { headers: { 'Content-Type': 'application/json' } }
+          );
+        } else {
+          return new Response(
+            JSON.stringify({
+              type: 'add_exercise',
+              text: `I couldn't find "${exerciseName}" in the exercise library. Try a different name?\nsuggestions:Show alternatives|Try different name`,
+              exerciseData: null,
+            }),
+            { headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch {
+        return new Response(
+          JSON.stringify({
+            type: 'add_exercise',
+            text: `Had trouble looking up "${exerciseName}". Try again?\nsuggestions:Try again|Add different exercise`,
+            exerciseData: null,
+          }),
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Regular text response (no tool use)
