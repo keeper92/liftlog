@@ -34,7 +34,7 @@ const STEPS: TourStep[] = [
     id: 'dashboard',
     target: '[data-tour-anchor="start-workout"]',
     title: 'Dashboard',
-    description: 'Start a workout, or resume one in progress.',
+    description: 'Tap Quick Start to jump into a workout instantly.',
     preferredPlacement: 'top',
   },
   {
@@ -62,7 +62,7 @@ const STEPS: TourStep[] = [
     id: 'templates',
     target: '[data-tour-anchor="saved-templates"]',
     title: 'Templates',
-    description: 'Use saved templates, or ask the AI trainer to build new ones.',
+    description: 'Tap a template chip to start that workout instantly.',
     preferredPlacement: 'bottom',
   },
 ];

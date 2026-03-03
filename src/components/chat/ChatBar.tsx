@@ -16,11 +16,14 @@ export default function ChatBar() {
   const showRibbon = isActive && !isOnWorkoutPage && pathname !== '/dashboard';
 
   const { isOpen, openChat, closeChat } = useChatUIStore();
+  const actionChips = useChatUIStore((s) => s.actionChips);
   const nudges = useContextualNudges();
 
   // Hide the bar UI during workout sessions and on the trainer page,
   // but always render the ChatBottomSheet so it can be opened from anywhere
   const hideBar = isWorkoutSession || isTrainerPage;
+
+  const hasChips = actionChips.length > 0 || nudges.length > 0;
 
   return (
     <>
@@ -34,9 +37,22 @@ export default function ChatBar() {
           }`}
         >
           <div className="mx-auto max-w-[430px] px-3">
-            {/* Nudge chips */}
-            {nudges.length > 0 && !isOpen && (
+            {/* Action chips + nudge chips */}
+            {hasChips && !isOpen && (
               <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
+                {/* Action chips — direct actions, primary-tinted */}
+                {actionChips.map((chip) => (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onClick={chip.onAction}
+                    data-tour-anchor={chip.id === 'quick-start' ? 'start-workout' : undefined}
+                    className="flex-shrink-0 rounded-full border border-primary/40 bg-background/95 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur transition-colors hover:bg-primary/10"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+                {/* Chat nudges — open chat */}
                 {nudges.map((nudge) => (
                   <button
                     key={nudge.label}
