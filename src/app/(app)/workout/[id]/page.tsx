@@ -22,7 +22,10 @@ import { NumberPadProvider, useNumberPad } from '@/components/workout/NumberPadC
 import SetInputCell from '@/components/workout/SetInputCell';
 import NumberPad from '@/components/workout/NumberPad';
 import ExercisePickerOverlay from '@/components/workout/ExercisePickerOverlay';
+import FavoritesBar from '@/components/workout/FavoritesBar';
+import WorkoutChatPanel from '@/components/workout/WorkoutChatPanel';
 import PRToast from '@/components/workout/PRToast';
+import { useChatUIStore } from '@/stores/chatUIStore';
 import { usePRStore } from '@/stores/prStore';
 import { detectPRs, type PRDetectionResult } from '@/lib/utils/prDetection';
 import { isAssistanceExerciseName } from '@/lib/utils/exerciseSemantics';
@@ -1200,6 +1203,12 @@ function WorkoutContent({
         </div>
       )}
 
+      {/* Favorites quick-add bar */}
+      <FavoritesBar
+        onSelect={(exercise) => store.addExercise(exercise)}
+        activeExerciseIds={store.exercises.map((ex) => ex.exerciseId)}
+      />
+
       {/* Exercise List */}
       <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto px-4 py-4 space-y-6 ${numberPadVisible ? 'pb-64 scroll-pb-[22rem]' : 'pb-20'}`}>
         {store.exercises.map((ex, exIdx) => {
@@ -1396,7 +1405,7 @@ function WorkoutContent({
                       <Button
                         variant="ghost"
                         onClick={() => {
-                          router.push(`/trainer?exerciseId=${ex.exerciseId}&exerciseName=${encodeURIComponent(ex.exerciseName)}`);
+                          useChatUIStore.getState().openChat(`tips:${ex.exerciseName}`);
                           setTrainingGuideMenu(null);
                         }}
                         className="h-9 w-full justify-start gap-2 rounded-sm px-2.5 text-left text-sm font-normal"
@@ -1728,13 +1737,20 @@ function WorkoutContent({
         })}
 
         <Button
-          variant="outline"
+          variant="ghost"
           fullWidth
           onClick={() => setShowExercisePicker(true)}
+          className="text-sm text-muted-foreground hover:text-foreground"
         >
-          + Add Exercise
+          Browse exercises…
         </Button>
       </div>
+
+      {/* AI chat panel for adding exercises */}
+      <WorkoutChatPanel
+        onAddExercise={(exercise) => store.addExercise(exercise)}
+        workoutExercises={store.exercises.map((ex) => ex.exerciseName)}
+      />
 
       {pendingSetDelete && (
         <div className={`fixed left-4 right-4 z-[70] ${numberPadVisible ? 'bottom-64' : 'bottom-24'}`}>

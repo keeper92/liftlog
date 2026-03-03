@@ -18,7 +18,7 @@ export default function ActiveWorkoutRibbon() {
   return (
     <Link
       href={`/workout/${workoutId}`}
-      className="fixed bottom-[calc(86px+env(safe-area-inset-bottom))] left-0 right-0 z-50 animate-slide-up"
+      className="fixed bottom-[calc(130px+env(safe-area-inset-bottom))] left-0 right-0 z-50 animate-slide-up"
     >
       <div className="mx-auto max-w-[430px]">
         <div className="mx-3 flex items-center justify-center rounded-lg border border-primary/20 bg-primary px-4 py-3 shadow-sm">

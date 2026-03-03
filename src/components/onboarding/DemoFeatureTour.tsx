@@ -59,11 +59,11 @@ const STEPS: TourStep[] = [
     preferredPlacement: 'top',
   },
   {
-    id: 'trainer',
-    target: '[data-tour-anchor="nav-trainer"]',
-    title: 'Trainer',
-    description: 'Build templates and get personalized coaching.',
-    preferredPlacement: 'top',
+    id: 'templates',
+    target: '[data-tour-anchor="saved-templates"]',
+    title: 'Templates',
+    description: 'Use saved templates, or ask the AI trainer to build new ones.',
+    preferredPlacement: 'bottom',
   },
 ];
 

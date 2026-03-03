@@ -35,15 +35,6 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    href: '/trainer',
-    label: 'Trainer',
-    icon: (active) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-      </svg>
-    ),
-  },
-  {
     href: '/settings',
     label: 'Settings',
     icon: () => (
@@ -66,7 +57,7 @@ export default function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[calc(env(safe-area-inset-bottom)+10px)]">
       <div className="mx-auto max-w-[430px] px-3">
-        <Card className="grid grid-cols-4 items-center gap-1 rounded-lg border bg-background/95 p-1.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/90">
+        <Card className="grid grid-cols-3 items-center gap-1 rounded-lg border bg-background/95 p-1.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/90">
           {navItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
@@ -74,11 +65,9 @@ export default function BottomNav() {
                 key={item.href}
                 href={item.href}
                 data-tour-anchor={
-                  item.href === '/trainer'
-                    ? 'nav-trainer'
-                    : item.href === '/progress'
-                      ? 'nav-progress'
-                      : undefined
+                  item.href === '/progress'
+                    ? 'nav-progress'
+                    : undefined
                 }
                 className={cn(
                   buttonVariants[isActive ? 'default' : 'ghost'],

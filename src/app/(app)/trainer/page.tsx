@@ -1,16 +1,12 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { useSettingsStore } from '@/stores/settingsStore';
-import { useChatStore, type ImportData, type TemplateData } from '@/stores/chatStore';
+import { useChatStore } from '@/stores/chatStore';
 import { useTrainerProfileStore } from '@/stores/trainerProfileStore';
-import { toDisplayWeight } from '@/lib/utils/units';
-import { FileUploadButton, ChatSidebar } from '@/components/chat';
+import { ChatMessages, ChatInput, ChatSidebar, type ChatInputHandle } from '@/components/chat';
 import { Button } from '@/components/ui/button-shadcn';
-import { Input } from '@/components/ui/input-shadcn';
-import type { TrainerProfile } from '@/lib/types/user';
+import { useChat } from '@/hooks/useChat';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,96 +14,6 @@ const MAIN_SUGGESTIONS = [
   'Create a workout template',
   'Analyze my progress',
 ];
-
-const TEMPLATE_REVIEW_SUGGESTIONS = 'suggestions:Swap exercise|Try new move|Adjust focus|Looks good';
-
-function ensureSuggestionsLine(content: string, suggestionsLine: string): string {
-  const trimmed = content.trim();
-  if (!trimmed) return `Here is a draft template. Want any changes?\n${suggestionsLine}`;
-  const lines = trimmed.split('\n');
-  const lastLine = lines[lines.length - 1]?.trim() || '';
-  if (lastLine.startsWith('suggestions:')) return trimmed;
-  return `${trimmed}\n${suggestionsLine}`;
-}
-
-interface ExerciseHistory {
-  date: string;
-  sets: { weight: number; reps: number }[];
-}
-
-interface WorkoutContext {
-  unitSystem: string;
-  recentWorkouts: {
-    name: string;
-    date: string;
-    exercises: string[];
-    totalSets: number;
-    totalVolume: number;
-  }[];
-  personalRecords: {
-    exerciseName: string;
-    maxWeight: number;
-    maxReps: number;
-    estimated1RM: number;
-  }[];
-  weeklyStats: {
-    workouts: number;
-    volume: number;
-    streak: number;
-  } | null;
-  currentExercise?: {
-    id: string;
-    name: string;
-    history: ExerciseHistory[];
-    similarExercises: string[];
-  };
-  trainerProfile?: {
-    experienceLevel: string;
-    trainingFrequency?: string;
-    sessionDuration?: string;
-    goals: string[];
-    gymAccess?: string;
-    availableEquipment?: string[];
-    favoriteExercises?: string[];
-    dislikedOrAvoidedExercises?: string[];
-    additionalNotes?: string;
-  };
-}
-
-interface ImportApiResponse {
-  type: 'import';
-  text: string;
-  importData: {
-    workouts: ImportData['workouts'];
-    needsConfirmation: boolean;
-    questions?: string[];
-  };
-}
-
-interface ProfileApiResponse {
-  type: 'profile';
-  text: string;
-  profileData: {
-    experienceLevel: string;
-    trainingFrequency?: string;
-    sessionDuration?: string;
-    goals: string[];
-    gymAccess?: string;
-    availableEquipment?: string[];
-    favoriteExercises?: string[];
-    dislikedOrAvoidedExercises?: string[];
-    additionalNotes?: string;
-  };
-}
-
-interface TemplateApiResponse {
-  type: 'template';
-  text: string;
-  templateData: {
-    name: string;
-    exercises: { name: string; defaultSets: number }[];
-  };
-}
 
 export default function TrainerPage() {
   return (
@@ -123,31 +29,32 @@ function TrainerContent() {
   const exerciseName = searchParams.get('exerciseName');
   const intent = searchParams.get('intent');
 
-  const supabase = useMemo(() => createClient(), []);
-  const unitSystem = useSettingsStore((s) => s.unitSystem);
-  const { messages, addMessage, updateMessage, updateImportStatus, updateTemplateStatus, createConversation } = useChatStore();
+  const { createConversation, addMessage } = useChatStore();
   const activeConversationId = useChatStore((s) => s.activeConversationId);
-  const { profile: trainerProfile, setProfile } = useTrainerProfileStore();
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [context, setContext] = useState<WorkoutContext | null>(null);
-  const [importingMessageId, setImportingMessageId] = useState<string | null>(null);
-  const [savingTemplateId, setSavingTemplateId] = useState<string | null>(null);
+  const { profile: trainerProfile } = useTrainerProfileStore();
+
   const [profileMode, setProfileMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<ChatInputHandle>(null);
   const initializedIntent = useRef<string | null>(null);
   const shouldAutoSendTemplateIntent = useRef(false);
-  const handleSendRef = useRef<(text?: string) => Promise<void>>(async () => {});
-
-  const exerciseSuggestions = exerciseName ? [
-    'Tips for perfect form',
-    'Weight and rep advice',
-    'Similar exercises',
-  ] : null;
-
   const initializedExercise = useRef<string | null>(null);
+
+  const {
+    messages,
+    isLoading,
+    context,
+    importingMessageId,
+    savingTemplateId,
+    send,
+    sendRef,
+    confirmImport,
+    cancelImport,
+    confirmTemplate,
+    cancelTemplate,
+  } = useChat({ profileMode, exerciseId, exerciseName });
+
+  // Exercise-specific initialization
   useEffect(() => {
     if (exerciseName && initializedExercise.current !== exerciseName) {
       initializedExercise.current = exerciseName;
@@ -158,6 +65,7 @@ function TrainerContent() {
     }
   }, [exerciseName, createConversation, addMessage]);
 
+  // Template intent initialization
   useEffect(() => {
     if (intent !== 'create-template') return;
     if (initializedIntent.current === intent) return;
@@ -172,156 +80,20 @@ function TrainerContent() {
     return () => window.cancelAnimationFrame(frameId);
   }, [intent, createConversation]);
 
+  // Auto-send template intent when context is ready
   useEffect(() => {
-    async function loadContext() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    if (intent !== 'create-template') return;
+    if (!shouldAutoSendTemplateIntent.current) return;
+    if (!context || isLoading) return;
+    if (messages.length > 0) return;
 
-      const ctx: WorkoutContext = {
-        unitSystem,
-        recentWorkouts: [],
-        personalRecords: [],
-        weeklyStats: null,
-      };
-
-      // Include trainer profile in context if available
-      if (trainerProfile) {
-        ctx.trainerProfile = {
-          experienceLevel: trainerProfile.experienceLevel,
-          trainingFrequency: trainerProfile.trainingFrequency || undefined,
-          sessionDuration: trainerProfile.sessionDuration || undefined,
-          goals: trainerProfile.goals,
-          gymAccess: trainerProfile.gymAccess || undefined,
-          availableEquipment: trainerProfile.availableEquipment.length > 0 ? trainerProfile.availableEquipment : undefined,
-          favoriteExercises: trainerProfile.favoriteExercises.length > 0 ? trainerProfile.favoriteExercises : undefined,
-          dislikedOrAvoidedExercises: trainerProfile.dislikedOrAvoidedExercises.length > 0 ? trainerProfile.dislikedOrAvoidedExercises : undefined,
-          additionalNotes: trainerProfile.additionalNotes || undefined,
-        };
-      }
-
-      const { data: summary } = await supabase.rpc('get_progress_summary', {
-        user_uuid: user.id,
-      });
-      if (summary) {
-        ctx.weeklyStats = {
-          workouts: (summary as { weekWorkouts: number }).weekWorkouts,
-          volume: Math.round(toDisplayWeight((summary as { weekVolume: number }).weekVolume, unitSystem)),
-          streak: (summary as { currentStreak: number }).currentStreak,
-        };
-      }
-
-      const { data: prData } = await supabase.rpc('get_personal_records', { user_uuid: user.id });
-      if (prData) {
-        ctx.personalRecords = (prData as { exercise_name: string; max_weight: number; max_reps: number; estimated_1rm: number }[])
-          .slice(0, 10)
-          .map((pr) => ({
-            exerciseName: pr.exercise_name,
-            maxWeight: Math.round(toDisplayWeight(pr.max_weight, unitSystem)),
-            maxReps: pr.max_reps,
-            estimated1RM: Math.round(toDisplayWeight(pr.estimated_1rm, unitSystem)),
-          }));
-      }
-
-      const { data: workouts } = await supabase
-        .from('workouts')
-        .select('name, date, sets(exercise_id, weight, reps, exercises(name))')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
-        .limit(10);
-      if (workouts) {
-        ctx.recentWorkouts = (workouts as unknown as {
-          name: string | null;
-          date: string;
-          sets: { exercise_id: string; weight: number | null; reps: number | null; exercises: { name: string } }[];
-        }[]).map((w) => {
-          const exerciseNames = [...new Set(w.sets.map((s) => s.exercises.name))];
-          const totalVolume = w.sets.reduce(
-            (sum, s) => sum + Math.round(toDisplayWeight((s.weight || 0) * (s.reps || 0), unitSystem)),
-            0,
-          );
-          return {
-            name: w.name || 'Workout',
-            date: new Date(w.date).toLocaleDateString(),
-            exercises: exerciseNames,
-            totalSets: w.sets.length,
-            totalVolume,
-          };
-        });
-      }
-
-      if (exerciseId && exerciseName) {
-        const { data: historyData } = await supabase
-          .from('sets')
-          .select('weight, reps, set_number, is_warmup, workouts!inner(id, date, user_id)')
-          .eq('exercise_id', exerciseId)
-          .eq('workouts.user_id', user.id)
-          .eq('is_completed', true)
-          .order('workouts(date)', { ascending: false });
-
-        const exerciseHistory: ExerciseHistory[] = [];
-        if (historyData) {
-          const workoutMap = new Map<string, { date: string; sets: { weight: number; reps: number }[] }>();
-          for (const row of historyData) {
-            const workout = row.workouts as unknown as { id: string; date: string };
-            if (!row.is_warmup) {
-              if (!workoutMap.has(workout.id)) {
-                workoutMap.set(workout.id, { date: workout.date, sets: [] });
-              }
-              workoutMap.get(workout.id)!.sets.push({
-                weight: Math.round(toDisplayWeight(row.weight || 0, unitSystem)),
-                reps: row.reps || 0,
-              });
-            }
-          }
-          Array.from(workoutMap.values())
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-            .slice(0, 5)
-            .forEach((w) => exerciseHistory.push({
-              date: new Date(w.date).toLocaleDateString(),
-              sets: w.sets,
-            }));
-        }
-
-        const { data: exerciseInfo } = await supabase
-          .from('exercises')
-          .select('primary_muscles')
-          .eq('id', exerciseId)
-          .single();
-
-        let similarExercises: string[] = [];
-        if (exerciseInfo && exerciseInfo.primary_muscles && exerciseInfo.primary_muscles.length > 0) {
-          const { data: similar } = await supabase
-            .from('exercises')
-            .select('name')
-            .contains('primary_muscles', [exerciseInfo.primary_muscles[0]])
-            .neq('id', exerciseId)
-            .limit(5);
-          if (similar) {
-            similarExercises = similar.map((e) => e.name);
-          }
-        }
-
-        ctx.currentExercise = {
-          id: exerciseId,
-          name: exerciseName,
-          history: exerciseHistory,
-          similarExercises,
-        };
-      }
-
-      setContext(ctx);
-    }
-    loadContext();
-  }, [unitSystem, exerciseId, exerciseName, trainerProfile, supabase]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    shouldAutoSendTemplateIntent.current = false;
+    void sendRef.current('Create a workout template');
+  }, [intent, context, isLoading, messages.length, sendRef]);
 
   // Reset local state when switching conversations
   useEffect(() => {
     setProfileMode(false);
-    setInput('');
   }, [activeConversationId]);
 
   function startProfileSetup() {
@@ -333,232 +105,24 @@ function TrainerContent() {
     inputRef.current?.focus();
   }
 
-  function handleFileUpload(content: string, filename: string) {
-    handleSend(`[file: ${filename}]\n\n${content}`);
-  }
-
-  async function handleSend(text?: string) {
-    const messageText = text || input.trim();
-    if (!messageText || isLoading || !context) return;
-
+  function handleSend(text: string) {
     // Auto-detect profile update requests
-    if (!profileMode && /update.*profile|edit.*profile|change.*profile|modify.*profile|redo.*profile|set up.*profile|setup.*profile/i.test(messageText)) {
+    if (!profileMode && /update.*profile|edit.*profile|change.*profile|modify.*profile|redo.*profile|set up.*profile|setup.*profile/i.test(text)) {
       startProfileSetup();
       return;
     }
-
-    setInput('');
-    addMessage('user', messageText);
-    setIsLoading(true);
-
-    const assistantId = addMessage('assistant', '');
-
-    try {
-      const chatMessages = [
-        ...messages.map((m) => ({ role: m.role, content: m.content })),
-        { role: 'user' as const, content: messageText },
-      ];
-
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: chatMessages,
-          context,
-          ...(profileMode && { mode: 'profile-setup' }),
-        }),
-      });
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error || 'Failed to get response');
-      }
-
-      const contentType = response.headers.get('content-type') || '';
-
-      if (contentType.includes('application/json')) {
-        const data = await response.json();
-
-        if (data.type === 'profile') {
-          // Profile setup complete — save the profile
-          const profileResponse = data as ProfileApiResponse;
-          const now = new Date().toISOString();
-          const newProfile: TrainerProfile = {
-            experienceLevel: profileResponse.profileData.experienceLevel,
-            trainingFrequency: profileResponse.profileData.trainingFrequency || '',
-            sessionDuration: profileResponse.profileData.sessionDuration || '',
-            goals: profileResponse.profileData.goals || [],
-            gymAccess: profileResponse.profileData.gymAccess || '',
-            availableEquipment: profileResponse.profileData.availableEquipment || [],
-            favoriteExercises: profileResponse.profileData.favoriteExercises || [],
-            dislikedOrAvoidedExercises: profileResponse.profileData.dislikedOrAvoidedExercises || [],
-            additionalNotes: profileResponse.profileData.additionalNotes || '',
-            createdAt: trainerProfile?.createdAt || now,
-            updatedAt: now,
-          };
-          setProfile(newProfile);
-          setProfileMode(false);
-
-          // Update context with new profile
-          setContext((prev) => prev ? {
-            ...prev,
-            trainerProfile: {
-              experienceLevel: newProfile.experienceLevel,
-              trainingFrequency: newProfile.trainingFrequency || undefined,
-              sessionDuration: newProfile.sessionDuration || undefined,
-              goals: newProfile.goals,
-              gymAccess: newProfile.gymAccess || undefined,
-              availableEquipment: newProfile.availableEquipment.length > 0 ? newProfile.availableEquipment : undefined,
-              favoriteExercises: newProfile.favoriteExercises.length > 0 ? newProfile.favoriteExercises : undefined,
-              dislikedOrAvoidedExercises: newProfile.dislikedOrAvoidedExercises.length > 0 ? newProfile.dislikedOrAvoidedExercises : undefined,
-              additionalNotes: newProfile.additionalNotes || undefined,
-            },
-          } : prev);
-
-          // Sync to Supabase
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            const { data: currentProfile } = await supabase
-              .from('profiles')
-              .select('preferences')
-              .eq('id', user.id)
-              .single();
-            const currentPrefs = (currentProfile?.preferences as Record<string, unknown>) || {};
-            await supabase
-              .from('profiles')
-              .update({ preferences: { ...currentPrefs, trainerProfile: newProfile } })
-              .eq('id', user.id);
-          }
-
-          updateMessage(assistantId, profileResponse.text);
-        } else if (data.type === 'template') {
-          // Template response
-          const templateResponse = data as TemplateApiResponse;
-          const templateData: TemplateData = {
-            name: templateResponse.templateData.name,
-            exercises: templateResponse.templateData.exercises,
-            status: 'pending',
-          };
-          updateMessage(
-            assistantId,
-            ensureSuggestionsLine(templateResponse.text, TEMPLATE_REVIEW_SUGGESTIONS),
-            undefined,
-            templateData,
-          );
-        } else {
-          // Import response
-          const importData: ImportData = {
-            workouts: (data as ImportApiResponse).importData.workouts,
-            needsConfirmation: (data as ImportApiResponse).importData.needsConfirmation,
-            questions: (data as ImportApiResponse).importData.questions,
-            status: 'pending',
-          };
-          updateMessage(assistantId, (data as ImportApiResponse).text, importData);
-        }
-      } else {
-        // Regular streaming response
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        let fullText = '';
-
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            fullText += decoder.decode(value, { stream: true });
-            updateMessage(assistantId, fullText);
-          }
-        }
-      }
-    } catch (err) {
-      updateMessage(
-        assistantId,
-        err instanceof Error ? err.message : 'Something went wrong. Please try again.'
-      );
-    } finally {
-      setIsLoading(false);
-      inputRef.current?.focus();
-    }
-  }
-  handleSendRef.current = handleSend;
-
-  useEffect(() => {
-    if (intent !== 'create-template') return;
-    if (!shouldAutoSendTemplateIntent.current) return;
-    if (!context || isLoading) return;
-    if (messages.length > 0) return;
-
-    shouldAutoSendTemplateIntent.current = false;
-    void handleSendRef.current('Create a workout template');
-  }, [intent, context, isLoading, messages.length]);
-
-  async function handleConfirmImport(messageId: string, importData: ImportData) {
-    setImportingMessageId(messageId);
-    try {
-      const response = await fetch('/api/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'import',
-          workouts: importData.workouts,
-          unitSystem: context?.unitSystem || 'imperial',
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Import failed');
-      }
-
-      const result = await response.json();
-      updateImportStatus(messageId, 'imported');
-      addMessage('assistant', `Imported ${result.imported} workout${result.imported !== 1 ? 's' : ''} with ${result.summary.totalSets} sets. Check your training log to see them!`);
-    } catch {
-      updateImportStatus(messageId, 'pending');
-      addMessage('assistant', 'Sorry, the import failed. Please try again.');
-    } finally {
-      setImportingMessageId(null);
-    }
+    send(text);
   }
 
-  function handleCancelImport(messageId: string) {
-    updateImportStatus(messageId, 'cancelled');
-    addMessage('assistant', 'Import cancelled. Let me know if you want to try again with different data.');
+  function handleFileUpload(content: string, filename: string) {
+    send(`[file: ${filename}]\n\n${content}`);
   }
 
-  async function handleConfirmTemplate(messageId: string, templateData: TemplateData) {
-    setSavingTemplateId(messageId);
-    try {
-      const response = await fetch('/api/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: templateData.name,
-          exercises: templateData.exercises,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save template');
-      }
-
-      const result = await response.json();
-      updateTemplateStatus(messageId, 'saved');
-      const unmatchedMsg = result.unmatched && result.unmatched.length > 0
-        ? ` (${result.unmatched.length} exercise${result.unmatched.length !== 1 ? 's' : ''} couldn't be matched: ${result.unmatched.join(', ')})`
-        : '';
-      addMessage('assistant', `Saved "${result.name}" with ${result.exerciseCount} exercises! You can find it in your Saved Templates on the home screen.${unmatchedMsg}`);
-    } catch {
-      updateTemplateStatus(messageId, 'pending');
-      addMessage('assistant', 'Sorry, I couldn\'t save that template. Please try again.');
-    } finally {
-      setSavingTemplateId(null);
-    }
-  }
-
-  function handleCancelTemplate(messageId: string) {
-    updateTemplateStatus(messageId, 'cancelled');
-    addMessage('assistant', 'No problem! Let me know if you want me to create a different template.');
-  }
+  const exerciseSuggestions = exerciseName ? [
+    'Tips for perfect form',
+    'Weight and rep advice',
+    'Similar exercises',
+  ] : null;
 
   const hasUserMessage = messages.some((m) => m.role === 'user');
   const showExerciseSuggestions = exerciseName && !hasUserMessage && messages.length > 0;
@@ -566,29 +130,6 @@ function TrainerContent() {
   const profileSuggestion = trainerProfile ? ['Modify your training profile'] : [];
   const contextualMainSuggestions = [...profileSuggestion, ...MAIN_SUGGESTIONS];
   const suggestions = exerciseSuggestions || contextualMainSuggestions;
-
-  // Parse suggestions from the last assistant message (format: "suggestions:Option A|Option B|Option C")
-  function parseSuggestions(content: string): { text: string; suggestions: string[] } {
-    const lines = content.split('\n');
-    const lastLine = lines[lines.length - 1]?.trim() || '';
-    if (lastLine.startsWith('suggestions:')) {
-      const suggestionsStr = lastLine.slice('suggestions:'.length);
-      const parsed = suggestionsStr.split('|').map((s) => s.trim()).filter(Boolean);
-      if (parsed.length > 0) {
-        return {
-          text: lines.slice(0, -1).join('\n').trimEnd(),
-          suggestions: parsed,
-        };
-      }
-    }
-    return { text: content, suggestions: [] };
-  }
-
-  // Get inline suggestions from the last assistant message (only if it's the most recent and not loading)
-  const lastMessage = messages[messages.length - 1];
-  const lastMessageSuggestions = !isLoading && lastMessage?.role === 'assistant' && lastMessage.content
-    ? parseSuggestions(lastMessage.content).suggestions
-    : [];
 
   return (
     <div className="flex flex-col h-[calc(100dvh-64px)] relative">
@@ -631,7 +172,7 @@ function TrainerContent() {
               Ask me anything about your training
             </p>
 
-            {/* Profile setup banner — shown when no profile exists */}
+            {/* Profile setup banner */}
             {!trainerProfile && (
               <Button
                 type="button"
@@ -670,194 +211,20 @@ function TrainerContent() {
             </div>
           </div>
         ) : (
-          <div className="space-y-3 pt-2">
-            {messages.map((msg) => (
-              <div key={msg.id}>
-                <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div
-                    className={`max-w-[85%] px-4 py-2.5 text-sm leading-relaxed ${
-                      msg.role === 'user'
-                        ? 'rounded-lg rounded-br-sm bg-primary text-primary-foreground shadow-sm'
-                        : 'rounded-lg rounded-bl-sm border border-border/70 bg-card text-foreground'
-                    }`}
-                  >
-                    {msg.content ? (
-                      <span
-                        dangerouslySetInnerHTML={{
-                          __html: parseSuggestions(msg.content).text
-                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                            .replace(/\n/g, '<br />')
-                        }}
-                      />
-                    ) : (
-                      <span className="inline-flex gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Import Preview */}
-                {msg.importData && msg.importData.status === 'pending' && (
-                  <div className="mt-3 ml-0 max-w-[90%]">
-                    <div className="bg-card border border-border/70 rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary">
-                          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                          <polyline points="7 10 12 15 17 10" />
-                          <line x1="12" y1="15" x2="12" y2="3" />
-                        </svg>
-                        <span className="text-sm font-medium">Import Preview</span>
-                      </div>
-
-                      <div className="text-xs text-muted-foreground mb-3">
-                        {msg.importData.workouts.length} workout{msg.importData.workouts.length !== 1 ? 's' : ''} to import
-                      </div>
-
-                      <div className="space-y-2 mb-4">
-                        {msg.importData.workouts.slice(0, 3).map((workout, i) => (
-                          <div key={i} className="text-xs bg-card rounded-lg p-2">
-                            <div className="font-medium text-foreground">
-                              {workout.name || new Date(workout.date).toLocaleDateString()}
-                            </div>
-                            <div className="text-muted-foreground mt-1">
-                              {workout.exercises.map((ex) => ex.name).join(', ')}
-                            </div>
-                          </div>
-                        ))}
-                        {msg.importData.workouts.length > 3 && (
-                          <div className="text-xs text-muted-foreground">
-                            +{msg.importData.workouts.length - 3} more...
-                          </div>
-                        )}
-                      </div>
-
-                      {msg.importData.questions && msg.importData.questions.length > 0 && (
-                        <div className="mb-4 rounded-lg border border-border bg-muted/40 p-2">
-                          <div className="mb-1 text-xs font-medium text-foreground">Questions:</div>
-                          {msg.importData.questions.map((q, i) => (
-                            <div key={i} className="text-xs text-muted-foreground">• {q}</div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          onClick={() => handleConfirmImport(msg.id, msg.importData!)}
-                          disabled={importingMessageId === msg.id}
-                          className="flex-1"
-                        >
-                          {importingMessageId === msg.id ? 'Importing...' : 'Confirm Import'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={() => handleCancelImport(msg.id)}
-                          disabled={importingMessageId === msg.id}
-                          className="flex-1"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Import Status */}
-                {msg.importData && msg.importData.status === 'imported' && (
-                  <div className="mt-2 ml-0">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Imported
-                    </span>
-                  </div>
-                )}
-
-                {msg.importData && msg.importData.status === 'cancelled' && (
-                  <div className="mt-2 ml-0">
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-card px-2 py-1 rounded-full">
-                      Cancelled
-                    </span>
-                  </div>
-                )}
-
-                {/* Template Preview */}
-                {msg.templateData && msg.templateData.status === 'pending' && (
-                  <div className="mt-3 ml-0 max-w-[90%]">
-                    <div className="bg-card border border-border/70 rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
-                          <line x1="12" y1="18" x2="12" y2="12" />
-                          <line x1="9" y1="15" x2="15" y2="15" />
-                        </svg>
-                        <span className="text-sm font-medium">{msg.templateData.name}</span>
-                      </div>
-
-                      <div className="text-xs text-muted-foreground mb-3">
-                        {msg.templateData.exercises.length} exercise{msg.templateData.exercises.length !== 1 ? 's' : ''}
-                      </div>
-
-                      <div className="space-y-1.5 mb-4">
-                        {msg.templateData.exercises.map((exercise, i) => (
-                          <div key={i} className="text-xs bg-card rounded-lg px-3 py-2 flex items-center justify-between">
-                            <span className="font-medium text-foreground">{exercise.name}</span>
-                            <span className="text-muted-foreground">{exercise.defaultSets} sets</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          onClick={() => handleConfirmTemplate(msg.id, msg.templateData!)}
-                          disabled={savingTemplateId === msg.id}
-                          className="flex-1"
-                        >
-                          {savingTemplateId === msg.id ? 'Saving...' : 'Save Template'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={() => handleCancelTemplate(msg.id)}
-                          disabled={savingTemplateId === msg.id}
-                          className="flex-1"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Template Saved Status */}
-                {msg.templateData && msg.templateData.status === 'saved' && (
-                  <div className="mt-2 ml-0">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Template Saved
-                    </span>
-                  </div>
-                )}
-
-                {/* Template Cancelled Status */}
-                {msg.templateData && msg.templateData.status === 'cancelled' && (
-                  <div className="mt-2 ml-0">
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-card px-2 py-1 rounded-full">
-                      Cancelled
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
+          <>
+            <ChatMessages
+              messages={messages}
+              isLoading={isLoading}
+              onSend={handleSend}
+              onConfirmImport={confirmImport}
+              onCancelImport={cancelImport}
+              onConfirmTemplate={confirmTemplate}
+              onCancelTemplate={cancelTemplate}
+              importingMessageId={importingMessageId}
+              savingTemplateId={savingTemplateId}
+              quickActions={contextualMainSuggestions}
+              showQuickActions={!profileMode && !showExerciseSuggestions}
+            />
             {showExerciseSuggestions && exerciseSuggestions && (
               <div className="flex flex-wrap gap-2 mt-4">
                 {exerciseSuggestions.map((s) => (
@@ -874,82 +241,21 @@ function TrainerContent() {
                 ))}
               </div>
             )}
-            {lastMessageSuggestions.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {lastMessageSuggestions.map((s) => (
-                  <Button
-                    type="button"
-                    key={s}
-                    onClick={() => handleSend(s)}
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full"
-                  >
-                    {s}
-                  </Button>
-                ))}
-              </div>
-            )}
-            {!profileMode && !showExerciseSuggestions && (
-              <div className="mt-4">
-                <p className="mb-2 text-sm font-medium text-muted-foreground">Quick actions</p>
-                <div className="flex flex-wrap gap-2">
-                  {contextualMainSuggestions.map((s) => (
-                    <Button
-                      type="button"
-                      key={s}
-                      onClick={() => handleSend(s)}
-                      variant="outline"
-                      size="sm"
-                      className="rounded-full"
-                    >
-                      {s}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+          </>
         )}
       </div>
 
       {/* Input */}
       <div className="border-t border-border/80 bg-background/95 backdrop-blur px-4 py-3">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSend();
-          }}
-          className="flex items-center gap-2"
-        >
-          {!profileMode && (
-            <FileUploadButton
-              onFileContent={handleFileUpload}
-              disabled={isLoading || !context}
-            />
-          )}
-          <Input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={profileMode ? 'Tell me about your training...' : 'Ask your trainer or paste workout data...'}
-            disabled={isLoading || !context}
-            className="h-11 flex-1 rounded-full"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!input.trim() || isLoading || !context}
-            className="h-10 w-10 rounded-full"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="19" x2="12" y2="5" />
-              <polyline points="5 12 12 5 19 12" />
-            </svg>
-          </Button>
-        </form>
+        <ChatInput
+          ref={inputRef}
+          onSend={handleSend}
+          isLoading={isLoading}
+          disabled={!context}
+          placeholder={profileMode ? 'Tell me about your training...' : 'Ask your trainer or paste workout data...'}
+          showFileUpload={!profileMode}
+          onFileContent={handleFileUpload}
+        />
       </div>
 
       {/* Chat Sidebar */}

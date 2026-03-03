@@ -28,6 +28,7 @@ import {
 import { Input } from '@/components/ui/input-shadcn';
 import { Label } from '@/components/ui/label';
 import DemoFeatureTour from '@/components/onboarding/DemoFeatureTour';
+import { useChatUIStore } from '@/stores/chatUIStore';
 
 import HistoryOverlay from '@/components/history/HistoryOverlay';
 import PRFeedOverlay from '@/components/pr/PRFeedOverlay';
@@ -249,10 +250,12 @@ export default function DashboardPage() {
     );
   }
 
+  const openChat = useChatUIStore((s) => s.openChat);
+
   function handleCreateTemplateWithAI() {
     setShowHistory(false);
     setShowPRFeed(false);
-    router.push('/trainer?intent=create-template');
+    openChat('create-template');
   }
 
   function openManualTemplateBuilder() {
