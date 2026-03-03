@@ -1210,7 +1210,7 @@ function WorkoutContent({
       />
 
       {/* Exercise List */}
-      <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto px-4 py-4 space-y-6 ${numberPadVisible ? 'pb-64 scroll-pb-[22rem]' : 'pb-20'}`}>
+      <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto px-4 py-4 space-y-6 ${numberPadVisible ? 'pb-80 scroll-pb-[26rem]' : 'pb-40'}`}>
         {store.exercises.map((ex, exIdx) => {
           const prev = store.previousPerformance[ex.exerciseId] || [];
           const isAssistanceExercise = isAssistanceExerciseName(ex.exerciseName);
@@ -1753,7 +1753,7 @@ function WorkoutContent({
       />
 
       {pendingSetDelete && (
-        <div className={`fixed left-4 right-4 z-[70] ${numberPadVisible ? 'bottom-64' : 'bottom-24'}`}>
+        <div className={`fixed left-4 right-4 z-[70] ${numberPadVisible ? 'bottom-80' : 'bottom-40'}`}>
           <div className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
             <p className="text-sm text-muted-foreground truncate pr-3">
               Set deleted from {pendingSetDelete.exerciseName}
@@ -1773,7 +1773,7 @@ function WorkoutContent({
 
       {/* Rest Timer - shown only when number pad is NOT visible */}
       {restTimer.isActive && !numberPadVisible && (
-        <div className="fixed bottom-16 left-0 right-0 bg-card border-t border-border px-4 py-3 z-50">
+        <div className="fixed bottom-28 left-0 right-0 bg-card border-t border-border px-4 py-3 z-50">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Rest Timer</span>
             <Button variant="ghost"
