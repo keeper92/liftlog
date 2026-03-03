@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { useActiveWorkoutStore, type ActiveSet, type ActiveWorkoutState, type PerformanceSet } from '@/stores/activeWorkoutStore';
+import { useActiveWorkoutStore, type ActiveSet, type ActiveWorkoutState, type PerformanceSet, type WorkoutExercise } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { ChevronDown } from 'lucide-react';
 import {
@@ -1020,6 +1020,78 @@ function WorkoutContent({
     }
   }
 
+  function hasPrefilledData(s: ActiveSet, ex: WorkoutExercise): boolean {
+    if (ex.exerciseCategory === 'cardio') return s.time !== null || s.distance !== null;
+    if (ex.logMode === 'split_lr') return s.leftWeight !== null && s.leftReps !== null && s.rightWeight !== null && s.rightReps !== null;
+    return s.weight !== null && s.reps !== null;
+  }
+
+  function scrollToNextIncompleteSet(completedExIdx: number, completedSetIdx: number) {
+    const exs = store.exercises;
+    for (let ei = completedExIdx; ei < exs.length; ei++) {
+      const startSet = ei === completedExIdx ? completedSetIdx + 1 : 0;
+      for (let si = startSet; si < exs[ei].sets.length; si++) {
+        if (!exs[ei].sets[si].isCompleted) {
+          requestAnimationFrame(() => {
+            document.querySelector(`[data-set-id="${ei}-${si}"]`)?.scrollIntoView({
+              behavior: 'smooth', block: 'center',
+            });
+          });
+          return;
+        }
+      }
+    }
+  }
+
+  function handleCheckmarkTap(exIdx: number, setIdx: number, ex: WorkoutExercise, s: ActiveSet) {
+    if (s.isCompleted) {
+      store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
+      return;
+    }
+
+    // Dismiss numpad if open
+    deactivate();
+
+    // Complete the set
+    store.completeSet(exIdx, setIdx);
+
+    // Start rest timer (non-cardio, non-warmup)
+    if (ex.exerciseCategory !== 'cardio' && !s.isWarmup) {
+      startRestTimer(ex.restTimerSeconds);
+    }
+
+    // PR detection
+    if (ex.exerciseCategory !== 'cardio') {
+      const prevPerf = store.previousPerformance[ex.exerciseId] || [];
+      const prs = detectPRs(s, ex, prevPerf);
+      const prStoreState = usePRStore.getState();
+      for (const pr of prs) {
+        if (store.workoutId && !prStoreState.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
+          prStoreState.markFired(store.workoutId, ex.exerciseId, pr.metric);
+          prStoreState.addPR({
+            exerciseId: ex.exerciseId,
+            exerciseName: ex.exerciseName,
+            metric: pr.metric,
+            previousValue: pr.previousValue,
+            newValue: pr.newValue,
+            date: new Date().toISOString(),
+            workoutId: store.workoutId,
+          });
+          onPRDetected(ex.exerciseName, pr);
+        }
+      }
+    }
+
+    // Auto-scroll to next incomplete set
+    scrollToNextIncompleteSet(exIdx, setIdx);
+  }
+
+  function checkmarkClassName(s: ActiveSet, ex: WorkoutExercise): string {
+    if (s.isCompleted) return 'bg-primary text-primary-foreground';
+    if (hasPrefilledData(s, ex)) return 'bg-primary/15 text-primary';
+    return 'bg-muted text-muted-foreground';
+  }
+
   const clearPendingDelete = useCallback(() => {
     if (undoTimerRef.current) {
       clearTimeout(undoTimerRef.current);
@@ -1489,7 +1561,7 @@ function WorkoutContent({
                   {ex.sets.slice(0, 1).map((s, setIdx) => {
                     const pace = calculatePace(s.time, s.distance, unitSystem);
                     return (
-                      <div key={s.id}>
+                      <div key={s.id} data-set-id={`${exIdx}-${setIdx}`}>
                         <div
                           className={`grid grid-cols-[40px_1fr_1fr_40px] gap-2 items-center ${
                             s.isCompleted ? 'opacity-60' : ''
@@ -1517,16 +1589,8 @@ function WorkoutContent({
                             isCompleted={s.isCompleted}
                           />
                           <Button variant="ghost"
-                            onClick={() => {
-                              if (s.isCompleted) {
-                                store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
-                              } else {
-                                store.completeSet(exIdx, setIdx);
-                              }
-                            }}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                            }`}
+                            onClick={() => handleCheckmarkTap(exIdx, setIdx, ex, s)}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center ${checkmarkClassName(s, ex)}`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
@@ -1556,6 +1620,7 @@ function WorkoutContent({
                     >
                       {ex.logMode === 'split_lr' ? (
                         <div
+                          data-set-id={`${exIdx}-${setIdx}`}
                           className={`grid grid-cols-[40px_1fr_1fr_40px] gap-2 items-center ${
                             s.isCompleted ? 'opacity-60' : ''
                           }`}
@@ -1606,36 +1671,8 @@ function WorkoutContent({
                             />
                           </div>
                           <Button variant="ghost"
-                            onClick={() => {
-                              if (s.isCompleted) {
-                                store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
-                              } else {
-                                store.completeSet(exIdx, setIdx);
-                                if (!s.isWarmup) startRestTimer(ex.restTimerSeconds);
-                                // PR detection for manual checkmark
-                                const prevPerf = store.previousPerformance[ex.exerciseId] || [];
-                                const prs = detectPRs(s, ex, prevPerf);
-                                const prStoreState = usePRStore.getState();
-                                for (const pr of prs) {
-                                  if (store.workoutId && !prStoreState.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
-                                    prStoreState.markFired(store.workoutId, ex.exerciseId, pr.metric);
-                                    prStoreState.addPR({
-                                      exerciseId: ex.exerciseId,
-                                      exerciseName: ex.exerciseName,
-                                      metric: pr.metric,
-                                      previousValue: pr.previousValue,
-                                      newValue: pr.newValue,
-                                      date: new Date().toISOString(),
-                                      workoutId: store.workoutId,
-                                    });
-                                    onPRDetected(ex.exerciseName, pr);
-                                  }
-                                }
-                              }
-                            }}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                            }`}
+                            onClick={() => handleCheckmarkTap(exIdx, setIdx, ex, s)}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center ${checkmarkClassName(s, ex)}`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
@@ -1644,6 +1681,7 @@ function WorkoutContent({
                         </div>
                       ) : (
                         <div
+                          data-set-id={`${exIdx}-${setIdx}`}
                           className={`grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 items-center ${
                             s.isCompleted ? 'opacity-60' : ''
                           }`}
@@ -1680,36 +1718,8 @@ function WorkoutContent({
                             isCompleted={s.isCompleted}
                           />
                           <Button variant="ghost"
-                            onClick={() => {
-                              if (s.isCompleted) {
-                                store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
-                              } else {
-                                store.completeSet(exIdx, setIdx);
-                                if (!s.isWarmup) startRestTimer(ex.restTimerSeconds);
-                                // PR detection for manual checkmark
-                                const prevPerf = store.previousPerformance[ex.exerciseId] || [];
-                                const prs = detectPRs(s, ex, prevPerf);
-                                const prStoreState = usePRStore.getState();
-                                for (const pr of prs) {
-                                  if (store.workoutId && !prStoreState.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
-                                    prStoreState.markFired(store.workoutId, ex.exerciseId, pr.metric);
-                                    prStoreState.addPR({
-                                      exerciseId: ex.exerciseId,
-                                      exerciseName: ex.exerciseName,
-                                      metric: pr.metric,
-                                      previousValue: pr.previousValue,
-                                      newValue: pr.newValue,
-                                      date: new Date().toISOString(),
-                                      workoutId: store.workoutId,
-                                    });
-                                    onPRDetected(ex.exerciseName, pr);
-                                  }
-                                }
-                              }
-                            }}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                            }`}
+                            onClick={() => handleCheckmarkTap(exIdx, setIdx, ex, s)}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center ${checkmarkClassName(s, ex)}`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
