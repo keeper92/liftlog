@@ -89,91 +89,95 @@ export default function ChatSidebar({ isOpen, onClose, onConversationChange }: C
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] lg:inset-y-4 lg:left-1/2 lg:w-[430px] lg:-translate-x-1/2 lg:overflow-hidden lg:rounded-[2rem] lg:border lg:border-border/70">
+    <div className="fixed inset-0 z-[70]">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-foreground/30"
         onClick={onClose}
       />
       {/* Panel */}
-      <div className="absolute inset-y-0 left-0 flex w-[72%] max-w-[320px] flex-col border-r bg-background shadow-lg">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-5 pb-3">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="h-10 w-10 rounded-full"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-foreground">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleNewChat}
-            className="rounded-full"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            New chat
-          </Button>
-        </div>
-
-        {/* Conversation list */}
-        <div className="flex-1 overflow-y-auto px-3 pb-6">
-          {withMessages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <p className="text-sm text-muted-foreground">No conversations yet</p>
-              <p className="text-xs text-muted-foreground mt-1">Start a chat with your trainer</p>
+      <div className="absolute inset-x-0 bottom-0">
+        <div className="relative mx-auto w-full max-w-[430px] overflow-hidden lg:rounded-t-2xl" style={{ height: '80dvh', maxHeight: '80dvh' }}>
+          <div className="absolute inset-y-0 left-0 flex w-[72%] max-w-[320px] flex-col border-r bg-background shadow-lg">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 pt-5 pb-3">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="h-10 w-10 rounded-full"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-foreground">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleNewChat}
+                className="rounded-full"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                New chat
+              </Button>
             </div>
-          ) : (
-            GROUP_ORDER.map((group) => {
-              const items = grouped.get(group);
-              if (!items || items.length === 0) return null;
-              return (
-                <div key={group} className="mb-4">
-                  <p className="mb-1.5 px-2 text-xs font-medium text-muted-foreground">
-                    {group}
-                  </p>
-                  <div className="space-y-0.5">
-                    {items.map((conv) => (
-                      <div
-                        key={conv.id}
-                        onClick={() => handleSelectConversation(conv.id)}
-                        className={`group flex items-center justify-between rounded-xl px-3 py-2.5 cursor-pointer transition-colors ${
-                          conv.id === activeConversationId
-                            ? 'bg-primary/10'
-                            : 'hover:bg-muted'
-                        }`}
-                      >
-                        <p className="text-sm text-foreground truncate flex-1 min-w-0 pr-2">
-                          {conv.title}
-                        </p>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => handleDeleteConversation(e, conv.id)}
-                          className="h-7 w-7 flex-shrink-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                          </svg>
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+
+            {/* Conversation list */}
+            <div className="flex-1 overflow-y-auto px-3 pb-6">
+              {withMessages.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center px-4 text-center">
+                  <p className="text-sm text-muted-foreground">No conversations yet</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Start a chat with your trainer</p>
                 </div>
-              );
-            })
-          )}
+              ) : (
+                GROUP_ORDER.map((group) => {
+                  const items = grouped.get(group);
+                  if (!items || items.length === 0) return null;
+                  return (
+                    <div key={group} className="mb-4">
+                      <p className="mb-1.5 px-2 text-xs font-medium text-muted-foreground">
+                        {group}
+                      </p>
+                      <div className="space-y-0.5">
+                        {items.map((conv) => (
+                          <div
+                            key={conv.id}
+                            onClick={() => handleSelectConversation(conv.id)}
+                            className={`group flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 transition-colors ${
+                              conv.id === activeConversationId
+                                ? 'bg-primary/10'
+                                : 'hover:bg-muted'
+                            }`}
+                          >
+                            <p className="min-w-0 flex-1 truncate pr-2 text-sm text-foreground">
+                              {conv.title}
+                            </p>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => handleDeleteConversation(e, conv.id)}
+                              className="h-7 w-7 flex-shrink-0 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                              </svg>
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
