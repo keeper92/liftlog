@@ -264,7 +264,7 @@ export default function PRFeedOverlay({ onClose, onStartWorkout }: PRFeedOverlay
   const grouped = groupByDate(displayRecords);
 
   return (
-    <div className="fixed inset-x-0 top-0 bottom-[calc(env(safe-area-inset-bottom)+84px)] z-[70] flex flex-col bg-background lg:absolute lg:inset-x-0 lg:top-0 lg:bottom-[calc(env(safe-area-inset-bottom)+84px)]">
+    <div className="fixed inset-x-0 top-0 bottom-[calc(env(safe-area-inset-bottom)+156px)] z-[70] flex flex-col bg-background lg:absolute lg:inset-x-0 lg:top-0 lg:bottom-[calc(env(safe-area-inset-bottom)+156px)]">
       <div className="mx-auto w-full max-w-3xl px-4 pt-4 sm:px-6">
         <div className="flex items-start justify-between gap-3">
           <div>

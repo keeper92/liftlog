@@ -762,7 +762,7 @@ export default function HistoryOverlay({
   const editableGroups = getEditableExerciseGroups();
 
   return (
-    <div className="fixed inset-x-0 top-0 bottom-[calc(env(safe-area-inset-bottom)+84px)] z-[70] flex flex-col bg-background lg:absolute lg:inset-x-0 lg:top-0 lg:bottom-[calc(env(safe-area-inset-bottom)+84px)]">
+    <div className="fixed inset-x-0 top-0 bottom-[calc(env(safe-area-inset-bottom)+156px)] z-[70] flex flex-col bg-background lg:absolute lg:inset-x-0 lg:top-0 lg:bottom-[calc(env(safe-area-inset-bottom)+156px)]">
       <Modal isOpen={!!editingWorkout} onClose={closeEditOverlay} title="Edit Workout">
         {editingWorkout && (
           <div className="space-y-4 text-sm">
