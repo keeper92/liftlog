@@ -15,10 +15,11 @@ interface TemplateSummary {
 
 interface TemplateChipsProps {
   templates: TemplateSummary[];
+  selectedTemplateId?: string | null;
   onSelect: (template: TemplateSummary) => void;
 }
 
-export default function TemplateChips({ templates, onSelect }: TemplateChipsProps) {
+export default function TemplateChips({ templates, selectedTemplateId, onSelect }: TemplateChipsProps) {
   if (templates.length === 0) return null;
 
   return (
@@ -29,10 +30,10 @@ export default function TemplateChips({ templates, onSelect }: TemplateChipsProp
       {templates.map((template) => (
         <Button
           key={template.id}
-          variant="outline"
+          variant={selectedTemplateId === template.id ? 'secondary' : 'outline'}
           size="sm"
           onClick={() => onSelect(template)}
-          className="flex-shrink-0 rounded-full px-3 py-1.5 text-xs font-medium border-border/60 bg-card"
+          className="flex-shrink-0 rounded-full px-3 py-1.5 text-xs font-medium"
         >
           {template.name}
         </Button>

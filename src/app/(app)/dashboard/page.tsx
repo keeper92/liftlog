@@ -10,7 +10,13 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { formatAutoWorkoutName } from '@/lib/utils/workoutName';
 import { buildExerciseSetSummaries } from '@/lib/utils/workoutSetSummary';
 import { Button } from '@/components/ui/button-shadcn';
-import { Card, CardContent } from '@/components/ui/card-shadcn';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card-shadcn';
 import {
   Dialog,
   DialogContent,
@@ -72,6 +78,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<ProgressSummary | null>(null);
   const [recentWorkouts, setRecentWorkouts] = useState<RecentWorkout[]>([]);
   const [recentWorkoutIndex, setRecentWorkoutIndex] = useState(0);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [historyInitialDateKey, setHistoryInitialDateKey] = useState<string | null>(null);
   const [showPRFeed, setShowPRFeed] = useState(false);
@@ -80,7 +87,6 @@ export default function DashboardPage() {
 
   const setActionChips = useChatUIStore((s) => s.setActionChips);
   const clearActionChips = useChatUIStore((s) => s.clearActionChips);
-  const openChat = useChatUIStore((s) => s.openChat);
 
   // ─── Load data ──────────────────────────────────────────
   useEffect(() => {
@@ -153,6 +159,19 @@ export default function DashboardPage() {
     void load();
   }, [supabase]);
 
+  useEffect(() => {
+    if (templates.length === 0) {
+      setSelectedTemplateId(null);
+      return;
+    }
+    setSelectedTemplateId((current) => {
+      if (current && templates.some((template) => template.id === current)) {
+        return current;
+      }
+      return templates[0]?.id ?? null;
+    });
+  }, [templates]);
+
   // ─── Demo tour ──────────────────────────────────────────
   useEffect(() => {
     const pendingTour = sessionStorage.getItem(DEMO_TOUR_PENDING_KEY);
@@ -168,29 +187,14 @@ export default function DashboardPage() {
     const chips = [];
     if (isActive) {
       chips.push({
-        id: 'quick-start',
+        id: 'resume-workout',
         label: 'Resume workout',
         onAction: () => router.push(`/workout/${workoutId}`),
       });
-    } else {
-      chips.push({
-        id: 'quick-start',
-        label: 'Quick start',
-        onAction: () => {
-          startWorkout();
-          const state = useActiveWorkoutStore.getState();
-          router.push(`/workout/${state.workoutId}`);
-        },
-      });
     }
-    chips.push({
-      id: 'create-template',
-      label: '+ Template',
-      onAction: () => openChat('create-template'),
-    });
     setActionChips(chips);
     return () => clearActionChips();
-  }, [isActive, workoutId, router, startWorkout, openChat, setActionChips, clearActionChips]);
+  }, [isActive, workoutId, router, setActionChips, clearActionChips]);
 
   // ─── Helpers ────────────────────────────────────────────
   function closeTour() {
@@ -274,6 +278,10 @@ export default function DashboardPage() {
     router.push(`/workout/${state.workoutId}`);
   }
 
+  function handleTemplateSelect(template: TemplateSummary) {
+    setSelectedTemplateId(template.id);
+  }
+
   const safeRecentWorkoutIndex = recentWorkouts.length === 0
     ? 0
     : Math.min(recentWorkoutIndex, recentWorkouts.length - 1);
@@ -283,6 +291,7 @@ export default function DashboardPage() {
   const activeWorkoutExerciseSummaries = activeRecentWorkout
     ? getExerciseSummaries(activeRecentWorkout)
     : [];
+  const selectedTemplate = templates.find((template) => template.id === selectedTemplateId) ?? null;
 
   return (
     <>
@@ -330,12 +339,12 @@ export default function DashboardPage() {
         />
       )}
 
-      <div className="mx-auto w-full max-w-3xl space-y-3 px-4 pt-4 sm:px-6">
+      <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pt-4 sm:px-6">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Your training hub.</p>
+            <p className="text-sm text-muted-foreground">Pick a template and start training.</p>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -374,13 +383,49 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Template chips */}
-        <TemplateChips templates={templates} onSelect={handleStartFromTemplate} />
+        <Card data-tour-anchor="saved-templates">
+          <CardHeader className="space-y-2 pb-4">
+            <CardTitle>Start workout</CardTitle>
+            <CardDescription>Primary route: start from a saved template.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {templates.length > 0 ? (
+              <>
+                <TemplateChips
+                  templates={templates}
+                  selectedTemplateId={selectedTemplateId}
+                  onSelect={handleTemplateSelect}
+                />
+                <Button
+                  onClick={() => {
+                    if (selectedTemplate) handleStartFromTemplate(selectedTemplate);
+                  }}
+                  size="lg"
+                  className="w-full text-base font-semibold"
+                  disabled={!selectedTemplate}
+                >
+                  {selectedTemplate ? `Start ${selectedTemplate.name}` : 'Start workout'}
+                </Button>
+              </>
+            ) : (
+              <Button onClick={handleStartWorkout} size="lg" className="w-full text-base font-semibold">
+                Start workout
+              </Button>
+            )}
+            <Button
+              onClick={handleStartWorkout}
+              variant="secondary"
+              className="w-full"
+            >
+              Quick start
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Recent Activity */}
         <section className="space-y-2">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold tracking-tight">Recent Activity</h2>
+            <h2 className="text-base font-medium text-muted-foreground">Recent Activity</h2>
           </div>
           <Card className="relative">
             {recentWorkouts.length === 0 ? (
