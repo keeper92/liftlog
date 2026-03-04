@@ -77,7 +77,6 @@ export default function DashboardPage() {
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [stats, setStats] = useState<ProgressSummary | null>(null);
   const [recentWorkouts, setRecentWorkouts] = useState<RecentWorkout[]>([]);
-  const [recentWorkoutIndex, setRecentWorkoutIndex] = useState(0);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [historyInitialDateKey, setHistoryInitialDateKey] = useState<string | null>(null);
@@ -124,7 +123,6 @@ export default function DashboardPage() {
 
       if (workoutData && !workoutError) {
         setRecentWorkouts(workoutData as unknown as RecentWorkout[]);
-        setRecentWorkoutIndex(0);
       } else if (isMissingSplitSetColumnsError(workoutError)) {
         const { data: legacyWorkoutData, error: legacyWorkoutError } = await supabase
           .from('workouts')
@@ -146,14 +144,11 @@ export default function DashboardPage() {
             })),
           }));
           setRecentWorkouts(normalized);
-          setRecentWorkoutIndex(0);
         } else {
           setRecentWorkouts([]);
-          setRecentWorkoutIndex(0);
         }
       } else if (workoutError) {
         setRecentWorkouts([]);
-        setRecentWorkoutIndex(0);
       }
     }
     void load();
@@ -224,18 +219,6 @@ export default function DashboardPage() {
     return new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
-  function toDateKey(value: string): string {
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      const year = parsed.getFullYear();
-      const month = String(parsed.getMonth() + 1).padStart(2, '0');
-      const day = String(parsed.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-    const [dateKey] = value.split('T');
-    return dateKey;
-  }
-
   function openHistory(dateKey: string | null = null) {
     setShowPRFeed(false);
     setHistoryInitialDateKey(dateKey);
@@ -282,15 +265,6 @@ export default function DashboardPage() {
     setSelectedTemplateId(template.id);
   }
 
-  const safeRecentWorkoutIndex = recentWorkouts.length === 0
-    ? 0
-    : Math.min(recentWorkoutIndex, recentWorkouts.length - 1);
-  const activeRecentWorkout = recentWorkouts[safeRecentWorkoutIndex] ?? null;
-  const canShowOlderWorkout = safeRecentWorkoutIndex < recentWorkouts.length - 1;
-  const canShowNewerWorkout = safeRecentWorkoutIndex > 0;
-  const activeWorkoutExerciseSummaries = activeRecentWorkout
-    ? getExerciseSummaries(activeRecentWorkout)
-    : [];
   const selectedTemplate = templates.find((template) => template.id === selectedTemplateId) ?? null;
 
   return (
@@ -427,72 +401,37 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <h2 className="text-base font-medium text-muted-foreground">Recent Activity</h2>
           </div>
-          <Card className="relative">
-            {recentWorkouts.length === 0 ? (
+          {recentWorkouts.length === 0 ? (
+            <Card>
               <CardContent className="py-6 text-center">
                 <p className="text-sm text-muted-foreground">No workouts logged yet.</p>
                 <Button onClick={handleStartWorkout} size="sm" className="mt-4">
                   Start First Workout
                 </Button>
               </CardContent>
-            ) : (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setRecentWorkoutIndex((idx) => Math.min(idx + 1, recentWorkouts.length - 1))}
-                  disabled={!canShowOlderWorkout}
-                  className="absolute left-2 top-1/2 z-10 h-9 w-9 -translate-y-1/2"
-                  aria-label="Show older workout"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="15 18 9 12 15 6" />
-                  </svg>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setRecentWorkoutIndex((idx) => Math.max(idx - 1, 0))}
-                  disabled={!canShowNewerWorkout}
-                  className="absolute right-2 top-1/2 z-10 h-9 w-9 -translate-y-1/2"
-                  aria-label="Show newer workout"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </Button>
-                <CardContent className="space-y-4 px-14 py-4">
-                  {activeRecentWorkout && (
-                    <>
-                      <div className="space-y-1 text-center">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openHistory(toDateKey(activeRecentWorkout.date))}
-                          className="h-auto max-w-full px-2 py-0.5 text-base font-semibold"
-                        >
-                          <span className="break-words">
-                            {activeRecentWorkout.name || formatAutoWorkoutName(activeRecentWorkout.date)}
-                          </span>
-                        </Button>
-                        <p className="text-xs text-muted-foreground">
-                          {formatWorkoutDate(activeRecentWorkout.date)}
-                        </p>
-                      </div>
-
-                      <ExerciseSetSummaryList
-                        summaries={activeWorkoutExerciseSummaries}
-                        emptyText="No exercises logged."
-                      />
-                    </>
-                  )}
-                </CardContent>
-              </>
-            )}
-          </Card>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {recentWorkouts.map((workout) => (
+                <Card key={workout.id}>
+                  <CardContent className="space-y-3 py-4">
+                    <div className="space-y-1">
+                      <p className="text-base font-semibold">
+                        {workout.name || formatAutoWorkoutName(workout.date)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatWorkoutDate(workout.date)}
+                      </p>
+                    </div>
+                    <ExerciseSetSummaryList
+                      summaries={getExerciseSummaries(workout)}
+                      emptyText="No exercises logged."
+                    />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </>
