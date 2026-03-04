@@ -222,6 +222,16 @@ export default function DashboardPage() {
     return new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
+  function formatDaysAgo(date: string) {
+    const workoutDate = new Date(date);
+    const today = new Date();
+    const workoutMidnight = new Date(workoutDate.getFullYear(), workoutDate.getMonth(), workoutDate.getDate());
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const daysAgo = Math.max(0, Math.floor((todayMidnight.getTime() - workoutMidnight.getTime()) / 86_400_000));
+
+    return daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`;
+  }
+
   function openHistory(dateKey: string | null = null) {
     setShowPRFeed(false);
     setHistoryInitialDateKey(dateKey);
@@ -281,6 +291,10 @@ export default function DashboardPage() {
   const selectedTemplateName = templates.length === 0
     ? 'No templates yet'
     : selectedTemplate?.name ?? templates[0]?.name ?? 'Choose template';
+  const latestWorkout = recentWorkouts[0] ?? null;
+  const lastWorkoutSubtitle = latestWorkout
+    ? `Last workout: ${latestWorkout.name || formatAutoWorkoutName(latestWorkout.date)} - ${formatDaysAgo(latestWorkout.date)}`
+    : 'Last workout: No workouts yet';
 
   return (
     <>
@@ -374,6 +388,7 @@ export default function DashboardPage() {
         <Card data-tour-anchor="saved-templates">
           <CardHeader className="pb-4">
             <CardTitle>Today&apos;s Workout</CardTitle>
+            <p className="text-sm text-muted-foreground">{lastWorkoutSubtitle}</p>
           </CardHeader>
           <CardContent className="space-y-3">
             <Dialog open={templatePickerOpen} onOpenChange={setTemplatePickerOpen}>
