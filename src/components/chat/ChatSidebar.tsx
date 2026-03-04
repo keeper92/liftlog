@@ -86,21 +86,18 @@ export default function ChatSidebar({ isOpen, onClose, onConversationChange }: C
     grouped.get(group)!.push(conv);
   }
 
+  if (!isOpen) return null;
+
   return (
-    <div
-      className={`fixed inset-0 z-[60] lg:inset-y-4 lg:left-1/2 lg:w-[430px] lg:-translate-x-1/2 lg:overflow-hidden lg:rounded-[2rem] lg:border lg:border-border/70 ${isOpen ? '' : 'pointer-events-none'}`}
-    >
+    <div className="fixed inset-0 z-[70]">
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-foreground/30 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+        className="absolute inset-0 bg-foreground/30"
         onClick={onClose}
       />
       {/* Panel */}
-      <div
-        className={`absolute inset-y-0 left-0 w-[72%] max-w-[320px] border-r bg-background flex flex-col transition-transform duration-300 ease-out shadow-lg ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
+      <div className="absolute inset-y-0 left-0 right-0 mx-auto w-full max-w-[430px]">
+        <div className="absolute inset-y-0 left-0 flex w-[72%] max-w-[320px] flex-col border-r bg-background shadow-lg">
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-5 pb-3">
           <Button
@@ -178,6 +175,7 @@ export default function ChatSidebar({ isOpen, onClose, onConversationChange }: C
               );
             })
           )}
+        </div>
         </div>
       </div>
     </div>

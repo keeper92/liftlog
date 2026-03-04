@@ -142,31 +142,19 @@ export default function ChatBottomSheet({ isOpen, onClose }: ChatBottomSheetProp
 
   const showEmptyState = messages.length === 0 && !profileMode;
 
+  if (!isOpen) return null;
+
   return (
-    <div
-      className={`fixed inset-0 z-[60] lg:inset-y-4 lg:left-1/2 lg:w-[430px] lg:-translate-x-1/2 lg:overflow-hidden lg:rounded-[2rem] lg:border lg:border-border/70 ${isOpen ? '' : 'pointer-events-none'}`}
-    >
+    <div className="fixed inset-0 z-[60]">
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-foreground/30 transition-opacity duration-300 ${
-          isOpen ? 'opacity-100' : 'opacity-0'
-        }`}
-        onPointerDown={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          onClose();
-        }}
+        className="absolute inset-0 bg-foreground/30"
+        onClick={onClose}
       />
 
       {/* Sheet */}
-      <div
-        className={`absolute bottom-0 left-0 right-0 flex flex-col bg-background transition-transform duration-300 ease-out ${
-          isOpen ? 'translate-y-0' : 'translate-y-full'
-        }`}
-        style={{ height: '80dvh', maxHeight: '80dvh' }}
-        onPointerDown={(event) => event.stopPropagation()}
-      >
-        <div className="mx-auto flex h-full w-full flex-col">
+      <div className="absolute inset-x-0 bottom-0">
+        <div className="mx-auto flex w-full max-w-[430px] flex-col bg-background shadow-xl lg:rounded-t-2xl" style={{ height: '80dvh', maxHeight: '80dvh' }}>
           {/* Drag handle + header */}
           <div className="flex items-center justify-between border-b border-border/50 px-4 pb-2 pt-3">
             <div className="flex items-center gap-2">

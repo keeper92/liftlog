@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useChatUIStore } from '@/stores/chatUIStore';
 import ChatBottomSheet from './ChatBottomSheet';
 
 export default function ChatBar() {
   const pathname = usePathname();
-  const { isOpen, openChat, closeChat } = useChatUIStore();
+  const isOpen = useChatUIStore((s) => s.isOpen);
+  const openChat = useChatUIStore((s) => s.openChat);
+  const closeChat = useChatUIStore((s) => s.closeChat);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     closeChat();
   }, [pathname, closeChat]);
 

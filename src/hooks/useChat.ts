@@ -151,17 +151,29 @@ export function useChat(options: UseChatOptions = {}) {
 
   useEffect(() => {
     async function loadContext() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
+      const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
       const ctx: WorkoutContext = {
         unitSystem,
         recentWorkouts: [],
         personalRecords: [],
         weeklyStats: null,
       };
+
+      // Auth hydration can lag on initial mount, so retry before giving up.
+      let userId: string | null = null;
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) {
+          userId = user.id;
+          break;
+        }
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          userId = session.user.id;
+          break;
+        }
+        await wait(250);
+      }
 
       // Include trainer profile in context if available
       if (trainerProfile) {
@@ -178,8 +190,14 @@ export function useChat(options: UseChatOptions = {}) {
         };
       }
 
+      // Allow chat to function with baseline context even if auth is delayed.
+      if (!userId) {
+        setContext(ctx);
+        return;
+      }
+
       const { data: summary } = await supabase.rpc('get_progress_summary', {
-        user_uuid: user.id,
+        user_uuid: userId,
       });
       if (summary) {
         ctx.weeklyStats = {
@@ -189,7 +207,7 @@ export function useChat(options: UseChatOptions = {}) {
         };
       }
 
-      const { data: prData } = await supabase.rpc('get_personal_records', { user_uuid: user.id });
+      const { data: prData } = await supabase.rpc('get_personal_records', { user_uuid: userId });
       if (prData) {
         ctx.personalRecords = (
           prData as { exercise_name: string; max_weight: number; max_reps: number; estimated_1rm: number }[]
@@ -206,7 +224,7 @@ export function useChat(options: UseChatOptions = {}) {
       const { data: workouts } = await supabase
         .from('workouts')
         .select('name, date, sets(exercise_id, weight, reps, exercises(name))')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .order('date', { ascending: false })
         .limit(10);
       if (workouts) {
@@ -238,7 +256,7 @@ export function useChat(options: UseChatOptions = {}) {
           .from('sets')
           .select('weight, reps, set_number, is_warmup, workouts!inner(id, date, user_id)')
           .eq('exercise_id', exerciseId)
-          .eq('workouts.user_id', user.id)
+          .eq('workouts.user_id', userId)
           .eq('is_completed', true)
           .order('workouts(date)', { ascending: false });
 
