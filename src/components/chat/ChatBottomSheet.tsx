@@ -27,6 +27,7 @@ export default function ChatBottomSheet({ isOpen, onClose }: ChatBottomSheetProp
   const nudges = useContextualNudges();
 
   const [profileMode, setProfileMode] = useState(false);
+  const workoutContext = useChatUIStore((s) => s.workoutContext);
 
   const {
     messages,
@@ -40,7 +41,12 @@ export default function ChatBottomSheet({ isOpen, onClose }: ChatBottomSheetProp
     cancelImport,
     confirmTemplate,
     cancelTemplate,
-  } = useChat({ profileMode });
+  } = useChat({
+    profileMode,
+    workoutMode: !!workoutContext,
+    workoutExercises: workoutContext?.exercises,
+    onAddExercise: workoutContext?.onAddExercise,
+  });
 
   // Handle intent-based auto-send (e.g., "create-template" from dashboard button)
   const handledIntent = useRef<string | null>(null);

@@ -23,7 +23,6 @@ import SetInputCell from '@/components/workout/SetInputCell';
 import NumberPad from '@/components/workout/NumberPad';
 import ExercisePickerOverlay from '@/components/workout/ExercisePickerOverlay';
 import FavoritesBar from '@/components/workout/FavoritesBar';
-import WorkoutChatPanel from '@/components/workout/WorkoutChatPanel';
 import PRToast from '@/components/workout/PRToast';
 import { useChatUIStore } from '@/stores/chatUIStore';
 import { usePRStore } from '@/stores/prStore';
@@ -473,6 +472,20 @@ export default function ActiveWorkoutPage() {
       }
     };
   }, [store.workoutId]);
+
+  // Register workout context so the global ChatBottomSheet can use workout mode
+  const { setWorkoutContext, clearWorkoutContext } = useChatUIStore();
+  const addExerciseRef = useRef(store.addExercise);
+  addExerciseRef.current = store.addExercise;
+
+  useEffect(() => {
+    const exerciseNames = exercises.map((ex) => ex.exerciseName);
+    setWorkoutContext({
+      exercises: exerciseNames,
+      onAddExercise: (exercise) => addExerciseRef.current(exercise),
+    });
+    return () => clearWorkoutContext();
+  }, [exercises, setWorkoutContext, clearWorkoutContext]);
 
   const startRestTimer = useCallback((seconds: number) => {
     const endsAt = Date.now() + seconds * 1000;
@@ -1755,12 +1768,6 @@ function WorkoutContent({
           Browse exercises…
         </Button>
       </div>
-
-      {/* AI chat panel for adding exercises */}
-      <WorkoutChatPanel
-        onAddExercise={(exercise) => store.addExercise(exercise)}
-        workoutExercises={store.exercises.map((ex) => ex.exerciseName)}
-      />
 
       {pendingSetDelete && (
         <div className={`fixed left-4 right-4 z-[70] ${numberPadVisible ? 'bottom-80' : 'bottom-40'}`}>
