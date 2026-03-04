@@ -403,7 +403,7 @@ export default function DashboardPage() {
               </Button>
               <DialogContent
                 hideCloseButton
-                className="fixed inset-x-0 bottom-0 top-auto z-[130] mx-auto w-full max-w-3xl rounded-b-none rounded-t-2xl border-x border-b-0 border-t p-0"
+                className="fixed inset-x-0 bottom-0 top-auto z-[130] mx-auto w-full max-w-[430px] rounded-b-none rounded-t-2xl border-x border-b-0 border-t p-0"
               >
                 <div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-muted" />
                 <DialogHeader className="px-4 pb-2 pt-3">
