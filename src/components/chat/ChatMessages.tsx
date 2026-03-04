@@ -1,48 +1,73 @@
 'use client';
 
-import type { ChatMessage, ImportData, TemplateData } from '@/stores/chatStore';
-import { parseSuggestions } from '@/hooks/useChatEngine';
+import { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button-shadcn';
-import ChatSuggestions from './ChatSuggestions';
+import type { ChatMessage, ImportData, TemplateData } from '@/stores/chatStore';
+
+/** Parse "suggestions:A|B|C" from the last line of assistant content */
+export function parseSuggestions(content: string): { text: string; suggestions: string[] } {
+  const lines = content.split('\n');
+  const lastLine = lines[lines.length - 1]?.trim() || '';
+  if (lastLine.startsWith('suggestions:')) {
+    const suggestionsStr = lastLine.slice('suggestions:'.length);
+    const parsed = suggestionsStr.split('|').map((s) => s.trim()).filter(Boolean);
+    if (parsed.length > 0) {
+      return {
+        text: lines.slice(0, -1).join('\n').trimEnd(),
+        suggestions: parsed,
+      };
+    }
+  }
+  return { text: content, suggestions: [] };
+}
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
   isLoading: boolean;
-  importingMessageId: string | null;
-  savingTemplateId: string | null;
-  showExerciseSuggestions: boolean;
-  exerciseSuggestions: string[] | null;
-  lastMessageSuggestions: string[];
-  contextualMainSuggestions: string[];
-  profileMode: boolean;
   onSend: (text: string) => void;
   onConfirmImport: (messageId: string, importData: ImportData) => void;
   onCancelImport: (messageId: string) => void;
   onConfirmTemplate: (messageId: string, templateData: TemplateData) => void;
   onCancelTemplate: (messageId: string) => void;
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  importingMessageId: string | null;
+  savingTemplateId: string | null;
+  /** Quick-action chips shown below messages (e.g., "Create a workout template") */
+  quickActions?: string[];
+  /** Whether to show quick actions section */
+  showQuickActions?: boolean;
 }
 
 export default function ChatMessages({
   messages,
-  importingMessageId,
-  savingTemplateId,
-  showExerciseSuggestions,
-  exerciseSuggestions,
-  lastMessageSuggestions,
-  contextualMainSuggestions,
-  profileMode,
+  isLoading,
   onSend,
   onConfirmImport,
   onCancelImport,
   onConfirmTemplate,
   onCancelTemplate,
-  messagesEndRef,
+  importingMessageId,
+  savingTemplateId,
+  quickActions = [],
+  showQuickActions = false,
 }: ChatMessagesProps) {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Inline suggestions from the last assistant message
+  const lastMessage = messages[messages.length - 1];
+  const lastMessageSuggestions =
+    !isLoading && lastMessage?.role === 'assistant' && lastMessage.content
+      ? parseSuggestions(lastMessage.content).suggestions
+      : [];
+
   return (
     <div className="space-y-3 pt-2">
       {messages.map((msg) => (
         <div key={msg.id}>
+          {/* Message bubble */}
           <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
               className={`max-w-[85%] px-4 py-2.5 text-sm leading-relaxed ${
@@ -54,22 +79,31 @@ export default function ChatMessages({
               {msg.content ? (
                 <span
                   dangerouslySetInnerHTML={{
-                    __html: parseSuggestions(msg.content).text
-                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                      .replace(/\n/g, '<br />')
+                    __html: parseSuggestions(msg.content)
+                      .text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                      .replace(/\n/g, '<br />'),
                   }}
                 />
               ) : (
                 <span className="inline-flex gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce"
+                    style={{ animationDelay: '0ms' }}
+                  />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce"
+                    style={{ animationDelay: '150ms' }}
+                  />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce"
+                    style={{ animationDelay: '300ms' }}
+                  />
                 </span>
               )}
             </div>
           </div>
 
-          {/* Import Preview */}
+          {/* Import Preview Card */}
           {msg.importData && msg.importData.status === 'pending' && (
             <div className="mt-3 ml-0 max-w-[90%]">
               <div className="bg-card border border-border/70 rounded-xl p-4">
@@ -105,7 +139,9 @@ export default function ChatMessages({
                   <div className="mb-4 rounded-lg border border-border bg-muted/40 p-2">
                     <div className="mb-1 text-xs font-medium text-foreground">Questions:</div>
                     {msg.importData.questions.map((q, i) => (
-                      <div key={i} className="text-xs text-muted-foreground">&bull; {q}</div>
+                      <div key={i} className="text-xs text-muted-foreground">
+                        &bull; {q}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -132,7 +168,7 @@ export default function ChatMessages({
             </div>
           )}
 
-          {/* Import Status */}
+          {/* Import Status Badges */}
           {msg.importData && msg.importData.status === 'imported' && (
             <div className="mt-2 ml-0">
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">
@@ -151,7 +187,7 @@ export default function ChatMessages({
             </div>
           )}
 
-          {/* Template Preview */}
+          {/* Template Preview Card */}
           {msg.templateData && msg.templateData.status === 'pending' && (
             <div className="mt-3 ml-0 max-w-[90%]">
               <div className="bg-card border border-border/70 rounded-xl p-4">
@@ -198,7 +234,7 @@ export default function ChatMessages({
             </div>
           )}
 
-          {/* Template Saved Status */}
+          {/* Template Status Badges */}
           {msg.templateData && msg.templateData.status === 'saved' && (
             <div className="mt-2 ml-0">
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">
@@ -219,23 +255,42 @@ export default function ChatMessages({
         </div>
       ))}
 
-      {showExerciseSuggestions && exerciseSuggestions && (
-        <ChatSuggestions suggestions={exerciseSuggestions} onSelect={onSend} />
-      )}
-
+      {/* Inline suggestions from last assistant message */}
       {lastMessageSuggestions.length > 0 && (
-        <div className="mt-3">
-          <ChatSuggestions suggestions={lastMessageSuggestions} onSelect={onSend} />
+        <div className="flex flex-wrap gap-2 mt-3">
+          {lastMessageSuggestions.map((s) => (
+            <Button
+              type="button"
+              key={s}
+              onClick={() => onSend(s)}
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+            >
+              {s}
+            </Button>
+          ))}
         </div>
       )}
 
-      {!profileMode && !showExerciseSuggestions && messages.length > 0 && (
+      {/* Quick actions (always shown below messages when applicable) */}
+      {showQuickActions && quickActions.length > 0 && (
         <div className="mt-4">
-          <ChatSuggestions
-            suggestions={contextualMainSuggestions}
-            onSelect={onSend}
-            label="Quick actions"
-          />
+          <p className="mb-2 text-sm font-medium text-muted-foreground">Quick actions</p>
+          <div className="flex flex-wrap gap-2">
+            {quickActions.map((s) => (
+              <Button
+                type="button"
+                key={s}
+                onClick={() => onSend(s)}
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+              >
+                {s}
+              </Button>
+            ))}
+          </div>
         </div>
       )}
 

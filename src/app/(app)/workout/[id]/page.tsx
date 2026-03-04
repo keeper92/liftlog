@@ -3,9 +3,9 @@
 import { useEffect, useState, useCallback, useRef, useMemo, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { useActiveWorkoutStore, type ActiveSet, type ActiveWorkoutState, type PerformanceSet } from '@/stores/activeWorkoutStore';
+import { useActiveWorkoutStore, type ActiveSet, type ActiveWorkoutState, type PerformanceSet, type WorkoutExercise } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { useChatBarStore } from '@/stores/chatBarStore';
+import { ChevronDown } from 'lucide-react';
 import {
   formatDuration,
   toDisplayWeight,
@@ -22,7 +22,10 @@ import { NumberPadProvider, useNumberPad } from '@/components/workout/NumberPadC
 import SetInputCell from '@/components/workout/SetInputCell';
 import NumberPad from '@/components/workout/NumberPad';
 import ExercisePickerOverlay from '@/components/workout/ExercisePickerOverlay';
+import FavoritesBar from '@/components/workout/FavoritesBar';
+import WorkoutChatPanel from '@/components/workout/WorkoutChatPanel';
 import PRToast from '@/components/workout/PRToast';
+import { useChatUIStore } from '@/stores/chatUIStore';
 import { usePRStore } from '@/stores/prStore';
 import { detectPRs, type PRDetectionResult } from '@/lib/utils/prDetection';
 import { isAssistanceExerciseName } from '@/lib/utils/exerciseSemantics';
@@ -394,13 +397,14 @@ export default function ActiveWorkoutPage() {
       router.replace('/dashboard');
       return;
     }
+    if (store.builderMode !== 'standard') return;
     const interval = setInterval(() => {
       if (store.startTime) {
         setElapsed(Math.floor((Date.now() - new Date(store.startTime).getTime()) / 1000));
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [store.isActive, store.startTime, router]);
+  }, [store.isActive, store.startTime, store.builderMode, router]);
 
   // Rest timer countdown
   useEffect(() => {
@@ -950,6 +954,21 @@ function WorkoutContent({
   const mouseDragCleanupRef = useRef<(() => void) | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
+  // Tap guard: prevent accidental "Add Set" taps when numpad just closed
+  const numpadCloseTimeRef = useRef<number>(0);
+  const prevNumberPadVisibleRef = useRef(numberPadVisible);
+  useEffect(() => {
+    if (prevNumberPadVisibleRef.current && !numberPadVisible) {
+      numpadCloseTimeRef.current = Date.now();
+    }
+    prevNumberPadVisibleRef.current = numberPadVisible;
+  }, [numberPadVisible]);
+
+  const handleAddSet = useCallback((exIdx: number) => {
+    if (Date.now() - numpadCloseTimeRef.current < 400) return;
+    store.addSet(exIdx);
+  }, [store]);
+
   const clearMouseDragListeners = useCallback(() => {
     if (!mouseDragCleanupRef.current) return;
     mouseDragCleanupRef.current();
@@ -999,6 +1018,78 @@ function WorkoutContent({
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
+  }
+
+  function hasPrefilledData(s: ActiveSet, ex: WorkoutExercise): boolean {
+    if (ex.exerciseCategory === 'cardio') return s.time !== null || s.distance !== null;
+    if (ex.logMode === 'split_lr') return s.leftWeight !== null && s.leftReps !== null && s.rightWeight !== null && s.rightReps !== null;
+    return s.weight !== null && s.reps !== null;
+  }
+
+  function scrollToNextIncompleteSet(completedExIdx: number, completedSetIdx: number) {
+    const exs = store.exercises;
+    for (let ei = completedExIdx; ei < exs.length; ei++) {
+      const startSet = ei === completedExIdx ? completedSetIdx + 1 : 0;
+      for (let si = startSet; si < exs[ei].sets.length; si++) {
+        if (!exs[ei].sets[si].isCompleted) {
+          requestAnimationFrame(() => {
+            document.querySelector(`[data-set-id="${ei}-${si}"]`)?.scrollIntoView({
+              behavior: 'smooth', block: 'center',
+            });
+          });
+          return;
+        }
+      }
+    }
+  }
+
+  function handleCheckmarkTap(exIdx: number, setIdx: number, ex: WorkoutExercise, s: ActiveSet) {
+    if (s.isCompleted) {
+      store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
+      return;
+    }
+
+    // Dismiss numpad if open
+    deactivate();
+
+    // Complete the set
+    store.completeSet(exIdx, setIdx);
+
+    // Start rest timer (non-cardio, non-warmup)
+    if (ex.exerciseCategory !== 'cardio' && !s.isWarmup) {
+      startRestTimer(ex.restTimerSeconds);
+    }
+
+    // PR detection
+    if (ex.exerciseCategory !== 'cardio') {
+      const prevPerf = store.previousPerformance[ex.exerciseId] || [];
+      const prs = detectPRs(s, ex, prevPerf);
+      const prStoreState = usePRStore.getState();
+      for (const pr of prs) {
+        if (store.workoutId && !prStoreState.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
+          prStoreState.markFired(store.workoutId, ex.exerciseId, pr.metric);
+          prStoreState.addPR({
+            exerciseId: ex.exerciseId,
+            exerciseName: ex.exerciseName,
+            metric: pr.metric,
+            previousValue: pr.previousValue,
+            newValue: pr.newValue,
+            date: new Date().toISOString(),
+            workoutId: store.workoutId,
+          });
+          onPRDetected(ex.exerciseName, pr);
+        }
+      }
+    }
+
+    // Auto-scroll to next incomplete set
+    scrollToNextIncompleteSet(exIdx, setIdx);
+  }
+
+  function checkmarkClassName(s: ActiveSet, ex: WorkoutExercise): string {
+    if (s.isCompleted) return 'bg-primary text-primary-foreground';
+    if (hasPrefilledData(s, ex)) return 'bg-primary/15 text-primary';
+    return 'bg-muted text-muted-foreground';
   }
 
   const clearPendingDelete = useCallback(() => {
@@ -1157,7 +1248,8 @@ function WorkoutContent({
               loading={deletingWorkout}
               disabled={saving}
               aria-label="Delete workout"
-              className="h-9 w-9 rounded-md p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              size="icon"
+              className="h-9 w-9 rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <polyline points="3 6 5 6 21 6" />
@@ -1183,8 +1275,14 @@ function WorkoutContent({
         </div>
       )}
 
+      {/* Favorites quick-add bar */}
+      <FavoritesBar
+        onSelect={(exercise) => store.addExercise(exercise)}
+        activeExerciseIds={store.exercises.map((ex) => ex.exerciseId)}
+      />
+
       {/* Exercise List */}
-      <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto px-4 py-4 space-y-6 ${numberPadVisible ? 'pb-64' : 'pb-20'}`}>
+      <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto px-4 py-4 space-y-6 ${numberPadVisible ? 'pb-80 scroll-pb-[26rem]' : 'pb-40'}`}>
         {store.exercises.map((ex, exIdx) => {
           const prev = store.previousPerformance[ex.exerciseId] || [];
           const isAssistanceExercise = isAssistanceExerciseName(ex.exerciseName);
@@ -1286,6 +1384,7 @@ function WorkoutContent({
                 >
                   <Button
                     variant="ghost"
+                    size="icon"
                     onClick={() => {
                       setTrainingGuideMenu(
                         isMenuOpen
@@ -1300,22 +1399,13 @@ function WorkoutContent({
                     }}
                     aria-label={`Open options for ${ex.exerciseName}`}
                     aria-expanded={isMenuOpen}
-                    className="h-8 w-8 rounded-md border border-border bg-background p-0 text-foreground hover:bg-accent"
+                    className="h-8 w-8 rounded-md border border-border bg-background text-foreground hover:bg-accent"
                   >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.75"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                    <ChevronDown
+                      size={18}
                       aria-hidden="true"
                       className={isMenuOpen ? 'rotate-180 text-foreground transition-transform' : 'text-foreground transition-transform'}
-                    >
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
+                    />
                   </Button>
                   {isMenuOpen && (
                     <div className="absolute right-0 top-10 z-40 w-56 rounded-md border border-border bg-card p-1 shadow-md">
@@ -1387,7 +1477,7 @@ function WorkoutContent({
                       <Button
                         variant="ghost"
                         onClick={() => {
-                          useChatBarStore.getState().openForExercise(ex.exerciseId, ex.exerciseName);
+                          useChatUIStore.getState().openChat(`tips:${ex.exerciseName}`);
                           setTrainingGuideMenu(null);
                         }}
                         className="h-9 w-full justify-start gap-2 rounded-sm px-2.5 text-left text-sm font-normal"
@@ -1396,6 +1486,23 @@ function WorkoutContent({
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                         </svg>
                         Chat with Trainer
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          startRestTimer(ex.restTimerSeconds);
+                          setTrainingGuideMenu(null);
+                        }}
+                        disabled={restTimer.isActive}
+                        className="h-9 w-full justify-start gap-2 rounded-sm px-2.5 text-left text-sm font-normal"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <circle cx="12" cy="13" r="8" />
+                          <path d="M12 9v4l2 2" />
+                          <path d="M5 3L2 6" />
+                          <path d="M22 6l-3-3" />
+                        </svg>
+                        Start Rest Timer
                       </Button>
                       <div className="my-1 h-px bg-border" />
                       <Button
@@ -1454,7 +1561,7 @@ function WorkoutContent({
                   {ex.sets.slice(0, 1).map((s, setIdx) => {
                     const pace = calculatePace(s.time, s.distance, unitSystem);
                     return (
-                      <div key={s.id}>
+                      <div key={s.id} data-set-id={`${exIdx}-${setIdx}`}>
                         <div
                           className={`grid grid-cols-[40px_1fr_1fr_40px] gap-2 items-center ${
                             s.isCompleted ? 'opacity-60' : ''
@@ -1482,16 +1589,8 @@ function WorkoutContent({
                             isCompleted={s.isCompleted}
                           />
                           <Button variant="ghost"
-                            onClick={() => {
-                              if (s.isCompleted) {
-                                store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
-                              } else {
-                                store.completeSet(exIdx, setIdx);
-                              }
-                            }}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                            }`}
+                            onClick={() => handleCheckmarkTap(exIdx, setIdx, ex, s)}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center ${checkmarkClassName(s, ex)}`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
@@ -1521,6 +1620,7 @@ function WorkoutContent({
                     >
                       {ex.logMode === 'split_lr' ? (
                         <div
+                          data-set-id={`${exIdx}-${setIdx}`}
                           className={`grid grid-cols-[40px_1fr_1fr_40px] gap-2 items-center ${
                             s.isCompleted ? 'opacity-60' : ''
                           }`}
@@ -1571,36 +1671,8 @@ function WorkoutContent({
                             />
                           </div>
                           <Button variant="ghost"
-                            onClick={() => {
-                              if (s.isCompleted) {
-                                store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
-                              } else {
-                                store.completeSet(exIdx, setIdx);
-                                if (!s.isWarmup) startRestTimer(ex.restTimerSeconds);
-                                // PR detection for manual checkmark
-                                const prevPerf = store.previousPerformance[ex.exerciseId] || [];
-                                const prs = detectPRs(s, ex, prevPerf);
-                                const prStoreState = usePRStore.getState();
-                                for (const pr of prs) {
-                                  if (store.workoutId && !prStoreState.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
-                                    prStoreState.markFired(store.workoutId, ex.exerciseId, pr.metric);
-                                    prStoreState.addPR({
-                                      exerciseId: ex.exerciseId,
-                                      exerciseName: ex.exerciseName,
-                                      metric: pr.metric,
-                                      previousValue: pr.previousValue,
-                                      newValue: pr.newValue,
-                                      date: new Date().toISOString(),
-                                      workoutId: store.workoutId,
-                                    });
-                                    onPRDetected(ex.exerciseName, pr);
-                                  }
-                                }
-                              }
-                            }}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                            }`}
+                            onClick={() => handleCheckmarkTap(exIdx, setIdx, ex, s)}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center ${checkmarkClassName(s, ex)}`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
@@ -1609,6 +1681,7 @@ function WorkoutContent({
                         </div>
                       ) : (
                         <div
+                          data-set-id={`${exIdx}-${setIdx}`}
                           className={`grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 items-center ${
                             s.isCompleted ? 'opacity-60' : ''
                           }`}
@@ -1645,36 +1718,8 @@ function WorkoutContent({
                             isCompleted={s.isCompleted}
                           />
                           <Button variant="ghost"
-                            onClick={() => {
-                              if (s.isCompleted) {
-                                store.updateSet(exIdx, setIdx, { isCompleted: false, timestamp: null });
-                              } else {
-                                store.completeSet(exIdx, setIdx);
-                                if (!s.isWarmup) startRestTimer(ex.restTimerSeconds);
-                                // PR detection for manual checkmark
-                                const prevPerf = store.previousPerformance[ex.exerciseId] || [];
-                                const prs = detectPRs(s, ex, prevPerf);
-                                const prStoreState = usePRStore.getState();
-                                for (const pr of prs) {
-                                  if (store.workoutId && !prStoreState.hasFired(store.workoutId, ex.exerciseId, pr.metric)) {
-                                    prStoreState.markFired(store.workoutId, ex.exerciseId, pr.metric);
-                                    prStoreState.addPR({
-                                      exerciseId: ex.exerciseId,
-                                      exerciseName: ex.exerciseName,
-                                      metric: pr.metric,
-                                      previousValue: pr.previousValue,
-                                      newValue: pr.newValue,
-                                      date: new Date().toISOString(),
-                                      workoutId: store.workoutId,
-                                    });
-                                    onPRDetected(ex.exerciseName, pr);
-                                  }
-                                }
-                              }
-                            }}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              s.isCompleted ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                            }`}
+                            onClick={() => handleCheckmarkTap(exIdx, setIdx, ex, s)}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center ${checkmarkClassName(s, ex)}`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
@@ -1690,7 +1735,7 @@ function WorkoutContent({
               <div className="mt-2">
                 {ex.exerciseCategory !== 'cardio' && (
                   <Button variant="ghost"
-                    onClick={() => store.addSet(exIdx)}
+                    onClick={() => handleAddSet(exIdx)}
                     className="w-full py-2 text-sm text-primary hover:text-primary/80"
                   >
                     + Add Set
@@ -1702,16 +1747,23 @@ function WorkoutContent({
         })}
 
         <Button
-          variant="outline"
+          variant="ghost"
           fullWidth
           onClick={() => setShowExercisePicker(true)}
+          className="text-sm text-muted-foreground hover:text-foreground"
         >
-          + Add Exercise
+          Browse exercises…
         </Button>
       </div>
 
+      {/* AI chat panel for adding exercises */}
+      <WorkoutChatPanel
+        onAddExercise={(exercise) => store.addExercise(exercise)}
+        workoutExercises={store.exercises.map((ex) => ex.exerciseName)}
+      />
+
       {pendingSetDelete && (
-        <div className={`fixed left-4 right-4 z-[70] ${numberPadVisible ? 'bottom-64' : 'bottom-24'}`}>
+        <div className={`fixed left-4 right-4 z-[70] ${numberPadVisible ? 'bottom-80' : 'bottom-40'}`}>
           <div className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
             <p className="text-sm text-muted-foreground truncate pr-3">
               Set deleted from {pendingSetDelete.exerciseName}
@@ -1731,7 +1783,7 @@ function WorkoutContent({
 
       {/* Rest Timer - shown only when number pad is NOT visible */}
       {restTimer.isActive && !numberPadVisible && (
-        <div className="fixed bottom-16 left-0 right-0 bg-card border-t border-border px-4 py-3 z-50">
+        <div className="fixed bottom-28 left-0 right-0 bg-card border-t border-border px-4 py-3 z-50">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Rest Timer</span>
             <Button variant="ghost"

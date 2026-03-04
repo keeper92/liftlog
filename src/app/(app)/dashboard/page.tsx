@@ -7,17 +7,10 @@ import { isMissingSplitSetColumnsError } from '@/lib/supabase/schemaCompat';
 import { DEMO_TOUR_PENDING_KEY } from '@/lib/constants/onboarding';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { useChatBarStore } from '@/stores/chatBarStore';
 import { formatAutoWorkoutName } from '@/lib/utils/workoutName';
 import { buildExerciseSetSummaries } from '@/lib/utils/workoutSetSummary';
 import { Button } from '@/components/ui/button-shadcn';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card-shadcn';
+import { Card, CardContent } from '@/components/ui/card-shadcn';
 import {
   Dialog,
   DialogContent,
@@ -26,15 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input-shadcn';
-import { Label } from '@/components/ui/label';
 import DemoFeatureTour from '@/components/onboarding/DemoFeatureTour';
-
+import { useChatUIStore } from '@/stores/chatUIStore';
 import HistoryOverlay from '@/components/history/HistoryOverlay';
 import PRFeedOverlay from '@/components/pr/PRFeedOverlay';
 import { usePRStore } from '@/stores/prStore';
-import ExercisePickerOverlay from '@/components/workout/ExercisePickerOverlay';
 import ExerciseSetSummaryList from '@/components/workout/ExerciseSetSummaryList';
+import TemplateChips from '@/components/dashboard/TemplateChips';
 
 interface TemplateSummary {
   id: string;
@@ -72,17 +63,10 @@ interface RecentWorkout {
   }> | null;
 }
 
-interface ManualTemplateExercise {
-  exerciseId: string;
-  name: string;
-  category: string;
-  defaultSets: number;
-}
-
 export default function DashboardPage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
-  const { isActive, workoutId, startWorkout, addExerciseWithSets, hydrateWorkoutSession } = useActiveWorkoutStore();
+  const { isActive, workoutId, startWorkout, addExerciseWithSets } = useActiveWorkoutStore();
   const unitSystem = useSettingsStore((s) => s.unitSystem);
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [stats, setStats] = useState<ProgressSummary | null>(null);
@@ -92,14 +76,13 @@ export default function DashboardPage() {
   const [historyInitialDateKey, setHistoryInitialDateKey] = useState<string | null>(null);
   const [showPRFeed, setShowPRFeed] = useState(false);
   const [tourStage, setTourStage] = useState<'idle' | 'intro' | 'active'>('idle');
-  const [showManualTemplateModal, setShowManualTemplateModal] = useState(false);
-  const [showTemplateExercisePicker, setShowTemplateExercisePicker] = useState(false);
-  const [manualTemplateName, setManualTemplateName] = useState('');
-  const [manualTemplateExercises, setManualTemplateExercises] = useState<ManualTemplateExercise[]>([]);
-  const [savingManualTemplate, setSavingManualTemplate] = useState(false);
-  const [manualTemplateError, setManualTemplateError] = useState<string | null>(null);
   const unreadCount = usePRStore((s) => s.unreadCount);
 
+  const setActionChips = useChatUIStore((s) => s.setActionChips);
+  const clearActionChips = useChatUIStore((s) => s.clearActionChips);
+  const openChat = useChatUIStore((s) => s.openChat);
+
+  // ─── Load data ──────────────────────────────────────────
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -113,7 +96,6 @@ export default function DashboardPage() {
         .limit(10);
       if (templatesData) setTemplates(templatesData as unknown as TemplateSummary[]);
 
-      // Get progress summary (streak + totals)
       const { data: summary } = await supabase.rpc('get_progress_summary', {
         user_uuid: user.id,
       });
@@ -171,6 +153,7 @@ export default function DashboardPage() {
     void load();
   }, [supabase]);
 
+  // ─── Demo tour ──────────────────────────────────────────
   useEffect(() => {
     const pendingTour = sessionStorage.getItem(DEMO_TOUR_PENDING_KEY);
     if (pendingTour !== '1') return;
@@ -180,6 +163,36 @@ export default function DashboardPage() {
     return () => window.cancelAnimationFrame(frameId);
   }, []);
 
+  // ─── Register action chips ─────────────────────────────
+  useEffect(() => {
+    const chips = [];
+    if (isActive) {
+      chips.push({
+        id: 'quick-start',
+        label: 'Resume workout',
+        onAction: () => router.push(`/workout/${workoutId}`),
+      });
+    } else {
+      chips.push({
+        id: 'quick-start',
+        label: 'Quick start',
+        onAction: () => {
+          startWorkout();
+          const state = useActiveWorkoutStore.getState();
+          router.push(`/workout/${state.workoutId}`);
+        },
+      });
+    }
+    chips.push({
+      id: 'create-template',
+      label: '+ Template',
+      onAction: () => openChat('create-template'),
+    });
+    setActionChips(chips);
+    return () => clearActionChips();
+  }, [isActive, workoutId, router, startWorkout, openChat, setActionChips, clearActionChips]);
+
+  // ─── Helpers ────────────────────────────────────────────
   function closeTour() {
     sessionStorage.removeItem(DEMO_TOUR_PENDING_KEY);
     setTourStage('idle');
@@ -194,10 +207,6 @@ export default function DashboardPage() {
     startWorkout();
     const state = useActiveWorkoutStore.getState();
     router.push(`/workout/${state.workoutId}`);
-  }
-
-  function handleResumeWorkout() {
-    router.push(`/workout/${workoutId}`);
   }
 
   function handleStartWorkoutFromOverlay() {
@@ -250,147 +259,6 @@ export default function DashboardPage() {
     );
   }
 
-  function handleCreateTemplateWithAI() {
-    setShowHistory(false);
-    setShowPRFeed(false);
-    useChatBarStore.getState().openWithMessage('Create a workout template');
-  }
-
-  function openManualTemplateBuilder() {
-    setShowHistory(false);
-    setShowPRFeed(false);
-    const suggestedName = `Template ${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
-    const enteredName = window.prompt('Template name', suggestedName);
-    if (enteredName === null) return;
-    const templateName = enteredName.trim() || suggestedName;
-
-    hydrateWorkoutSession({
-      workoutName: templateName,
-      startTime: new Date().toISOString(),
-      exercises: [],
-      builderMode: 'template_builder',
-    });
-
-    const state = useActiveWorkoutStore.getState();
-    if (state.workoutId) {
-      router.push(`/workout/${state.workoutId}`);
-    }
-  }
-
-  function closeManualTemplateBuilder() {
-    if (savingManualTemplate) return;
-    setShowManualTemplateModal(false);
-    setShowTemplateExercisePicker(false);
-    setManualTemplateError(null);
-  }
-
-  function addExerciseToManualTemplate(exercise: { id: string; name: string; category: string }) {
-    setManualTemplateError(null);
-    setManualTemplateExercises((prev) => {
-      if (prev.some((item) => item.exerciseId === exercise.id)) {
-        setManualTemplateError('Exercise already added to this template.');
-        return prev;
-      }
-      return [
-        ...prev,
-        {
-          exerciseId: exercise.id,
-          name: exercise.name,
-          category: exercise.category,
-          defaultSets: 3,
-        },
-      ];
-    });
-  }
-
-  function updateManualTemplateSets(index: number, value: string) {
-    const parsed = Number.parseInt(value, 10);
-    setManualTemplateExercises((prev) => {
-      const next = [...prev];
-      if (!next[index]) return prev;
-      next[index] = {
-        ...next[index],
-        defaultSets: Number.isFinite(parsed) ? Math.max(1, Math.min(12, parsed)) : 1,
-      };
-      return next;
-    });
-  }
-
-  function removeManualTemplateExercise(index: number) {
-    setManualTemplateExercises((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  function moveManualTemplateExercise(index: number, direction: 'up' | 'down') {
-    setManualTemplateExercises((prev) => {
-      const target = direction === 'up' ? index - 1 : index + 1;
-      if (target < 0 || target >= prev.length) return prev;
-      const next = [...prev];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
-  }
-
-  async function handleSaveManualTemplate() {
-    const trimmedName = manualTemplateName.trim();
-    if (!trimmedName) {
-      setManualTemplateError('Template name is required.');
-      return;
-    }
-    if (manualTemplateExercises.length === 0) {
-      setManualTemplateError('Add at least one exercise.');
-      return;
-    }
-
-    setSavingManualTemplate(true);
-    setManualTemplateError(null);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setManualTemplateError('Please sign in again.');
-      setSavingManualTemplate(false);
-      return;
-    }
-
-    const { data: template, error: templateError } = await supabase
-      .from('workout_templates')
-      .insert({ user_id: user.id, name: trimmedName })
-      .select('id')
-      .single();
-
-    if (templateError || !template) {
-      setManualTemplateError(templateError?.message || 'Could not create template.');
-      setSavingManualTemplate(false);
-      return;
-    }
-
-    const templateRows = manualTemplateExercises.map((exercise, index) => ({
-      template_id: template.id,
-      exercise_id: exercise.exerciseId,
-      order_index: index,
-      default_sets: exercise.defaultSets,
-    }));
-
-    const { error: templateExercisesError } = await supabase
-      .from('template_exercises')
-      .insert(templateRows);
-
-    if (templateExercisesError) {
-      setManualTemplateError(templateExercisesError.message || 'Could not save template exercises.');
-      await supabase.from('workout_templates').delete().eq('id', template.id);
-      setSavingManualTemplate(false);
-      return;
-    }
-
-    const { data: templatesData } = await supabase
-      .from('workout_templates')
-      .select('id, name, template_exercises(exercise_id, order_index, default_sets, exercises(name, category))')
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false })
-      .limit(10);
-    if (templatesData) setTemplates(templatesData as unknown as TemplateSummary[]);
-    setSavingManualTemplate(false);
-    setShowManualTemplateModal(false);
-  }
-
   function handleStartFromTemplate(template: TemplateSummary) {
     const sortedExercises = [...template.template_exercises].sort(
       (a, b) => a.order_index - b.order_index
@@ -418,6 +286,7 @@ export default function DashboardPage() {
 
   return (
     <>
+      {/* Tour intro dialog */}
       <Dialog
         open={tourStage === 'intro'}
         onOpenChange={(open) => {
@@ -461,294 +330,94 @@ export default function DashboardPage() {
         />
       )}
 
-      <Dialog
-        open={showManualTemplateModal}
-        onOpenChange={(open) => {
-          if (!open) closeManualTemplateBuilder();
-        }}
-      >
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Build Template</DialogTitle>
-            <DialogDescription>Create your own workout template.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {manualTemplateError && (
-              <div className="rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {manualTemplateError}
-              </div>
-            )}
+      <div className="mx-auto w-full max-w-3xl space-y-3 px-4 pt-4 sm:px-6">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">Your training hub.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setShowPRFeed(true)}
+              data-tour-anchor="pr-feed"
+              aria-label="Open personal records"
+              className="relative"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              {unreadCount > 0 && (
+                <span className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => openHistory()}
+              data-tour-anchor="history"
+              aria-label="Open consistency calendar"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            </Button>
+          </div>
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="manual-template-name">Template Name</Label>
-              <Input
-                id="manual-template-name"
-                value={manualTemplateName}
-                onChange={(e) => setManualTemplateName(e.target.value)}
-                placeholder="e.g., Push Day"
-              />
-            </div>
+        {/* Template chips */}
+        <TemplateChips templates={templates} onSelect={handleStartFromTemplate} />
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Exercises</Label>
+        {/* Recent Activity */}
+        <section className="space-y-2">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold tracking-tight">Recent Activity</h2>
+          </div>
+          <Card className="relative">
+            {recentWorkouts.length === 0 ? (
+              <CardContent className="py-6 text-center">
+                <p className="text-sm text-muted-foreground">No workouts logged yet.</p>
+                <Button onClick={handleStartWorkout} size="sm" className="mt-4">
+                  Start First Workout
+                </Button>
+              </CardContent>
+            ) : (
+              <>
                 <Button
                   type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setShowTemplateExercisePicker(true)}
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setRecentWorkoutIndex((idx) => Math.min(idx + 1, recentWorkouts.length - 1))}
+                  disabled={!canShowOlderWorkout}
+                  className="absolute left-2 top-1/2 z-10 h-9 w-9 -translate-y-1/2"
+                  aria-label="Show older workout"
                 >
-                  + Add Exercise
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
                 </Button>
-              </div>
-
-              <div className="max-h-64 space-y-2 overflow-y-auto rounded-md border p-3">
-                {manualTemplateExercises.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No exercises yet. Add one to start building your template.</p>
-                ) : (
-                  manualTemplateExercises.map((exercise, index) => (
-                    <div key={`${exercise.exerciseId}-${index}`} className="grid grid-cols-[1fr_72px_90px] items-center gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{exercise.name}</p>
-                        <p className="text-xs text-muted-foreground capitalize">{exercise.category.replace('_', ' ')}</p>
-                      </div>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={12}
-                        value={exercise.defaultSets}
-                        onChange={(e) => updateManualTemplateSets(index, e.target.value)}
-                        className="h-8 text-center"
-                      />
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => moveManualTemplateExercise(index, 'up')}
-                          className="h-7 w-7"
-                          aria-label="Move exercise up"
-                        >
-                          ↑
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => moveManualTemplateExercise(index, 'down')}
-                          className="h-7 w-7"
-                          aria-label="Move exercise down"
-                        >
-                          ↓
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => removeManualTemplateExercise(index)}
-                          className="h-7 w-7"
-                          aria-label="Remove exercise"
-                        >
-                          ×
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">Default sets per exercise.</p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={closeManualTemplateBuilder} disabled={savingManualTemplate}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveManualTemplate} disabled={savingManualTemplate}>
-              {savingManualTemplate ? 'Saving...' : 'Save Template'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <ExercisePickerOverlay
-        isOpen={showTemplateExercisePicker}
-        onClose={() => setShowTemplateExercisePicker(false)}
-        onSelect={(exercise) => {
-          addExerciseToManualTemplate(exercise);
-          setShowTemplateExercisePicker(false);
-        }}
-      />
-
-      <div className="mx-auto w-full max-w-3xl space-y-3 px-4 pt-4 sm:px-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Start workouts, track progress, and launch templates.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setShowPRFeed(true)}
-                data-tour-anchor="pr-feed"
-                aria-label="Open personal records"
-                className="relative"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-                {unreadCount > 0 && (
-                  <span className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => openHistory()}
-                data-tour-anchor="history"
-                aria-label="Open consistency calendar"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-              </Button>
-            </div>
-          </div>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Ready to train?</CardTitle>
-              <CardDescription>
-                {isActive ? 'You have a workout in progress.' : 'Start a quick workout or choose a template.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isActive ? (
-                <Button className="w-full" onClick={handleResumeWorkout} data-tour-anchor="start-workout">
-                  Resume Workout
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setRecentWorkoutIndex((idx) => Math.max(idx - 1, 0))}
+                  disabled={!canShowNewerWorkout}
+                  className="absolute right-2 top-1/2 z-10 h-9 w-9 -translate-y-1/2"
+                  aria-label="Show newer workout"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
                 </Button>
-              ) : (
-                <Button className="w-full" onClick={handleStartWorkout} data-tour-anchor="start-workout">
-                  Start Workout
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-
-          <section className="space-y-2" data-tour-anchor="saved-templates">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold tracking-tight">Saved Templates</h2>
-                {templates.length > 0 ? (
-                  <p className="text-sm text-muted-foreground">{templates.length} saved</p>
-                ) : null}
-              </div>
-            </div>
-
-            {templates.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center py-6 text-center">
-                  <p className="text-sm text-muted-foreground">No templates yet.</p>
-                  <p className="text-sm text-muted-foreground">Build one yourself in seconds.</p>
-                  <Button onClick={openManualTemplateBuilder} size="sm" className="mt-4">
-                    + Build Template
-                  </Button>
-                  <Button variant="link" size="sm" onClick={handleCreateTemplateWithAI} className="mt-1 px-0">
-                    Or chat with AI trainer to build
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {templates.map((t) => {
-                  const sortedExercises = [...t.template_exercises].sort(
-                    (a, b) => a.order_index - b.order_index
-                  );
-                  const exerciseNames = sortedExercises.slice(0, 3).map((e) => e.exercises.name);
-                  const moreCount = t.template_exercises.length - 3;
-
-                  return (
-                    <Card key={t.id}>
-                      <CardContent className="p-0">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="h-auto w-full justify-between rounded-xl px-4 py-4 text-left"
-                          onClick={() => handleStartFromTemplate(t)}
-                        >
-                          <div className="min-w-0 space-y-1">
-                            <p className="truncate text-sm font-medium">{t.name}</p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {exerciseNames.join(' • ')}
-                              {moreCount > 0 && ` +${moreCount}`}
-                            </p>
-                          </div>
-                          <span className="ml-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <polyline points="9 18 15 12 9 6" />
-                            </svg>
-                          </span>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-                <div className="text-center">
-                  <Button variant="link" size="sm" onClick={handleCreateTemplateWithAI} className="px-0">
-                    Or chat with AI trainer to build
-                  </Button>
-                </div>
-              </div>
-            )}
-          </section>
-
-          <section className="space-y-2">
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold tracking-tight">Recent Activity</h2>
-            </div>
-            <Card className="relative">
-              {recentWorkouts.length === 0 ? (
-                <CardContent className="py-6 text-center">
-                  <p className="text-sm text-muted-foreground">No workouts logged yet.</p>
-                  <Button onClick={handleStartWorkout} size="sm" className="mt-4">
-                    Start First Workout
-                  </Button>
-                </CardContent>
-              ) : (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setRecentWorkoutIndex((idx) => Math.min(idx + 1, recentWorkouts.length - 1))}
-                    disabled={!canShowOlderWorkout}
-                    className="absolute left-2 top-1/2 z-10 h-9 w-9 -translate-y-1/2"
-                    aria-label="Show older workout"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setRecentWorkoutIndex((idx) => Math.max(idx - 1, 0))}
-                    disabled={!canShowNewerWorkout}
-                    className="absolute right-2 top-1/2 z-10 h-9 w-9 -translate-y-1/2"
-                    aria-label="Show newer workout"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </Button>
                 <CardContent className="space-y-4 px-14 py-4">
                   {activeRecentWorkout && (
                     <>
@@ -776,11 +445,11 @@ export default function DashboardPage() {
                     </>
                   )}
                 </CardContent>
-                </>
-              )}
-            </Card>
-          </section>
-        </div>
+              </>
+            )}
+          </Card>
+        </section>
+      </div>
     </>
   );
 }
