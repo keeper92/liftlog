@@ -66,7 +66,7 @@ export default function BottomNav() {
                 }
                 className={cn(
                   buttonVariants[isActive ? 'default' : 'ghost'],
-                  'h-auto min-h-0 w-full flex-col gap-1 rounded-xl px-3 py-2 text-xs font-medium shadow-none'
+                  'h-auto min-h-0 w-full flex-col items-center gap-1 rounded-xl px-3 py-2 text-xs font-medium shadow-none'
                 )}
               >
                 {item.icon(isActive)}
