@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Check, ChevronRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { isMissingSplitSetColumnsError } from '@/lib/supabase/schemaCompat';
 import { DEMO_TOUR_PENDING_KEY } from '@/lib/constants/onboarding';
@@ -13,7 +14,6 @@ import { Button } from '@/components/ui/button-shadcn';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card-shadcn';
@@ -25,13 +25,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import DemoFeatureTour from '@/components/onboarding/DemoFeatureTour';
 import { useChatUIStore } from '@/stores/chatUIStore';
 import HistoryOverlay from '@/components/history/HistoryOverlay';
 import PRFeedOverlay from '@/components/pr/PRFeedOverlay';
 import { usePRStore } from '@/stores/prStore';
 import ExerciseSetSummaryList from '@/components/workout/ExerciseSetSummaryList';
-import TemplateChips from '@/components/dashboard/TemplateChips';
 
 interface TemplateSummary {
   id: string;
@@ -77,7 +77,11 @@ export default function DashboardPage() {
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [stats, setStats] = useState<ProgressSummary | null>(null);
   const [recentWorkouts, setRecentWorkouts] = useState<RecentWorkout[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return window.localStorage.getItem('selectedTemplateId');
+  });
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [historyInitialDateKey, setHistoryInitialDateKey] = useState<string | null>(null);
   const [showPRFeed, setShowPRFeed] = useState(false);
@@ -86,6 +90,7 @@ export default function DashboardPage() {
 
   const setActionChips = useChatUIStore((s) => s.setActionChips);
   const clearActionChips = useChatUIStore((s) => s.clearActionChips);
+  const openChat = useChatUIStore((s) => s.openChat);
 
   // ─── Load data ──────────────────────────────────────────
   useEffect(() => {
@@ -155,17 +160,15 @@ export default function DashboardPage() {
   }, [supabase]);
 
   useEffect(() => {
-    if (templates.length === 0) {
-      setSelectedTemplateId(null);
+    const nextSelectedTemplateId = selectedTemplateId && templates.some((template) => template.id === selectedTemplateId)
+      ? selectedTemplateId
+      : templates[0]?.id ?? null;
+    if (nextSelectedTemplateId) {
+      window.localStorage.setItem('selectedTemplateId', nextSelectedTemplateId);
       return;
     }
-    setSelectedTemplateId((current) => {
-      if (current && templates.some((template) => template.id === current)) {
-        return current;
-      }
-      return templates[0]?.id ?? null;
-    });
-  }, [templates]);
+    window.localStorage.removeItem('selectedTemplateId');
+  }, [selectedTemplateId, templates]);
 
   // ─── Demo tour ──────────────────────────────────────────
   useEffect(() => {
@@ -261,11 +264,23 @@ export default function DashboardPage() {
     router.push(`/workout/${state.workoutId}`);
   }
 
-  function handleTemplateSelect(template: TemplateSummary) {
-    setSelectedTemplateId(template.id);
+  function handleTemplateSelect(templateId: string) {
+    setSelectedTemplateId(templateId);
+    setTemplatePickerOpen(false);
   }
 
-  const selectedTemplate = templates.find((template) => template.id === selectedTemplateId) ?? null;
+  function handleCreateTemplate() {
+    setTemplatePickerOpen(false);
+    openChat('create-template');
+  }
+
+  const effectiveSelectedTemplateId = selectedTemplateId && templates.some((template) => template.id === selectedTemplateId)
+    ? selectedTemplateId
+    : templates[0]?.id ?? null;
+  const selectedTemplate = templates.find((template) => template.id === effectiveSelectedTemplateId) ?? null;
+  const selectedTemplateName = templates.length === 0
+    ? 'No templates yet'
+    : selectedTemplate?.name ?? templates[0]?.name ?? 'Choose template';
 
   return (
     <>
@@ -318,7 +333,6 @@ export default function DashboardPage() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Pick a template and start training.</p>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -358,40 +372,86 @@ export default function DashboardPage() {
         </div>
 
         <Card data-tour-anchor="saved-templates">
-          <CardHeader className="space-y-2 pb-4">
-            <CardTitle>Start workout</CardTitle>
-            <CardDescription>Primary route: start from a saved template.</CardDescription>
+          <CardHeader className="pb-4">
+            <CardTitle>Today&apos;s Workout</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {templates.length > 0 ? (
-              <>
-                <TemplateChips
-                  templates={templates}
-                  selectedTemplateId={selectedTemplateId}
-                  onSelect={handleTemplateSelect}
-                />
-                <Button
-                  onClick={() => {
-                    if (selectedTemplate) handleStartFromTemplate(selectedTemplate);
-                  }}
-                  size="lg"
-                  className="w-full text-base font-semibold"
-                  disabled={!selectedTemplate}
-                >
-                  {selectedTemplate ? `Start ${selectedTemplate.name}` : 'Start workout'}
-                </Button>
-              </>
-            ) : (
-              <Button onClick={handleStartWorkout} size="lg" className="w-full text-base font-semibold">
-                Start workout
+          <CardContent className="space-y-3">
+            <Dialog open={templatePickerOpen} onOpenChange={setTemplatePickerOpen}>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full justify-between bg-muted/40 hover:bg-muted/60"
+                onClick={() => setTemplatePickerOpen(true)}
+              >
+                <span className="truncate text-left">{selectedTemplateName}</span>
+                <ChevronRight className="h-4 w-4 shrink-0 opacity-60" />
               </Button>
-            )}
+              <DialogContent
+                hideCloseButton
+                className="fixed inset-x-0 bottom-0 top-auto z-[130] mx-auto w-full max-w-3xl rounded-b-none rounded-t-2xl border-x border-b-0 border-t p-0"
+              >
+                <div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-muted" />
+                <DialogHeader className="px-4 pb-2 pt-3">
+                  <DialogTitle>Choose template</DialogTitle>
+                </DialogHeader>
+                <div className="px-4 pb-4">
+                  <ScrollArea className="h-[50vh]">
+                    {templates.length > 0 ? (
+                      <div className="space-y-1">
+                        {templates.map((template) => {
+                          const isSelected = template.id === effectiveSelectedTemplateId;
+                          return (
+                            <button
+                              key={template.id}
+                              type="button"
+                              onClick={() => handleTemplateSelect(template.id)}
+                              className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                                isSelected
+                                  ? 'border-primary/40 bg-primary/10 text-foreground'
+                                  : 'border-transparent hover:border-border hover:bg-muted/60'
+                              }`}
+                            >
+                              <span className="truncate">{template.name}</span>
+                              {isSelected ? (
+                                <Check className="h-4 w-4 text-primary" />
+                              ) : (
+                                <span className="h-4 w-4" aria-hidden="true" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="flex h-[50vh] items-center justify-center rounded-md border border-dashed border-border bg-muted/30 px-4 text-sm text-muted-foreground">
+                        No templates yet
+                      </div>
+                    )}
+                  </ScrollArea>
+                  <Button
+                    variant="secondary"
+                    className="mt-3 w-full"
+                    onClick={handleCreateTemplate}
+                  >
+                    + Create new template
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button
+              onClick={() => {
+                if (selectedTemplate) handleStartFromTemplate(selectedTemplate);
+              }}
+              className="w-full"
+              disabled={!selectedTemplate}
+            >
+              Start Workout
+            </Button>
             <Button
               onClick={handleStartWorkout}
               variant="secondary"
               className="w-full"
             >
-              Quick start
+              Quick Start
             </Button>
           </CardContent>
         </Card>
