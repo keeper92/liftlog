@@ -151,7 +151,11 @@ export default function ChatBottomSheet({ isOpen, onClose }: ChatBottomSheetProp
         className={`absolute inset-0 bg-foreground/30 transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0'
         }`}
-        onClick={onClose}
+        onPointerDown={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onClose();
+        }}
       />
 
       {/* Sheet */}
@@ -160,6 +164,7 @@ export default function ChatBottomSheet({ isOpen, onClose }: ChatBottomSheetProp
           isOpen ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={{ height: '80dvh', maxHeight: '80dvh' }}
+        onPointerDown={(event) => event.stopPropagation()}
       >
         <div className="mx-auto flex h-full w-full flex-col">
           {/* Drag handle + header */}
