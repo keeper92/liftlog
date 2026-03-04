@@ -10,7 +10,6 @@ export default function ChatBar() {
   const pathname = usePathname();
   const isWorkoutSession =
     pathname.startsWith('/workout/') && !pathname.startsWith('/workout/summary/');
-  const isTrainerPage = pathname === '/trainer';
   const isActive = useActiveWorkoutStore((s) => s.isActive);
   const isOnWorkoutPage = pathname.startsWith('/workout');
   const showRibbon = isActive && !isOnWorkoutPage && pathname !== '/dashboard';
@@ -19,9 +18,8 @@ export default function ChatBar() {
   const actionChips = useChatUIStore((s) => s.actionChips);
   const nudges = useContextualNudges();
 
-  // Hide the bar UI during workout sessions and on the trainer page,
-  // but always render the ChatBottomSheet so it can be opened from anywhere
-  const hideBar = isWorkoutSession || isTrainerPage;
+  // Hide the bar UI during workout sessions
+  const hideBar = isWorkoutSession;
 
   const hasChips = actionChips.length > 0 || nudges.length > 0;
 

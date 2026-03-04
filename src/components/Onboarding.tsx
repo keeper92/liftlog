@@ -38,7 +38,7 @@ const slides = [
   },
   {
     title: 'AI Personal Trainer',
-    description: 'Chat with your AI personal trainer to plan workouts, get insights on your progress, and receive personalized advice.',
+    description: 'Chat with your AI trainer from any screen to plan workouts, get insights, and receive personalized advice.',
     image: '/onboarding/trainer.svg',
     icon: (
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
