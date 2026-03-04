@@ -1,17 +1,10 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
-import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import { useChatUIStore } from '@/stores/chatUIStore';
 import { useContextualNudges } from '@/hooks/useContextualNudges';
 import ChatBottomSheet from './ChatBottomSheet';
 
 export default function ChatBar() {
-  const pathname = usePathname();
-  const isActive = useActiveWorkoutStore((s) => s.isActive);
-  const isOnWorkoutPage = pathname.startsWith('/workout');
-  const showRibbon = isActive && !isOnWorkoutPage && pathname !== '/dashboard';
-
   const { isOpen, openChat, closeChat } = useChatUIStore();
   const actionChips = useChatUIStore((s) => s.actionChips);
   const nudges = useContextualNudges();
@@ -20,14 +13,8 @@ export default function ChatBar() {
 
   return (
     <>
-      {/* Compact chat bar - always visible above bottom nav */}
-      <div
-        className={`fixed left-0 right-0 z-50 ${
-          showRibbon
-            ? 'bottom-[calc(134px+env(safe-area-inset-bottom))]'
-            : 'bottom-[calc(82px+env(safe-area-inset-bottom))]'
-        }`}
-      >
+      {/* Compact chat bar - always visible directly above bottom nav */}
+      <div className="fixed left-0 right-0 z-50 bottom-[calc(82px+env(safe-area-inset-bottom))]">
         <div className="mx-auto max-w-[430px] px-3">
           {/* Action chips + nudge chips */}
           {hasChips && !isOpen && (
