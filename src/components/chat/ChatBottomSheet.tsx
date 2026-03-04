@@ -22,7 +22,6 @@ export default function ChatBottomSheet({ isOpen, onClose }: ChatBottomSheetProp
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const intent = useChatUIStore((s) => s.intent);
   const { createConversation, addMessage } = useChatStore();
-  const activeConversationId = useChatStore((s) => s.activeConversationId);
   const { profile: trainerProfile } = useTrainerProfileStore();
   const nudges = useContextualNudges();
 
@@ -77,11 +76,6 @@ export default function ChatBottomSheet({ isOpen, onClose }: ChatBottomSheetProp
       handledIntent.current = null;
     }
   }, [isOpen]);
-
-  // Reset profile mode when switching conversations
-  useEffect(() => {
-    setProfileMode(false);
-  }, [activeConversationId]);
 
   // Lock body scroll when open
   useEffect(() => {
@@ -149,7 +143,9 @@ export default function ChatBottomSheet({ isOpen, onClose }: ChatBottomSheetProp
   const showEmptyState = messages.length === 0 && !profileMode;
 
   return (
-    <div className={`fixed inset-0 z-[60] ${isOpen ? '' : 'pointer-events-none'}`}>
+    <div
+      className={`fixed inset-0 z-[60] lg:inset-y-4 lg:left-1/2 lg:w-[430px] lg:-translate-x-1/2 lg:overflow-hidden lg:rounded-[2rem] lg:border lg:border-border/70 ${isOpen ? '' : 'pointer-events-none'}`}
+    >
       {/* Backdrop */}
       <div
         className={`absolute inset-0 bg-foreground/30 transition-opacity duration-300 ${
@@ -165,7 +161,7 @@ export default function ChatBottomSheet({ isOpen, onClose }: ChatBottomSheetProp
         }`}
         style={{ height: '80dvh', maxHeight: '80dvh' }}
       >
-        <div className="mx-auto flex w-full max-w-[430px] flex-col" style={{ height: '80dvh' }}>
+        <div className="mx-auto flex h-full w-full flex-col">
           {/* Drag handle + header */}
           <div className="flex items-center justify-between border-b border-border/50 px-4 pb-2 pt-3">
             <div className="flex items-center gap-2">
@@ -331,7 +327,11 @@ export default function ChatBottomSheet({ isOpen, onClose }: ChatBottomSheetProp
       </div>
 
       {/* Chat Sidebar (conversation history) */}
-      <ChatSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <ChatSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onConversationChange={() => setProfileMode(false)}
+      />
     </div>
   );
 }

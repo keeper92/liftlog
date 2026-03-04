@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button-shadcn';
 interface ChatSidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  onConversationChange?: () => void;
 }
 
 function getTimeGroup(dateStr: string): string {
@@ -29,7 +30,7 @@ function getTimeGroup(dateStr: string): string {
 
 const GROUP_ORDER = ['Today', 'Yesterday', 'Last 7 Days', 'Last 30 Days', 'Older'];
 
-export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
+export default function ChatSidebar({ isOpen, onClose, onConversationChange }: ChatSidebarProps) {
   const conversations = useChatStore((s) => s.conversations);
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const createConversation = useChatStore((s) => s.createConversation);
@@ -61,11 +62,13 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
 
   function handleNewChat() {
     createConversation();
+    onConversationChange?.();
     onClose();
   }
 
   function handleSelectConversation(id: string) {
     switchConversation(id);
+    onConversationChange?.();
     onClose();
   }
 
@@ -84,7 +87,9 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
   }
 
   return (
-    <div className={`fixed inset-0 z-[60] ${isOpen ? '' : 'pointer-events-none'}`}>
+    <div
+      className={`fixed inset-0 z-[60] lg:inset-y-4 lg:left-1/2 lg:w-[430px] lg:-translate-x-1/2 lg:overflow-hidden lg:rounded-[2rem] lg:border lg:border-border/70 ${isOpen ? '' : 'pointer-events-none'}`}
+    >
       {/* Backdrop */}
       <div
         className={`absolute inset-0 bg-foreground/30 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
