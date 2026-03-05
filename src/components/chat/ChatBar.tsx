@@ -19,7 +19,7 @@ export default function ChatBar() {
     <>
       {/* Persistent floating chat trigger above bottom nav */}
       {!isOpen && (
-        <div className="pointer-events-none fixed inset-x-0 z-50 bottom-[calc(82px+env(safe-area-inset-bottom)+10px)]">
+        <div className="pointer-events-none fixed inset-x-0 z-50 bottom-[calc(82px+env(safe-area-inset-bottom)+10px)] lg:static lg:z-auto lg:pointer-events-auto">
           <div className="mx-auto flex w-full max-w-[430px] justify-end px-3">
             <button
               type="button"

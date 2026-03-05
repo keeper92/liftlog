@@ -14,7 +14,7 @@ export default function AppLayout({
 }) {
   return (
     <DesktopMobileFrame>
-      <div className="relative flex min-h-dvh flex-col bg-background lg:min-h-full">
+      <div className="relative flex min-h-dvh flex-col bg-background lg:h-full lg:min-h-0">
         <WorkoutOutboxSync />
         <MainContent>{children}</MainContent>
         <ActiveWorkoutRibbon />

@@ -15,7 +15,7 @@ export default function MainContent({ children }: { children: React.ReactNode })
   const bottomPadding = showRibbon ? 'pb-48' : 'pb-40';
 
   return (
-    <main className={`flex-1 ${bottomPadding}`}>
+    <main className={`flex-1 ${bottomPadding} lg:overflow-y-auto lg:pb-0`}>
       {children}
     </main>
   );
