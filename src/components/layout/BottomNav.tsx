@@ -50,7 +50,7 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[calc(env(safe-area-inset-bottom)+10px)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[calc(env(safe-area-inset-bottom)+10px)] lg:static lg:z-auto lg:pb-2.5">
       <div className="mx-auto max-w-[430px] px-3">
         <Card className="grid grid-cols-3 items-center gap-1 rounded-lg border bg-background/95 p-1.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/90">
           {navItems.map((item) => {

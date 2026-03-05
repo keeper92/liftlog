@@ -63,7 +63,7 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center space-y-3">
-        <h1 className="text-3xl font-bold tracking-tight">repsfit</h1>
+        <h1 className="text-3xl font-bold tracking-tight">reps</h1>
         <div className="text-sm text-muted-foreground">Loading...</div>
       </div>
     </div>
