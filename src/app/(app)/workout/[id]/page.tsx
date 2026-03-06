@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useActiveWorkoutStore, type ActiveSet, type ActiveWorkoutState, type PerformanceSet, type WorkoutExercise } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { ChevronDown } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import {
   formatDuration,
   toDisplayWeight,
@@ -1605,9 +1605,7 @@ function WorkoutContent({
                             onClick={() => handleCheckmarkTap(exIdx, setIdx, ex, s)}
                             className={`w-10 h-10 rounded-full flex items-center justify-center ${checkmarkClassName(s, ex)}`}
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
+                            <Check size={16} strokeWidth={3} />
                           </Button>
                         </div>
                         {pace && (
@@ -1687,9 +1685,7 @@ function WorkoutContent({
                             onClick={() => handleCheckmarkTap(exIdx, setIdx, ex, s)}
                             className={`w-10 h-10 rounded-full flex items-center justify-center ${checkmarkClassName(s, ex)}`}
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
+                            <Check size={16} strokeWidth={3} />
                           </Button>
                         </div>
                       ) : (
@@ -1734,9 +1730,7 @@ function WorkoutContent({
                             onClick={() => handleCheckmarkTap(exIdx, setIdx, ex, s)}
                             className={`w-10 h-10 rounded-full flex items-center justify-center ${checkmarkClassName(s, ex)}`}
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
+                            <Check size={16} strokeWidth={3} />
                           </Button>
                         </div>
                       )}
