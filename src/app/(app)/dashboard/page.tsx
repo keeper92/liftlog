@@ -262,7 +262,7 @@ export default function DashboardPage() {
   const selectedTemplate = templates.find((template) => template.id === effectiveSelectedTemplateId) ?? null;
   const selectedTemplateName = templates.length === 0
     ? 'No templates yet'
-    : selectedTemplate?.name ?? templates[0]?.name ?? 'Choose template';
+    : 'Select Template';
   const latestWorkout = recentWorkouts[0] ?? null;
   const lastWorkoutSubtitle = latestWorkout
     ? `Last workout: ${latestWorkout.name || formatAutoWorkoutName(latestWorkout.date)} - ${formatDaysAgo(latestWorkout.date)}`
