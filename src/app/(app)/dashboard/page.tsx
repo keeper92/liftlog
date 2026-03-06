@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, ChevronRight } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { isMissingSplitSetColumnsError } from '@/lib/supabase/schemaCompat';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
@@ -350,7 +350,6 @@ export default function DashboardPage() {
                 onClick={() => setTemplatePickerOpen(true)}
               >
                 <span className="truncate text-left">{selectedTemplateName}</span>
-                <ChevronRight className="h-4 w-4 shrink-0 opacity-60" />
               </Button>
               <SheetContent
                 side="bottom"
