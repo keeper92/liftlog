@@ -25,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import DemoFeatureTour from '@/components/onboarding/DemoFeatureTour';
 import { useChatUIStore } from '@/stores/chatUIStore';
@@ -392,7 +393,7 @@ export default function DashboardPage() {
             <p className="text-sm text-muted-foreground">{lastWorkoutSubtitle}</p>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Dialog open={templatePickerOpen} onOpenChange={setTemplatePickerOpen}>
+            <Sheet open={templatePickerOpen} onOpenChange={setTemplatePickerOpen}>
               <Button
                 type="button"
                 variant="outline"
@@ -402,14 +403,16 @@ export default function DashboardPage() {
                 <span className="truncate text-left">{selectedTemplateName}</span>
                 <ChevronRight className="h-4 w-4 shrink-0 opacity-60" />
               </Button>
-              <DialogContent
+              <SheetContent
+                side="bottom"
+                portal={false}
                 hideCloseButton
-                className="fixed inset-x-0 bottom-0 top-auto z-[130] mx-auto w-full max-w-[430px] rounded-b-none rounded-t-2xl border-x border-b-0 border-t p-0"
+                className="inset-x-0 bottom-0 rounded-t-2xl p-0"
               >
                 <div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-muted" />
-                <DialogHeader className="px-4 pb-2 pt-3">
-                  <DialogTitle>Choose template</DialogTitle>
-                </DialogHeader>
+                <SheetHeader className="px-4 pb-2 pt-3">
+                  <SheetTitle>Choose template</SheetTitle>
+                </SheetHeader>
                 <div className="px-4 pb-4">
                   <ScrollArea className="h-[50vh]">
                     {templates.length > 0 ? (
@@ -451,8 +454,8 @@ export default function DashboardPage() {
                     + Create new template
                   </Button>
                 </div>
-              </DialogContent>
-            </Dialog>
+              </SheetContent>
+            </Sheet>
             <Button
               onClick={() => {
                 if (selectedTemplate) handleStartFromTemplate(selectedTemplate);

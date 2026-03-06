@@ -7,6 +7,7 @@ import { toDisplayWeight, weightUnit } from '@/lib/utils/units';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button-shadcn';
 import { Card, CardContent } from '@/components/ui/card-shadcn';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 interface PRFeedOverlayProps {
   onClose: () => void;
@@ -264,7 +265,13 @@ export default function PRFeedOverlay({ onClose, onStartWorkout }: PRFeedOverlay
   const grouped = groupByDate(displayRecords);
 
   return (
-    <div className="fixed inset-x-0 top-0 bottom-[calc(env(safe-area-inset-bottom)+156px)] z-[70] flex flex-col bg-background lg:absolute lg:inset-x-0 lg:top-0 lg:bottom-[calc(env(safe-area-inset-bottom)+156px)]">
+    <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <SheetContent
+        side="top"
+        portal={false}
+        hideCloseButton
+        className="inset-x-0 top-0 bottom-[calc(env(safe-area-inset-bottom)+82px)] flex flex-col p-0"
+      >
       <div className="mx-auto w-full max-w-3xl px-4 pt-4 sm:px-6">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -338,6 +345,7 @@ export default function PRFeedOverlay({ onClose, onStartWorkout }: PRFeedOverlay
         )}
         </div>
       </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }

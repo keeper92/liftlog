@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useChatStore } from '@/stores/chatStore';
 import { useChatUIStore } from '@/stores/chatUIStore';
 import { useTrainerProfileStore } from '@/stores/trainerProfileStore';
 import { useContextualNudges } from '@/hooks/useContextualNudges';
 import { useChat } from '@/hooks/useChat';
 import { Button } from '@/components/ui/button-shadcn';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import ChatMessages from './ChatMessages';
 import ChatInput, { type ChatInputHandle } from './ChatInput';
 import ChatSidebar from './ChatSidebar';
@@ -77,16 +78,6 @@ export default function ChatBottomSheet({ isOpen, onClose }: ChatBottomSheetProp
     }
   }, [isOpen]);
 
-  // Lock body scroll when open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
   // Focus input when opening
   useEffect(() => {
     if (isOpen) {
@@ -94,19 +85,6 @@ export default function ChatBottomSheet({ isOpen, onClose }: ChatBottomSheetProp
       return () => cancelAnimationFrame(id);
     }
   }, [isOpen]);
-
-  // Escape key to close
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !sidebarOpen) onClose();
-    },
-    [onClose, sidebarOpen]
-  );
-
-  useEffect(() => {
-    if (isOpen) document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, handleKeyDown]);
 
   function startProfileSetup() {
     setProfileMode(true);
@@ -142,19 +120,14 @@ export default function ChatBottomSheet({ isOpen, onClose }: ChatBottomSheetProp
 
   const showEmptyState = messages.length === 0 && !profileMode;
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[60]">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-foreground/30"
-        onClick={onClose}
-      />
-
-      {/* Sheet */}
-      <div className="absolute inset-x-0 bottom-0">
-        <div className="mx-auto flex w-full max-w-[430px] flex-col bg-background shadow-xl lg:rounded-t-2xl" style={{ height: '80dvh', maxHeight: '80dvh' }}>
+    <Sheet open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <SheetContent
+        side="bottom"
+        portal={false}
+        hideCloseButton
+        className="inset-x-0 bottom-0 h-[80dvh] max-h-[80dvh] flex flex-col p-0 rounded-t-2xl"
+      >
           {/* Drag handle + header */}
           <div className="flex items-center justify-between border-b border-border/50 px-4 pb-2 pt-3">
             <div className="flex items-center gap-2">
@@ -316,15 +289,13 @@ export default function ChatBottomSheet({ isOpen, onClose }: ChatBottomSheetProp
               onFileContent={handleFileUpload}
             />
           </div>
-        </div>
-      </div>
-
       {/* Chat Sidebar (conversation history) */}
       <ChatSidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onConversationChange={() => setProfileMode(false)}
       />
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }

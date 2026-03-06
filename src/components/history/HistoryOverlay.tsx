@@ -13,6 +13,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input-shadcn';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import ExerciseSetSummaryList from '@/components/workout/ExerciseSetSummaryList';
 
 interface WorkoutSet {
@@ -762,7 +763,13 @@ export default function HistoryOverlay({
   const editableGroups = getEditableExerciseGroups();
 
   return (
-    <div className="fixed inset-x-0 top-0 bottom-[calc(env(safe-area-inset-bottom)+156px)] z-[70] flex flex-col bg-background lg:absolute lg:inset-x-0 lg:top-0 lg:bottom-[calc(env(safe-area-inset-bottom)+156px)]">
+    <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <SheetContent
+        side="top"
+        portal={false}
+        hideCloseButton
+        className="inset-x-0 top-0 bottom-[calc(env(safe-area-inset-bottom)+82px)] flex flex-col p-0"
+      >
       <Modal isOpen={!!editingWorkout} onClose={closeEditOverlay} title="Edit Workout">
         {editingWorkout && (
           <div className="space-y-4 text-sm">
@@ -1064,6 +1071,7 @@ export default function HistoryOverlay({
           </div>
         )}
       </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }
