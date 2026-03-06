@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { DEMO_TOUR_PENDING_KEY } from '@/lib/constants/onboarding';
 import { useWorkoutOutboxStore } from '@/stores/workoutOutboxStore';
 
 export default function HomePage() {
@@ -52,7 +51,6 @@ export default function HomePage() {
         }
 
         useWorkoutOutboxStore.getState().clear();
-        sessionStorage.setItem(DEMO_TOUR_PENDING_KEY, '1');
         router.replace('/dashboard');
       } catch {
         router.replace('/login');

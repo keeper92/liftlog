@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Check, ChevronRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { isMissingSplitSetColumnsError } from '@/lib/supabase/schemaCompat';
-import { DEMO_TOUR_PENDING_KEY } from '@/lib/constants/onboarding';
 import { useActiveWorkoutStore } from '@/stores/activeWorkoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { formatAutoWorkoutName } from '@/lib/utils/workoutName';
@@ -17,17 +16,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card-shadcn';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import DemoFeatureTour from '@/components/onboarding/DemoFeatureTour';
 import { useChatUIStore } from '@/stores/chatUIStore';
 import HistoryOverlay from '@/components/history/HistoryOverlay';
 import PRFeedOverlay from '@/components/pr/PRFeedOverlay';
@@ -86,7 +76,6 @@ export default function DashboardPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [historyInitialDateKey, setHistoryInitialDateKey] = useState<string | null>(null);
   const [showPRFeed, setShowPRFeed] = useState(false);
-  const [tourStage, setTourStage] = useState<'idle' | 'intro' | 'active'>('idle');
   const unreadCount = usePRStore((s) => s.unreadCount);
 
   const setActionChips = useChatUIStore((s) => s.setActionChips);
@@ -171,15 +160,7 @@ export default function DashboardPage() {
     window.localStorage.removeItem('selectedTemplateId');
   }, [selectedTemplateId, templates]);
 
-  // ─── Demo tour ──────────────────────────────────────────
-  useEffect(() => {
-    const pendingTour = sessionStorage.getItem(DEMO_TOUR_PENDING_KEY);
-    if (pendingTour !== '1') return;
-    const frameId = window.requestAnimationFrame(() => {
-      setTourStage('intro');
-    });
-    return () => window.cancelAnimationFrame(frameId);
-  }, []);
+  // ─── Demo tour (disabled) ───────────────────────────────
 
   // ─── Register action chips ─────────────────────────────
   useEffect(() => {
@@ -196,16 +177,6 @@ export default function DashboardPage() {
   }, [isActive, workoutId, router, setActionChips, clearActionChips]);
 
   // ─── Helpers ────────────────────────────────────────────
-  function closeTour() {
-    sessionStorage.removeItem(DEMO_TOUR_PENDING_KEY);
-    setTourStage('idle');
-  }
-
-  function startTour() {
-    sessionStorage.removeItem(DEMO_TOUR_PENDING_KEY);
-    setTourStage('active');
-  }
-
   function handleStartWorkout() {
     startWorkout();
     const state = useActiveWorkoutStore.getState();
@@ -300,28 +271,6 @@ export default function DashboardPage() {
   return (
     <>
       {/* Tour intro dialog */}
-      <Dialog
-        open={tourStage === 'intro'}
-        onOpenChange={(open) => {
-          if (!open) closeTour();
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Welcome to the demo</DialogTitle>
-            <DialogDescription>
-              This quick tour highlights the main features so you can explore the app in under a minute.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={closeTour}>Skip</Button>
-            <Button onClick={startTour}>Start Tour</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {tourStage === 'active' && <DemoFeatureTour onFinish={closeTour} />}
-
       {showHistory && stats && (
         <HistoryOverlay
           onClose={() => {
