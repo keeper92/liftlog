@@ -14,13 +14,13 @@ export default function AnimationDemo({ className, label }: AnimationDemoProps) 
     <div className="flex flex-col items-center gap-3">
       <div
         key={key}
-        className={`rounded-lg bg-primary/20 border border-primary/30 px-6 py-4 text-sm font-medium text-foreground ${className}`}
+        className={`rounded-lg bg-gray-100 border border-gray-300 px-6 py-4 text-sm font-medium text-black ${className}`}
       >
         {label}
       </div>
       <button
         onClick={() => setKey((k) => k + 1)}
-        className="text-xs font-mono text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+        className="text-xs font-mono text-gray-500 hover:text-black transition-colors cursor-pointer"
       >
         ↻ Replay
       </button>

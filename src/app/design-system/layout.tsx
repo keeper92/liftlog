@@ -11,8 +11,11 @@ export default function DesignSystemLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-dvh bg-background text-foreground">
-      {children}
-    </div>
+    <>
+      <style>{`body { background-color: #ffffff !important; color: #000000 !important; }`}</style>
+      <div className="min-h-dvh">
+        {children}
+      </div>
+    </>
   );
 }
