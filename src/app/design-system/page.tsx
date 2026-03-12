@@ -129,13 +129,13 @@ function ColorSwatch({ token, mode }: { token: ColorToken; mode: 'light' | 'dark
   return (
     <div className="flex items-center gap-3">
       <div
-        className="h-12 w-12 shrink-0 rounded-md border border-foreground/10"
+        className="h-12 w-12 shrink-0 rounded-md border border-gray-300"
         style={{ backgroundColor: hex }}
       />
       <div className="min-w-0">
         <p className="text-sm font-medium truncate">{token.name}</p>
-        <p className="font-mono text-xs text-foreground">{hex}</p>
-        <p className="font-mono text-[10px] text-muted-foreground truncate">
+        <p className="font-mono text-xs text-black">{hex}</p>
+        <p className="font-mono text-[10px] text-gray-500 truncate">
           var({token.cssVar})
         </p>
       </div>
@@ -165,7 +165,7 @@ export default function DesignSystemPage() {
       {/* Header */}
       <header className="mb-12">
         <h1 className="text-4xl font-bold tracking-tight">Design System</h1>
-        <p className="mt-2 text-lg text-muted-foreground">
+        <p className="mt-2 text-lg text-gray-500">
           Reps / LiftLog &mdash; Token reference &amp; component library
         </p>
 
@@ -175,7 +175,7 @@ export default function DesignSystemPage() {
             <a
               key={s.id}
               href={`#${s.id}`}
-              className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent/30"
+              className="rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-gray-100"
             >
               {s.label}
             </a>
@@ -189,21 +189,21 @@ export default function DesignSystemPage() {
         {/* ============================================================ */}
         <section>
           <SectionHeading id="colors">Colors</SectionHeading>
-          <p className="mt-2 mb-8 text-sm text-muted-foreground">
+          <p className="mt-2 mb-8 text-sm text-gray-500">
             Two-tier token system. Primitive oklch values mapped to semantic roles via Tailwind&apos;s @theme inline.
           </p>
 
           {COLOR_GROUPS.map((group) => (
             <div key={group.label} className="mb-10">
-              <h3 className="mb-4 text-lg font-semibold text-foreground/80">
+              <h3 className="mb-4 text-lg font-semibold text-black/80">
                 {group.label}
               </h3>
               <div className="grid grid-cols-1 gap-x-12 gap-y-1 lg:grid-cols-2">
                 {/* Light column header */}
-                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground lg:col-span-1">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-500 lg:col-span-1">
                   Light
                 </p>
-                <p className="mb-2 hidden text-xs font-semibold uppercase tracking-widest text-muted-foreground lg:block">
+                <p className="mb-2 hidden text-xs font-semibold uppercase tracking-widest text-gray-500 lg:block">
                   Dark
                 </p>
 
@@ -226,7 +226,7 @@ export default function DesignSystemPage() {
         {/* ============================================================ */}
         <section>
           <SectionHeading id="typography">Typography</SectionHeading>
-          <p className="mt-2 mb-8 text-sm text-muted-foreground">
+          <p className="mt-2 mb-8 text-sm text-gray-500">
             Three font families registered via CSS custom properties.
           </p>
 
@@ -235,17 +235,17 @@ export default function DesignSystemPage() {
             <div>
               <div className="mb-3 flex items-baseline gap-3">
                 <h3 className="text-lg font-semibold">Oxanium</h3>
-                <span className="font-mono text-xs text-muted-foreground">
+                <span className="font-mono text-xs text-gray-500">
                   var(--font-sans) &middot; sans-serif
                 </span>
               </div>
-              <div className="space-y-2 rounded-lg border border-border bg-card p-6" style={{ fontFamily: 'Oxanium, sans-serif' }}>
+              <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-6" style={{ fontFamily: 'Oxanium, sans-serif' }}>
                 <p className="text-4xl font-bold">Heading 1 &mdash; The quick brown fox</p>
                 <p className="text-3xl font-bold">Heading 2 &mdash; jumps over the lazy dog</p>
                 <p className="text-2xl font-semibold">Heading 3 &mdash; Pack my box with five dozen</p>
                 <p className="text-xl font-medium">Heading 4 &mdash; liquor jugs</p>
                 <p className="mt-4 text-base">Body &mdash; AaBbCcDdEeFfGg 0123456789</p>
-                <p className="text-sm text-muted-foreground">Small &mdash; Secondary text at smaller size</p>
+                <p className="text-sm text-gray-500">Small &mdash; Secondary text at smaller size</p>
               </div>
             </div>
 
@@ -253,18 +253,18 @@ export default function DesignSystemPage() {
             <div>
               <div className="mb-3 flex items-baseline gap-3">
                 <h3 className="text-lg font-semibold">Merriweather</h3>
-                <span className="font-mono text-xs text-muted-foreground">
+                <span className="font-mono text-xs text-gray-500">
                   var(--font-serif) &middot; serif
                 </span>
               </div>
-              <div className="space-y-2 rounded-lg border border-border bg-card p-6" style={{ fontFamily: 'Merriweather, serif' }}>
+              <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-6" style={{ fontFamily: 'Merriweather, serif' }}>
                 <p className="text-2xl font-bold">The quick brown fox jumps over the lazy dog</p>
                 <p className="text-base leading-relaxed">
                   Designed for long-form reading. This serif typeface provides a warm,
                   traditional feel that complements the geometric modernity of Oxanium.
                   AaBbCcDdEeFfGg 0123456789 !@#$%
                 </p>
-                <p className="text-sm italic text-muted-foreground">
+                <p className="text-sm italic text-gray-500">
                   Italic variant for emphasis and secondary content.
                 </p>
               </div>
@@ -274,11 +274,11 @@ export default function DesignSystemPage() {
             <div>
               <div className="mb-3 flex items-baseline gap-3">
                 <h3 className="text-lg font-semibold">Fira Code</h3>
-                <span className="font-mono text-xs text-muted-foreground">
+                <span className="font-mono text-xs text-gray-500">
                   var(--font-mono) &middot; monospace
                 </span>
               </div>
-              <div className="rounded-lg border border-border bg-card p-6" style={{ fontFamily: '"Fira Code", monospace' }}>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-6" style={{ fontFamily: '"Fira Code", monospace' }}>
                 <pre className="text-sm leading-relaxed">
 {`const theme = {
   primary: "oklch(0.5553 0.1455 48.9975)",
@@ -298,7 +298,7 @@ export default function DesignSystemPage() {
         {/* ============================================================ */}
         <section>
           <SectionHeading id="shadows">Shadows</SectionHeading>
-          <p className="mt-2 mb-8 text-sm text-muted-foreground">
+          <p className="mt-2 mb-8 text-sm text-gray-500">
             8-level shadow scale using warm-tinted shadow color in light mode, neutral in dark mode.
           </p>
 
@@ -306,10 +306,10 @@ export default function DesignSystemPage() {
             {SHADOWS.map((s) => (
               <div
                 key={s.name}
-                className={`rounded-lg border border-border bg-card p-6 ${s.class}`}
+                className={`rounded-lg border border-gray-200 bg-gray-50 p-6 ${s.class}`}
               >
                 <p className="text-sm font-semibold">{s.name}</p>
-                <p className="mt-1 font-mono text-[10px] text-muted-foreground">{s.class}</p>
+                <p className="mt-1 font-mono text-[10px] text-gray-500">{s.class}</p>
               </div>
             ))}
           </div>
@@ -320,7 +320,7 @@ export default function DesignSystemPage() {
         {/* ============================================================ */}
         <section>
           <SectionHeading id="radius">Border Radius</SectionHeading>
-          <p className="mt-2 mb-8 text-sm text-muted-foreground">
+          <p className="mt-2 mb-8 text-sm text-gray-500">
             Derived from --radius: 0.3rem base value.
           </p>
 
@@ -328,10 +328,10 @@ export default function DesignSystemPage() {
             {RADII.map((r) => (
               <div key={r.name} className="flex flex-col items-center gap-2">
                 <div
-                  className={`h-20 w-20 border-2 border-primary bg-primary/15 ${r.class}`}
+                  className={`h-20 w-20 border-2 border-gray-400 bg-gray-100 ${r.class}`}
                 />
                 <p className="text-sm font-semibold">{r.name}</p>
-                <p className="font-mono text-[10px] text-muted-foreground">{r.value}</p>
+                <p className="font-mono text-[10px] text-gray-500">{r.value}</p>
               </div>
             ))}
           </div>
@@ -342,21 +342,21 @@ export default function DesignSystemPage() {
         {/* ============================================================ */}
         <section>
           <SectionHeading id="spacing">Spacing</SectionHeading>
-          <p className="mt-2 mb-8 text-sm text-muted-foreground">
+          <p className="mt-2 mb-8 text-sm text-gray-500">
             Based on --spacing: 0.25rem (4px) baseline unit.
           </p>
 
           <div className="space-y-3">
             {SPACING_STEPS.map((step) => (
               <div key={step} className="flex items-center gap-4">
-                <span className="w-8 text-right font-mono text-sm text-muted-foreground">
+                <span className="w-8 text-right font-mono text-sm text-gray-500">
                   {step}
                 </span>
                 <div
-                  className="h-6 rounded-sm bg-primary/70"
+                  className="h-6 rounded-sm bg-gray-700"
                   style={{ width: `${step * 0.25}rem` }}
                 />
-                <span className="font-mono text-xs text-muted-foreground">
+                <span className="font-mono text-xs text-gray-500">
                   {step * 0.25}rem / {step * 4}px
                 </span>
               </div>
@@ -369,7 +369,7 @@ export default function DesignSystemPage() {
         {/* ============================================================ */}
         <section>
           <SectionHeading id="animations">Animations</SectionHeading>
-          <p className="mt-2 mb-8 text-sm text-muted-foreground">
+          <p className="mt-2 mb-8 text-sm text-gray-500">
             Custom keyframe animations defined in globals.css.
           </p>
 
@@ -386,17 +386,17 @@ export default function DesignSystemPage() {
         {/* ============================================================ */}
         <section>
           <SectionHeading id="components">Components</SectionHeading>
-          <p className="mt-2 mb-8 text-sm text-muted-foreground">
+          <p className="mt-2 mb-8 text-sm text-gray-500">
             Live renders of the app&apos;s component library using actual imports.
           </p>
 
           {/* Buttons */}
           <div className="mb-10">
-            <h3 className="mb-4 text-lg font-semibold text-foreground/80">Button</h3>
-            <div className="space-y-6 rounded-lg border border-border bg-card p-6">
+            <h3 className="mb-4 text-lg font-semibold text-black/80">Button</h3>
+            <div className="space-y-6 rounded-lg border border-gray-200 bg-gray-50 p-6">
               {/* Variants */}
               <div>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-500">
                   Variants
                 </p>
                 <div className="flex flex-wrap gap-3">
@@ -409,7 +409,7 @@ export default function DesignSystemPage() {
 
               {/* Sizes */}
               <div>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-500">
                   Sizes
                 </p>
                 <div className="flex flex-wrap items-center gap-3">
@@ -421,7 +421,7 @@ export default function DesignSystemPage() {
 
               {/* States */}
               <div>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-500">
                   States
                 </p>
                 <div className="flex flex-wrap gap-3">
@@ -435,18 +435,18 @@ export default function DesignSystemPage() {
 
           {/* Card */}
           <div className="mb-10">
-            <h3 className="mb-4 text-lg font-semibold text-foreground/80">Card</h3>
+            <h3 className="mb-4 text-lg font-semibold text-black/80">Card</h3>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <Card>
                 <p className="text-sm font-semibold">Default Card</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  With default padding. Uses bg-card, rounded-lg, border, shadow-sm.
+                <p className="mt-1 text-xs text-gray-500">
+                  With default padding. Uses bg-gray-50, rounded-lg, border, shadow-sm.
                 </p>
               </Card>
               <Card noPadding>
                 <div className="p-4">
                   <p className="text-sm font-semibold">No Padding Card</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="mt-1 text-xs text-gray-500">
                     noPadding prop removes default p-4. Content manages its own spacing.
                   </p>
                 </div>
@@ -456,8 +456,8 @@ export default function DesignSystemPage() {
 
           {/* Input */}
           <div className="mb-10">
-            <h3 className="mb-4 text-lg font-semibold text-foreground/80">Input</h3>
-            <div className="grid grid-cols-1 gap-6 rounded-lg border border-border bg-card p-6 lg:grid-cols-3">
+            <h3 className="mb-4 text-lg font-semibold text-black/80">Input</h3>
+            <div className="grid grid-cols-1 gap-6 rounded-lg border border-gray-200 bg-gray-50 p-6 lg:grid-cols-3">
               <Input placeholder="Default input" />
               <Input label="With Label" placeholder="Enter value..." />
               <Input label="With Error" placeholder="Invalid..." error="This field is required" />
@@ -466,8 +466,8 @@ export default function DesignSystemPage() {
 
           {/* Textarea */}
           <div className="mb-10">
-            <h3 className="mb-4 text-lg font-semibold text-foreground/80">Textarea</h3>
-            <div className="rounded-lg border border-border bg-card p-6">
+            <h3 className="mb-4 text-lg font-semibold text-black/80">Textarea</h3>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-6">
               <Label className="mb-1.5 block">Notes</Label>
               <Textarea placeholder="Write your workout notes here..." />
             </div>
@@ -475,8 +475,8 @@ export default function DesignSystemPage() {
 
           {/* Select */}
           <div className="mb-10">
-            <h3 className="mb-4 text-lg font-semibold text-foreground/80">Select</h3>
-            <div className="rounded-lg border border-border bg-card p-6">
+            <h3 className="mb-4 text-lg font-semibold text-black/80">Select</h3>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-6">
               <Label className="mb-1.5 block">Unit Preference</Label>
               <Select defaultValue="lbs" className="max-w-xs">
                 <option value="lbs">Pounds (lbs)</option>
@@ -487,17 +487,17 @@ export default function DesignSystemPage() {
 
           {/* Label */}
           <div className="mb-10">
-            <h3 className="mb-4 text-lg font-semibold text-foreground/80">Label</h3>
-            <div className="flex gap-6 rounded-lg border border-border bg-card p-6">
+            <h3 className="mb-4 text-lg font-semibold text-black/80">Label</h3>
+            <div className="flex gap-6 rounded-lg border border-gray-200 bg-gray-50 p-6">
               <Label>Default Label</Label>
-              <Label className="text-muted-foreground">Muted Label</Label>
+              <Label className="text-gray-500">Muted Label</Label>
             </div>
           </div>
         </section>
       </div>
 
       {/* Footer */}
-      <footer className="mt-20 border-t border-border pt-6 pb-12 text-center text-xs text-muted-foreground">
+      <footer className="mt-20 border-t border-gray-200 pt-6 pb-12 text-center text-xs text-gray-500">
         Reps / LiftLog Design System &mdash; Auto-generated from globals.css tokens
       </footer>
     </div>
